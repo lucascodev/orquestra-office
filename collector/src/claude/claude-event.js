@@ -1,9 +1,10 @@
+import { PATH_LIMIT } from "../shared/text/field-limits.js";
+import { claudeSessionIdOf } from "./claude-session-id.js";
 import { describeActivity } from "./describe-activity.js";
 
 const NEEDS_YOU_NOTIFICATIONS = new Set(["permission_prompt", "elicitation_dialog", "agent_needs_input"]);
 const ROLE_NAME = /^[\w.-]{1,40}$/;
 const TEAM_LIMIT = 40;
-const PATH_LIMIT = 400;
 const AGENT_TYPE_LIMIT = 40;
 const TOOL_NAME_LIMIT = 30;
 const UNNAMED_TOOL = "uma ferramenta";
@@ -21,10 +22,10 @@ function teamOf(payload) {
 export function claudeActorOf(payload) {
   return {
     source: "claude",
-    sessionId: String(payload.session_id ?? ""),
+    sessionId: claudeSessionIdOf(payload),
     agentId: payload.agent_id ? String(payload.agent_id) : null,
     agentType: payload.agent_type ? String(payload.agent_type).slice(0, AGENT_TYPE_LIMIT) : null,
-    cwd: typeof payload.cwd === "string" ? payload.cwd : "",
+    cwd: typeof payload.cwd === "string" ? payload.cwd.slice(0, PATH_LIMIT) : "",
     projectRoot: projectRootOf(payload),
   };
 }

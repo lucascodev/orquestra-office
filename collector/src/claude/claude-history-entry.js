@@ -1,6 +1,7 @@
 import { agentKeyOf } from "../office/domain/agent-key.js";
 import { clip } from "../shared/text/clip.js";
 import { summarizeTool } from "../shared/claude/summarize-tool.js";
+import { claudeSessionIdOf } from "./claude-session-id.js";
 
 const TEXT_LIMIT = 4_000;
 const TOOL_NAME_LIMIT = 60;
@@ -34,7 +35,7 @@ function entryOf(payload) {
 }
 
 function claudeAgentKey(payload) {
-  return agentKeyOf({ source: "claude", sessionId: String(payload.session_id), agentId: payload.agent_id ? String(payload.agent_id) : null });
+  return agentKeyOf({ source: "claude", sessionId: claudeSessionIdOf(payload), agentId: payload.agent_id ? String(payload.agent_id) : null });
 }
 
 export function claudeHistoryEntry(payload, now = Date.now()) {

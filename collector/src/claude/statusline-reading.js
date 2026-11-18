@@ -1,3 +1,5 @@
+import { claudeSessionIdOf } from "./claude-session-id.js";
+
 const MS_PER_SECOND = 1_000;
 const FULL_PERCENTAGE = 100;
 
@@ -12,7 +14,7 @@ export function normalizeStatusline(payload, now = Date.now()) {
   if (!payload || typeof payload !== "object" || !payload.session_id) return null;
   const limits = payload.rate_limits;
   return {
-    sessionId: String(payload.session_id),
+    sessionId: claudeSessionIdOf(payload),
     at: now,
     costUsd: numberOr(payload.cost?.total_cost_usd, 0),
     tokens: numberOr(payload.context_window?.total_input_tokens, 0) + numberOr(payload.context_window?.total_output_tokens, 0),
