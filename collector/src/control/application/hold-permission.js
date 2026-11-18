@@ -1,3 +1,4 @@
+import { AGENT_ACTION } from "../../office/domain/agent-actions.js";
 import { summarizeTool } from "../../shared/claude/summarize-tool.js";
 
 const UNNAMED_TOOL = "uma ferramenta";
@@ -8,8 +9,14 @@ export function createHoldPermission({ holdRequest, activity }) {
     const tool = { ...described, summary: described.summary || `Usar ${described.toolName || UNNAMED_TOOL}` };
     const answer = await holdRequest(actor, { kind: "permission", ...tool }, onAbort);
     if (!answer) return null;
-    const verb = answer.behavior === "allow" ? "aprovou" : "recusou";
-    activity.note(actor, `você ${verb} ${tool.toolName} pelo escritório`, `você ${verb}: ${tool.summary}`);
+    const isAllowed = answer.behavior === "allow";
+    const verb = isAllowed ? "aprovou" : "recusou";
+    const decided = {
+      actionId: isAllowed ? AGENT_ACTION.PERMISSION_APPROVED : AGENT_ACTION.PERMISSION_DENIED,
+      subject: tool.toolName,
+      action: `você ${verb} ${tool.toolName} pelo escritório`,
+    };
+    activity.note(actor, decided, `você ${verb}: ${tool.summary}`);
     return answer;
   };
 }

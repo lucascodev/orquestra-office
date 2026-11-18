@@ -1,3 +1,4 @@
+import { AGENT_ACTION } from "../office/domain/agent-actions.js";
 import { PATH_LIMIT, SESSION_ID_LIMIT } from "../shared/text/field-limits.js";
 
 export function normalizeCodexEvent(payload, now = Date.now()) {
@@ -14,6 +15,8 @@ export function normalizeCodexEvent(payload, now = Date.now()) {
     at: now,
     kind: "activity",
     status: "waiting",
+    actionId: AGENT_ACTION.TURN_FINISHED_WAITING,
+    subject: null,
     action: "terminou o turno e espera você",
     counts: "turns",
   };

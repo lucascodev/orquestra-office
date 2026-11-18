@@ -8,7 +8,7 @@ import { createRecordActivity } from "../src/office/application/record-activity.
 import { createOfficeStore } from "../src/office/domain/office-store.js";
 
 const MAIN_KEY = "claude:s1";
-const EVENT = Object.freeze({ source: "claude", sessionId: "s1", agentId: null, agentType: null, cwd: "/tmp/demo", projectRoot: "", at: 1, kind: "activity", status: "working", action: "lendo a.md" });
+const EVENT = Object.freeze({ source: "claude", sessionId: "s1", agentId: null, agentType: null, cwd: "/tmp/demo", projectRoot: "", at: 1, kind: "activity", status: "working", actionId: "reading", subject: "a.md", action: "lendo a.md" });
 const ENTRY = Object.freeze({ at: 1, kind: "prompt", text: "rename the secret module", detail: "" });
 
 test("recorded activity moves the room and keeps the text only in the history", () => {

@@ -11,6 +11,7 @@ import { createOutbox } from "../src/control/domain/outbox.js";
 import { createPendingDecisions } from "../src/control/domain/pending-decisions.js";
 import { createSessionHistory } from "../src/history/session-history.js";
 import { createRecordActivity } from "../src/office/application/record-activity.js";
+import { AGENT_ACTION } from "../src/office/domain/agent-actions.js";
 import { createOfficeStore } from "../src/office/domain/office-store.js";
 
 const HOLD_MS = 5_000;
@@ -45,7 +46,11 @@ function createControl({ holdMs = HOLD_MS, isWatched = true } = {}) {
 }
 
 const agentOf = (store, key) => store.findAgent(key);
-const startSession = (store, actor = ACTOR) => store.apply({ ...actor, at: 1, kind: "activity", status: "idle", action: "abriu a sessão" });
+const actionOf = (store, key) => {
+  const { actionId, subject } = agentOf(store, key);
+  return { actionId, subject };
+};
+const startSession = (store, actor = ACTOR) => store.apply({ ...actor, at: 1, kind: "activity", status: "idle", actionId: AGENT_ACTION.SESSION_OPENED, subject: null, action: "abriu a sessão" });
 
 test("with nobody watching the office a permission goes straight back with no answer", async () => {
   const control = createControl({ isWatched: false });
@@ -71,6 +76,7 @@ test("an approved permission comes back as the answer and is noted in the room a
   control.decisions.settle(request.id, { behavior: "allow" });
   assert.deepEqual(await held, { behavior: "allow" });
   assert.equal(agentOf(control.store, MAIN_KEY).action, "você aprovou Bash pelo escritório");
+  assert.deepEqual(actionOf(control.store, MAIN_KEY), { actionId: AGENT_ACTION.PERMISSION_APPROVED, subject: "Bash" });
   assert.deepEqual(control.history.of(MAIN_KEY).map(({ kind, text }) => ({ kind, text })), [{ kind: "note", text: "você aprovou: Rodar um comando" }]);
 });
 
@@ -86,6 +92,7 @@ test("a denied permission is noted as refused", async () => {
   control.decisions.settle(control.decisions.list()[0].id, { behavior: "deny", message: "no" });
   assert.deepEqual(await held, { behavior: "deny", message: "no" });
   assert.equal(agentOf(control.store, MAIN_KEY).action, "você recusou Bash pelo escritório");
+  assert.deepEqual(actionOf(control.store, MAIN_KEY), { actionId: AGENT_ACTION.PERMISSION_DENIED, subject: "Bash" });
 });
 
 test("closing the hook connection releases the held permission with no answer and no note", async () => {
@@ -120,6 +127,7 @@ test("an answered question comes back with the answers and notes them", async ()
   control.decisions.settle(request.id, { answers: { "Which framework?": "Vue" } });
   assert.deepEqual(await held, { answers: { "Which framework?": "Vue" } });
   assert.equal(control.history.of(MAIN_KEY).at(-1).text, "você respondeu: Vue");
+  assert.deepEqual(actionOf(control.store, MAIN_KEY), { actionId: AGENT_ACTION.QUESTION_ANSWERED, subject: null });
 });
 
 test("queued messages are handed over once, at the end of the main session's turn", () => {
@@ -127,6 +135,7 @@ test("queued messages are handed over once, at the end of the main session's tur
   control.outbox.queue(MAIN_KEY, "also update the README");
   assert.deepEqual(control.deliverQueuedMessages(ACTOR), ["also update the README"]);
   assert.equal(agentOf(control.store, MAIN_KEY).action, "recebeu sua mensagem pelo escritório");
+  assert.deepEqual(actionOf(control.store, MAIN_KEY), { actionId: AGENT_ACTION.MESSAGE_DELIVERED, subject: null });
   assert.deepEqual(control.deliverQueuedMessages(ACTOR), []);
 });
 
@@ -177,6 +186,6 @@ test("a message goes only to a running Claude Code main session", () => {
 test("a session that already closed takes no messages", () => {
   const control = createControl();
   startSession(control.store);
-  control.store.apply({ ...ACTOR, at: 2, kind: "session-end", status: "idle", action: "fechou a sessão" });
+  control.store.apply({ ...ACTOR, at: 2, kind: "session-end", status: "idle", actionId: AGENT_ACTION.SESSION_CLOSED, subject: null, action: "fechou a sessão" });
   assert.equal(control.sendMessageToAgent({ agentKey: MAIN_KEY, text: "hi" }), OUTCOME.NOT_FOUND);
 });

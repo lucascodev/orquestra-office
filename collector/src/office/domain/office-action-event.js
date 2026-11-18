@@ -1,3 +1,3 @@
-export function officeActionEvent(actor, action, at) {
-  return { ...actor, at, kind: "activity", status: "working", action };
+export function officeActionEvent(actor, { actionId, subject = null, action }, at) {
+  return { ...actor, at, kind: "activity", status: "working", actionId, subject, action };
 }

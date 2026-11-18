@@ -7,8 +7,8 @@ export function createRecordActivity({ store, history, now = Date.now }) {
     if (historyItem) history.add(historyItem.agentKey, historyItem.entry);
   }
 
-  function note(actor, action, text) {
-    store.apply(officeActionEvent(actor, action, now()));
+  function note(actor, described, text) {
+    store.apply(officeActionEvent(actor, described, now()));
     history.add(agentKeyOf(actor), { at: now(), kind: "note", detail: "", text });
   }
 
