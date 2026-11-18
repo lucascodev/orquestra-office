@@ -2,6 +2,7 @@ import { freshestThoughts, thoughtAt } from "../domain/behavior/agent-thoughts.j
 import { createFreeTimeClock } from "../domain/behavior/free-time-clock.js";
 import { assignPlaces } from "../domain/behavior/room-places.js";
 import { createConversationTracker } from "../domain/conversations/conversation-tracker.js";
+import { isScreenLit } from "../domain/office/agent-status.js";
 import { nearestLaneZ, routeBetween } from "../domain/room/room-routes.js";
 import { exitStop } from "../domain/room/room-spots.js";
 import { THREE } from "./kit.js";
@@ -21,7 +22,6 @@ const SAME_STOP = 0.01;
 const NAMEPLATE_HEIGHT = 0.75;
 const ROUTINE_CHECK_MS = 2_000;
 const HURRYING_THOUGHTS = "hurrying";
-const LIT = new Set(["working", "reviewing", "needs_you", "waiting"]);
 
 const isSameStop = (a, b) => Boolean(a && b) && Math.abs(a.x - b.x) < SAME_STOP && Math.abs(a.z - b.z) < SAME_STOP;
 
@@ -257,7 +257,7 @@ export function createRoomRenderer({ onPick, describeStatus }) {
 
   function show(project, theme) {
     const agents = Object.values(project.agents);
-    const next = `${project.key}|${theme.id}|${(project.team ?? []).join(",")}|${agents.map((a) => `${a.key}:${LIT.has(a.status)}:${Boolean(a.endedAt)}`).sort().join(",")}`;
+    const next = `${project.key}|${theme.id}|${(project.team ?? []).join(",")}|${agents.map((a) => `${a.key}:${isScreenLit(a)}:${Boolean(a.endedAt)}`).sort().join(",")}`;
     if (next !== signature) {
       rebuild(project, theme);
       signature = next;

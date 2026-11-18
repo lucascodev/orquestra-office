@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { describeToolEntry, diffLines, languageOfFile } from "../scripts/view/terminal-format.js";
+import { describeToolEntry, diffLines, languageOfFile } from "../scripts/domain/terminal/terminal-format.js";
 
 describe("tool entries in the terminal", () => {
   it("shows a shell command as a command, highlighted as bash", () => {

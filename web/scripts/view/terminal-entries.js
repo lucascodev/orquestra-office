@@ -1,5 +1,5 @@
+import { describeToolEntry, diffLines } from "../domain/terminal/terminal-format.js";
 import { ago, clockTime, esc } from "./format.js";
-import { describeToolEntry, diffLines } from "./terminal-format.js";
 import { codeBlock, highlight, renderMarkdown } from "./terminal-markdown.js";
 
 const COLLAPSE_AFTER_LINES = 12;

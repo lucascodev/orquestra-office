@@ -1,4 +1,4 @@
-import { CODE_LANGUAGES, TOOL_GLYPHS, TOOL_KINDS } from "../data/terminal-tools.js";
+import { CODE_LANGUAGES, TOOL_GLYPHS, TOOL_KINDS } from "../../data/terminal-tools.js";
 
 const TOOL_TEXT = /^([\w.-]+)(?::\s*(.*))?$/s;
 const WRITE_SUMMARY = /^Escrever\s+(.+)$/;

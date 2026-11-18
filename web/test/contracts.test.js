@@ -7,8 +7,8 @@ import { TEMPLATE_IDS } from "../../collector/src/office/domain/templates.js";
 import { THEMES } from "../scripts/data/themes.js";
 import { busyReactionOf } from "../scripts/domain/behavior/agent-reactions.js";
 import { thoughtAt } from "../scripts/domain/behavior/agent-thoughts.js";
-import { canReceiveMessages as webCanReceiveMessages } from "../scripts/view/agent-rules.js";
-import { describeToolEntry, diffLines } from "../scripts/view/terminal-format.js";
+import { canReceiveMessages as webCanReceiveMessages } from "../scripts/domain/office/can-receive-messages.js";
+import { describeToolEntry, diffLines } from "../scripts/domain/terminal/terminal-format.js";
 
 const THEME_COUNT = 7;
 const AGENT_KEY = "claude:s1";

@@ -1,3 +1,4 @@
+import { isScreenLit } from "../domain/office/agent-status.js";
 import { layoutRoom } from "../domain/room/room-layout.js";
 import { seatStop } from "../domain/room/room-spots.js";
 import { wallWidthOf } from "../domain/room/wall-plan.js";
@@ -16,7 +17,6 @@ const CURB_HEIGHT = 0.14;
 const PARTITION_HEIGHT = 0.9;
 const RUG_MARGIN_X = 0.3;
 const RUG_MARGIN_Z = 1.0;
-const LIT = new Set(["working", "reviewing", "needs_you", "waiting"]);
 
 function shell(root, theme, W, D) {
   const H = theme.wallHeight;
@@ -75,7 +75,7 @@ function workstations(root, pods, theme, roomKey) {
         if (seat.role) nameplates.push({ role: seat.role, ...seatStop(pod, seat) });
         continue;
       }
-      station(root, seat.cx, edgeZ, seat.direction, theme, LIT.has(seat.agent.status), rng(hashOf(seat.agent.key)));
+      station(root, seat.cx, edgeZ, seat.direction, theme, isScreenLit(seat.agent), rng(hashOf(seat.agent.key)));
       people.set(seat.agent.key, createPerson(root, seat.agent));
     }
   }

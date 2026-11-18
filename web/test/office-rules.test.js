@@ -1,9 +1,9 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import { FIRST_NAMES } from "../scripts/data/first-names.js";
-import { withAgentNames } from "../scripts/view/agent-names.js";
-import { needsYou, sortedProjects } from "../scripts/view/office-view.js";
-import { statusOf } from "../scripts/view/status.js";
+import { withAgentNames } from "../scripts/domain/office/agent-names.js";
+import { statusOf } from "../scripts/domain/office/agent-status.js";
+import { needsYou, sortedProjects } from "../scripts/domain/office/project-order.js";
 
 const NOW = 1_800_000_000_000;
 const MINUTE = 60_000;

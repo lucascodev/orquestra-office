@@ -1,15 +1,17 @@
+import { themeById } from "../data/themes.js";
+import { withAgentNames } from "../domain/office/agent-names.js";
+import { canReceiveMessages } from "../domain/office/can-receive-messages.js";
+import { agentKeyOfSession } from "../domain/office/live-sessions.js";
+import { sortedProjects } from "../domain/office/project-order.js";
+import { createRoomRenderer } from "../three/renderer.js";
+import { renderUsage } from "../view/control-view.js";
+import { renderNoProjects, renderOffice, renderTabs, renderTeam } from "../view/office-view.js";
+import { describeStatus } from "../view/status.js";
 import { createAgentPanel } from "./agent-panel.js";
 import { createDataSource } from "./data-source.js";
 import { submitDecision } from "./decision-actions.js";
 import { createNewSessionDialog } from "./new-session-dialog.js";
 import { createPanelResizer } from "./panel-resizer.js";
-import { themeById } from "../data/themes.js";
-import { createRoomRenderer } from "../three/renderer.js";
-import { withAgentNames } from "../view/agent-names.js";
-import { canReceiveMessages } from "../view/agent-rules.js";
-import { renderUsage } from "../view/control-view.js";
-import { renderNoProjects, renderOffice, renderTabs, renderTeam, sortedProjects } from "../view/office-view.js";
-import { describeStatus } from "../view/status.js";
 
 const SELECTED_KEY = "office.selected";
 const MODE_LABEL = {
@@ -55,7 +57,7 @@ createPanelResizer({
 const newSessionDialog = createNewSessionDialog({
   dialog: document.getElementById("new-session"),
   control: source,
-  onOpened: (session) => { awaitedAgentKey = `claude:${session.sessionId}`; render(); },
+  onOpened: (session) => { awaitedAgentKey = agentKeyOfSession(session); render(); },
 });
 
 function currentProject() {

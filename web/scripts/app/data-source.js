@@ -1,12 +1,11 @@
 import { demoHistory, demoState, demoTerminal, queueDemoMessage, resolveDemoRequest, tickDemo } from "../data/demo-data.js";
+import { agentKeyOfSession, liveAgentsOf, liveSessionOf } from "../domain/office/live-sessions.js";
 import { officeApi } from "./office-api.js";
 import { runnerClient } from "./runner-client.js";
 
 const DEMO_TICK_MS = 4_000;
 const RUNNER_POLL_MS = 4_000;
 const DEMO_ONLY = "Na prévia com dados de exemplo não dá para abrir sessões.";
-
-const agentKeyOfSession = (session) => `claude:${session.sessionId}`;
 
 export function createDataSource(onState) {
   let mode = "connecting";
@@ -15,11 +14,10 @@ export function createDataSource(onState) {
   let demoTerminalChange = null;
 
   const isDemo = () => mode === "demo";
-  const liveSessionOf = (agentKey) => runner.sessions.find((session) => session.sessionId && session.status !== "ended" && agentKeyOfSession(session) === agentKey) ?? null;
+  const liveSessionFor = (agentKey) => liveSessionOf(runner.sessions, agentKey);
 
   const publish = () => {
-    const liveAgents = Object.fromEntries(runner.sessions.filter((session) => liveSessionOf(agentKeyOfSession(session))).map((session) => [agentKeyOfSession(session), session.status]));
-    onState({ mode, projects: { ...local.projects }, pending: local.pending ?? [], outbox: local.outbox ?? {}, usage: local.usage ?? null, runner: { isAvailable: runner.isAvailable, liveAgents } });
+    onState({ mode, projects: { ...local.projects }, pending: local.pending ?? [], outbox: local.outbox ?? {}, usage: local.usage ?? null, runner: { isAvailable: runner.isAvailable, liveAgents: liveAgentsOf(runner.sessions) } });
   };
 
   function startDemo() {
@@ -77,7 +75,7 @@ export function createDataSource(onState) {
   }
 
   async function sendMessage(agentKey, text) {
-    const session = liveSessionOf(agentKey);
+    const session = liveSessionFor(agentKey);
     if (isDemo() && session) {
       demoTerminalChange?.({ type: "entry", entry: { at: Date.now(), kind: "prompt", text, detail: "" } });
       return true;
@@ -107,7 +105,7 @@ export function createDataSource(onState) {
   }
 
   function watchTerminal(agent, handlers) {
-    const session = liveSessionOf(agent.key);
+    const session = liveSessionFor(agent.key);
     if (!session) return () => {};
     if (!isDemo()) return runnerClient.watch(session.id, handlers);
     demoTerminalChange = handlers.onChange;
@@ -116,7 +114,7 @@ export function createDataSource(onState) {
   }
 
   const onLiveSession = (action) => async (agentKey) => {
-    const session = liveSessionOf(agentKey);
+    const session = liveSessionFor(agentKey);
     return Boolean(session) && !isDemo() && action(session.id);
   };
 

@@ -1,17 +1,13 @@
 import { THEMES, themeById } from "../data/themes.js";
+import { ACTIVE_STATUSES, statusOf } from "../domain/office/agent-status.js";
+import { needsYou, sortedProjects } from "../domain/office/project-order.js";
 import { renderPendingStrip } from "./control-view.js";
 import { ago, esc, formatCost, formatTokens } from "./format.js";
-import { ACTIVE_STATUSES, STATUS, statusOf } from "./status.js";
+import { STATUS } from "./status.js";
 
 const AGENT_MARKS = { claude: ["C", "var(--a-claude)"], codex: ["Cx", "var(--a-codex)"] };
 const UNKNOWN_MARK = ["?", "var(--a-shell)"];
 const COST_NOTE = "Estimativa do próprio Claude Code, a preço de tabela.";
-
-export const needsYou = (project) => Object.values(project.agents).filter((a) => a.status === "needs_you").length;
-
-export function sortedProjects(projects) {
-  return Object.values(projects).sort((a, b) => needsYou(b) - needsYou(a) || b.updatedAt - a.updatedAt);
-}
 
 export function agentMark(agent) {
   const [sign, color] = AGENT_MARKS[agent.source] ?? UNKNOWN_MARK;

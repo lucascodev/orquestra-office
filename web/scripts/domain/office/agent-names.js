@@ -1,5 +1,5 @@
-import { hashOf } from "../domain/shared/seeded-random.js";
-import { FIRST_NAMES } from "../data/first-names.js";
+import { FIRST_NAMES } from "../../data/first-names.js";
+import { hashOf } from "../shared/seeded-random.js";
 
 function firstFreeIndex(preferred, taken) {
   let index = preferred;
