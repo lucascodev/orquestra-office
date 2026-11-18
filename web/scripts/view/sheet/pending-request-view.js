@@ -1,14 +1,18 @@
 import { esc } from "../shared/escape-html.js";
 import { clockTime } from "../shared/format.js";
 
+const FAILED_DECISION_ALERT = `<p class="pending-error" role="alert" hidden></p>`;
+
+const quickDecision = () => `<div class="pending-actions"><button class="btn btn-sm btn-secondary" data-decide="deny">Negar</button><button class="btn btn-sm btn-primary" data-decide="allow">Permitir</button></div>
+    ${FAILED_DECISION_ALERT}`;
+
+const answerInSheet = (request) => `<div class="pending-actions"><button class="btn btn-sm btn-primary" data-open-agent="${esc(request.agentKey)}">Responder</button></div>`;
+
 export function renderPendingStrip(request) {
-  const quickActions = request.kind === "permission"
-    ? `<button class="btn btn-sm btn-secondary" data-decide="deny">Negar</button><button class="btn btn-sm btn-primary" data-decide="allow">Permitir</button>`
-    : `<button class="btn btn-sm btn-primary" data-open-agent="${esc(request.agentKey)}">Responder</button>`;
   return `<div class="pending-strip" data-pending="${esc(request.id)}">
     <p class="pending-what">${esc(request.summary)}</p>
     ${request.detail ? `<code class="mono">${esc(request.detail)}</code>` : ""}
-    <div class="pending-actions">${quickActions}</div>
+    ${request.kind === "permission" ? quickDecision() : answerInSheet(request)}
   </div>`;
 }
 
@@ -50,6 +54,6 @@ export function renderPendingCard(request, agentName) {
   return `<section class="card pending-card" data-pending="${esc(request.id)}">
     <p class="pending-flag"><span aria-hidden="true">●</span> aguardando você · volta para o terminal às ${clockTime(request.expiresAt)}</p>
     ${body}
-    <p class="pending-error" role="alert" hidden></p>
+    ${FAILED_DECISION_ALERT}
   </section>`;
 }

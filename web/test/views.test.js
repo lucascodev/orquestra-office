@@ -120,6 +120,12 @@ describe("pending request strip", () => {
     assertMatchesRecording("pending-strip-permission", renderPendingStrip(permission));
   });
 
+  it("has the card's hidden alert, to say when allow or deny could not be sent", () => {
+    const failedDecisionAlert = '<p class="pending-error" role="alert" hidden></p>';
+    assert.ok(renderPendingCard(permission, "Caio").includes(failedDecisionAlert));
+    assert.ok(renderPendingStrip(permission).includes(failedDecisionAlert));
+  });
+
   it("offers to open the agent to answer a question", () => {
     assertMatchesRecording("pending-strip-question", renderPendingStrip(question));
   });
