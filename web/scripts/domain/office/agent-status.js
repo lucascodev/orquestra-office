@@ -1,4 +1,4 @@
-const KNOWN_STATUSES = new Set(["working", "reviewing", "needs_you", "waiting", "break", "blocked", "idle"]);
+export const KNOWN_STATUSES = new Set(["working", "reviewing", "needs_you", "waiting", "break", "blocked", "idle"]);
 const SCREEN_LIT_STATUSES = new Set(["working", "reviewing", "needs_you", "waiting"]);
 
 export const ACTIVE_STATUSES = new Set(["working", "reviewing", "needs_you", "waiting", "blocked"]);

@@ -1,0 +1,10 @@
+import first, { second, third as renamed, $fourth } from "./a.js";
+import * as everything from "./b.js";
+import { unused } from "./c.js";
+import lonely from "./d.js";
+import { spread, onlyAsProperty } from "./e.js";
+import { inTemplate } from "./f.js";
+// lonely and unused are only mentioned here
+export const total = first + renamed($fourth) + second.size + everything.x;
+export const items = [...spread, settings.onlyAsProperty];
+export const markup = `<li data-x="${inTemplate(total)}"></li>`;
