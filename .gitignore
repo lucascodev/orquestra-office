@@ -1,11 +1,5 @@
 node_modules/
 .env
 .playwright-mcp/
-
-/state.js
-/state-sync*.js
-/handoff-*.py
-/rename-skills-*.py
-/claude-manifest-*.txt
-/index.html
-/nginx.conf
+collector/data/
+_site/
