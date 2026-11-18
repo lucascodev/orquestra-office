@@ -86,6 +86,17 @@ test("a sweep that throws is reported and the next sweep still runs", (t) => {
   }
 });
 
+test("once the office stops, the sweep no longer runs", (t) => {
+  t.mock.timers.enable({ apis: ["setInterval"] });
+  const office = createOffice({ webDir: WEB_DIR });
+  const sweep = t.mock.method(office.store, "sweep", () => {});
+  office.startSweep();
+  t.mock.timers.tick(SWEEP_INTERVAL_MS);
+  office.stop();
+  t.mock.timers.tick(SWEEP_INTERVAL_MS * 3);
+  assert.equal(sweep.mock.callCount(), 1);
+});
+
 test("with no office page open a permission goes back to the terminal at once, long before the hold would end", { timeout: NO_VIEWER_TEST_TIMEOUT_MS }, async () => {
   const office = createOffice({ webDir: WEB_DIR, holdMs: HOLD_MS });
   const base = await listenOnFetchablePort(office.server);
