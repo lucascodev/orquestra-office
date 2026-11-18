@@ -31,7 +31,7 @@ function entryOf(payload) {
   }
 }
 
-export function claudeAgentKey(payload) {
+function claudeAgentKey(payload) {
   return agentKeyOf({ source: "claude", sessionId: String(payload.session_id), agentId: payload.agent_id ? String(payload.agent_id) : null });
 }
 

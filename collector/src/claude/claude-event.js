@@ -15,7 +15,7 @@ function teamOf(payload) {
   return Array.isArray(team) ? team.filter((role) => typeof role === "string" && ROLE_NAME.test(role)).slice(0, TEAM_LIMIT) : null;
 }
 
-function base(payload, now) {
+export function claudeActorOf(payload) {
   return {
     source: "claude",
     sessionId: String(payload.session_id ?? ""),
@@ -23,16 +23,15 @@ function base(payload, now) {
     agentType: payload.agent_type ? String(payload.agent_type).slice(0, 40) : null,
     cwd: typeof payload.cwd === "string" ? payload.cwd : "",
     projectRoot: projectRootOf(payload),
-    at: now,
   };
+}
+
+function base(payload, now) {
+  return { ...claudeActorOf(payload), at: now };
 }
 
 function activity(payload, now, status, action, extra = {}) {
   return { ...base(payload, now), kind: "activity", status, action, ...extra };
-}
-
-export function officeActionEvent(payload, action, now = Date.now()) {
-  return activity(payload, now, "working", action);
 }
 
 export function normalizeClaudeEvent(payload, now = Date.now()) {
