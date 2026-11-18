@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { existsSync, mkdtempSync, readFileSync, rmSync } from "node:fs";
+import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { after, before, describe, it } from "node:test";
@@ -10,6 +10,8 @@ import { startTags } from "./support/html.mjs";
 const SITE_DIR = fileURLToPath(new URL("..", import.meta.url));
 const REPOSITORY_DIR = resolve(SITE_DIR, "..");
 const ROOT_RELATIVE = /^\//;
+const FOREIGN_FILE_NAME = "notes.txt";
+const FOREIGN_CONTENT = "not part of the site";
 
 describe("site assembly", () => {
   let workDir;
@@ -47,9 +49,20 @@ describe("site assembly", () => {
     }
   });
 
-  it("lets the default output and folders outside the repository be replaced", () => {
-    for (const dir of [join(REPOSITORY_DIR, "_site"), outputDir]) {
-      assert.equal(holdsSources(dir), false, dir);
+  it("replaces a missing folder, an empty one and one it assembled before", () => {
+    const emptyDir = mkdtempSync(join(workDir, "empty-"));
+    for (const dir of [join(workDir, "missing"), emptyDir, outputDir]) {
+      assembleSite(dir);
+      assert.ok(existsSync(join(dir, "index.html")), dir);
     }
+  });
+
+  it("refuses to replace a folder it did not assemble and keeps its files", () => {
+    const foreignDir = mkdtempSync(join(workDir, "foreign-"));
+    const foreignFile = join(foreignDir, FOREIGN_FILE_NAME);
+    writeFileSync(foreignFile, FOREIGN_CONTENT);
+    assert.throws(() => assembleSite(foreignDir), /refusing to replace/);
+    assert.equal(readFileSync(foreignFile, "utf8"), FOREIGN_CONTENT);
+    assert.ok(!existsSync(join(foreignDir, "index.html")));
   });
 });
