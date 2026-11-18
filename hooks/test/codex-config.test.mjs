@@ -1,14 +1,15 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { applyNotify, configLines, configText, officeNotifyLine } from "../lib/codex-config.mjs";
+import { applyNotify, configLines, configText, officeNotifyEntries, officeNotifyLine } from "../lib/codex-config.mjs";
 
 const OFFICE_URL = "http://127.0.0.1:8420";
 const INSTALL = { isRemoving: false, officeUrl: OFFICE_URL };
 const REMOVE = { ...INSTALL, isRemoving: true };
 const OFFICE_NOTIFY = officeNotifyLine(OFFICE_URL);
+const NOTIFY_BEFORE_NOPROXY = 'notify = ["curl", "-s", "-m", "3", "-X", "POST", "-H", "Content-Type: application/json", "http://127.0.0.1:8420/events/codex", "--data-raw"]';
 
-test("the notify posts the Codex turn to the office with curl and a short timeout", () => {
-  assert.equal(OFFICE_NOTIFY, 'notify = ["curl", "-s", "-m", "3", "-X", "POST", "-H", "Content-Type: application/json", "http://127.0.0.1:8420/events/codex", "--data-raw"]');
+test("the notify posts the Codex turn straight to the office with curl, past any proxy and with a short timeout", () => {
+  assert.equal(OFFICE_NOTIFY, 'notify = ["curl", "-s", "--noproxy", "*", "-m", "3", "-X", "POST", "-H", "Content-Type: application/json", "http://127.0.0.1:8420/events/codex", "--data-raw"]');
 });
 
 test("refuses a notify at the root that belongs to someone else, on install and on remove", () => {
@@ -18,16 +19,46 @@ test("refuses a notify at the root that belongs to someone else, on install and 
   assert.deepEqual(applyNotify(lines, REMOVE), { foreignNotifyLine: '  notify = ["notify-send"]' });
 });
 
+test("a notify that only mentions the office route belongs to someone else", () => {
+  for (const line of [
+    'notify = ["sh", "-c", "curl -d @- http://127.0.0.1:8420/events/codex; my-script"]',
+    'notify = ["curl", "https://audit.example.com/events/codex"]',
+    `${OFFICE_NOTIFY} # mine now`,
+  ]) {
+    assert.deepEqual(applyNotify([line], INSTALL), { foreignNotifyLine: line }, line);
+    assert.deepEqual(applyNotify([line], REMOVE), { foreignNotifyLine: line }, line);
+  }
+});
+
+test("a quoted notify key is someone else's notify, even with the office command", () => {
+  for (const key of ['"notify"', "'notify'"]) {
+    const line = OFFICE_NOTIFY.replace(/^notify/, key);
+
+    assert.deepEqual(applyNotify(['model = "o3"', line], INSTALL), { foreignNotifyLine: line });
+    assert.deepEqual(applyNotify([line], REMOVE), { foreignNotifyLine: line });
+  }
+});
+
 test("inserts at the root, before the first table, and ignores a notify inside a table", () => {
   const lines = ['model = "o3"', "", "[profiles.a]", 'notify = ["x"]'];
 
   assert.deepEqual(applyNotify(lines, INSTALL), { lines: [OFFICE_NOTIFY, ...lines] });
 });
 
-test("installing again replaces its own notify instead of adding a second one", () => {
-  const { lines: once } = applyNotify(['model = "o3"'], { ...INSTALL, officeUrl: "http://10.0.0.9:9999" });
+test("installing again replaces its own notify, written before or after --noproxy, and with other spacing", () => {
+  const spaced = OFFICE_NOTIFY.replace(/, /g, ",").replace("= ", "=  ");
 
-  assert.deepEqual(applyNotify(once, INSTALL), { lines: [OFFICE_NOTIFY, 'model = "o3"'] });
+  for (const line of [OFFICE_NOTIFY, NOTIFY_BEFORE_NOPROXY, spaced]) {
+    assert.deepEqual(applyNotify([line, 'model = "o3"'], INSTALL), { lines: [OFFICE_NOTIFY, 'model = "o3"'] }, line);
+  }
+});
+
+test("a notify recorded in the manifest is replaced even when it points at another office", () => {
+  const oldInstall = { ...INSTALL, officeUrl: "http://localhost:9999" };
+  const { lines: once } = applyNotify(['model = "o3"'], oldInstall);
+
+  assert.ok(applyNotify(once, INSTALL).foreignNotifyLine);
+  assert.deepEqual(applyNotify(once, { ...INSTALL, recorded: officeNotifyEntries(oldInstall) }), { lines: [OFFICE_NOTIFY, 'model = "o3"'] });
 });
 
 test("removing takes out its own notify and keeps the rest", () => {

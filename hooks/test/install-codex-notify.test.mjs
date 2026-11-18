@@ -8,7 +8,9 @@ import { runHookScript } from "./support/run-hook-script.mjs";
 
 const INSTALLER = "install-codex-notify.mjs";
 const BACKUP_NAME = /^config\.toml\.bak-\d{8}-\d{6}$/;
-const OFFICE_NOTIFY = 'notify = ["curl", "-s", "-m", "3", "-X", "POST", "-H", "Content-Type: application/json", "http://127.0.0.1:8420/events/codex", "--data-raw"]';
+const OFFICE_NOTIFY = 'notify = ["curl", "-s", "--noproxy", "*", "-m", "3", "-X", "POST", "-H", "Content-Type: application/json", "http://127.0.0.1:8420/events/codex", "--data-raw"]';
+const NOTIFY_BEFORE_NOPROXY = 'notify = ["curl", "-s", "-m", "3", "-X", "POST", "-H", "Content-Type: application/json", "http://127.0.0.1:8420/events/codex", "--data-raw"]';
+const MANIFEST = "orquestra-office.json";
 
 function codexHome(t) {
   const dir = mkdtempSync(join(tmpdir(), "office-codex-cli-"));
@@ -103,6 +105,61 @@ test("refuses a notify that belongs to someone else, exits 1 and changes nothing
   }
   assert.equal(readConfig(dir), original);
   assert.deepEqual(backupsIn(dir), []);
+});
+
+for (const foreignNotify of [
+  'notify = ["sh", "-c", "curl -d @- http://127.0.0.1:8420/events/codex; my-script"]',
+  '"notify" = ["curl", "-s", "--noproxy", "*", "-m", "3", "-X", "POST", "-H", "Content-Type: application/json", "http://127.0.0.1:8420/events/codex", "--data-raw"]',
+]) {
+  test(`keeps a notify that only looks like the office's, on install and on remove: ${foreignNotify.slice(0, 30)}`, async (t) => {
+    const dir = codexHome(t);
+    const original = `model = "o3"\n${foreignNotify}\n`;
+    writeFileSync(join(dir, "config.toml"), original);
+
+    for (const args of [[], ["--remove"]]) {
+      const result = await install(dir, {}, args);
+
+      assert.equal(result.code, 1);
+      assert.match(result.stderr, /already has another notify command:/);
+    }
+    assert.equal(readConfig(dir), original);
+  });
+}
+
+test("replaces the notify written before --noproxy existed, without a second notify", async (t) => {
+  const dir = codexHome(t);
+  writeFileSync(join(dir, "config.toml"), `${NOTIFY_BEFORE_NOPROXY}\nmodel = "o3"\n`);
+
+  const result = await install(dir);
+
+  assert.equal(result.code, 0);
+  assert.equal(readConfig(dir), `${OFFICE_NOTIFY}\nmodel = "o3"\n`);
+});
+
+test("records the notify in orquestra-office.json, so reinstalling with another OFFICE_URL replaces it", async (t) => {
+  const dir = codexHome(t);
+  await install(dir, { OFFICE_URL: "http://localhost:9999" });
+
+  const result = await install(dir);
+
+  assert.equal(result.code, 0);
+  assert.equal(readConfig(dir), `${OFFICE_NOTIFY}\n`);
+  assert.deepEqual(JSON.parse(readFileSync(join(dir, MANIFEST), "utf8")).codex.notify, [JSON.parse(OFFICE_NOTIFY.replace(/^notify = /, ""))]);
+
+  await install(dir, {}, ["--remove"]);
+
+  assert.equal(existsSync(join(dir, MANIFEST)), false);
+});
+
+test("keeps the Claude section of a manifest shared with CLAUDE_CONFIG_DIR", async (t) => {
+  const dir = codexHome(t);
+  const claude = { urls: ["http://127.0.0.1:8420/events/claude"], commands: [] };
+  writeFileSync(join(dir, MANIFEST), JSON.stringify({ claude }));
+
+  await install(dir);
+  await install(dir, {}, ["--remove"]);
+
+  assert.deepEqual(JSON.parse(readFileSync(join(dir, MANIFEST), "utf8")), { claude });
 });
 
 test("--remove takes out only the office notify", async (t) => {
