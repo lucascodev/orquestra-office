@@ -283,3 +283,28 @@ test("a saved room named like a prototype key loads as an ordinary room", () => 
   assert.equal(store.closeProject("__proto__"), true);
   assert.deepEqual(store.snapshot().projects, {});
 });
+
+const EVERY_PROTOTYPE_KEY = ["__proto__", "constructor", "toString", "hasOwnProperty"];
+const TOKENS_AT_START = 1_000;
+const TOKENS_LATER = 1_600;
+const COST_AT_START = 0.5;
+const COST_LATER = 1.25;
+
+function savedOfficeWithOneRoom() {
+  const first = createOfficeStore();
+  first.apply(claude("SessionStart", { session_id: "s0" }, STARTED_AT));
+  return JSON.parse(JSON.stringify({ projects: first.snapshot().projects, sessions: {}, meters: {} }));
+}
+
+test("after loading an ordinary saved state, session ids named like prototype keys start sessions and add up their usage", () => {
+  const store = createOfficeStore(savedOfficeWithOneRoom());
+  for (const sessionId of EVERY_PROTOTYPE_KEY) {
+    store.apply(claude("SessionStart", { session_id: sessionId }, STARTED_AT));
+    store.recordUsage(reading(TOKENS_AT_START, COST_AT_START, STARTED_AT, sessionId));
+    store.recordUsage(reading(TOKENS_LATER, COST_LATER, STARTED_AT, sessionId));
+  }
+  const snapshot = store.snapshot();
+  assert.equal(Object.keys(snapshot.projects).length, 1);
+  assert.deepEqual(Object.keys(snapshot.sessions).sort(), [...EVERY_PROTOTYPE_KEY].sort());
+  assert.equal(projectOf(store).stats.tokens, EVERY_PROTOTYPE_KEY.length * (TOKENS_LATER - TOKENS_AT_START));
+});
