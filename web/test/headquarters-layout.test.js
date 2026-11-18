@@ -170,6 +170,17 @@ describe("islands per project", () => {
     assert.deepEqual(second, ["claude:b", "claude:b:s0", "claude:b:s1", "claude:b:s2"]);
   });
 
+  it("opens one more island rather than split a team that fits whole on one", () => {
+    const agents = [...teamOf("claude:a", 4, NOW - 30 * MINUTE), ...teamOf("claude:b", 4, NOW - 20 * MINUTE), ...teamOf("claude:c", 3, NOW - 10 * MINUTE)];
+    const project = projectOf("c:/three-teams", agents);
+    const islands = islandsOf(layoutHeadquarters(officeOf([project])), project.key).map((island) => occupantsOf(island).filter(Boolean));
+    assert.deepEqual(islands, [
+      ["claude:a", "claude:a:s0", "claude:a:s1", "claude:a:s2"],
+      ["claude:b", "claude:b:s0", "claude:b:s1", "claude:b:s2"],
+      ["claude:c", "claude:c:s0", "claude:c:s1"],
+    ]);
+  });
+
   it("keeps the seat of someone who is leaving until the collector forgets them", () => {
     const project = projectOf("c:/leaving", [agentOf("claude:gone", { endedAt: NOW - MINUTE }), agentOf("claude:here")]);
     assert.deepEqual(occupantsOf(islandsOf(layoutHeadquarters(officeOf([project])), project.key)[0]).filter(Boolean), ["claude:gone", "claude:here"]);
