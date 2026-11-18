@@ -459,3 +459,32 @@ Respondidas em 18/11/2026.
 | Q4 migração | Corte seco, com o aviso de "hooks antigos" na página. |
 | Q3, Q5, Q7, Q8 | Seguem a recomendação: atividade por `curl` com token (A3), se o S.0 confirmar; segredo em `~/.orquestra-office`; executor autenticado já na fase S; QR com biblioteca vendorizada. |
 | Q6 ordem | A fase 5 já estava em andamento quando o ADR ficou pronto. A fase S roda em paralelo, numa branch própria, e entra antes do passo 6.6 da Sede, que mexe nos hooks. |
+
+## Medições do S.0
+
+Feitas em 18/11/2026 no Windows 11 (10.0.26300), Node 24.22.1, `curl.exe` 8.22.0 em `C:\Windows\System32` e Claude Code 2.1.327. Os scripts ficaram fora do repositório.
+
+| Forma | Tempo de relógio, 200 execuções | CPU por processo, 40 execuções | Memória de pico |
+|---|---|---|---|
+| `node -e ""` em forma exec | p50 67 ms, p95 83 ms | p50 63 ms, p95 78 ms | 51 MB |
+| `curl.exe` em forma exec, mandando o corpo pelo stdin a um servidor local | p50 17 ms, p95 26 ms | p50 16 ms, p95 47 ms | 3 MB |
+| `node` pelo Git Bash (forma shell) | p50 117 ms, p95 166 ms | não medido | não medido |
+
+A CPU do Windows é contada em fatias de 15,6 ms, então os números de CPU do `curl` são o piso da medida. Nenhuma execução falhou.
+
+**Confirmado pela documentação** ([Hooks reference](https://code.claude.com/docs/en/hooks), lida de novo em 18/11/2026): com `args`, o comando roda sem shell em todas as plataformas e, no Windows, precisa ser um executável real (`.exe`); `async` só existe em `command`, o `timeout` não vale para ele, `additionalContext` e `systemMessage` da saída chegam ao modelo no turno seguinte e, em `-p`, hooks `async` ainda rodando são mortos no encerramento.
+
+**Conclusões.**
+
+- A3 fica: o `curl` em forma exec custa cerca de um quarto do `node` e um sétimo da forma shell.
+- As três decisões usam a forma `command` (`node "<hooks>/office-decision.mjs" --office-url "<url>" --secret-file "<arquivo>"`), não a forma exec. É o caminho conservador: a forma `command` com `node "<caminho>"` já roda hoje no `SessionStart` desta máquina, e o relato de `args` ignorado no Windows (issue 90495) não foi descartado. As decisões são raras, então o Git Bash a mais não pesa. Os caminhos passam pela mesma lista de caracteres permitidos de `hooks/lib/hooks-dir.mjs`.
+- O `SessionEnd` síncrono usa `timeout` 2, não 1,5: o campo é em segundos e não há garantia de que aceite fração.
+- O `compose.yaml` não usa `~` em `secrets.file`, porque a documentação do Compose não fala de expansão de `~`. Usa interpolação aninhada, que está documentada: `${OFFICE_SECRET_FILE:-${USERPROFILE:-${HOME}}/.orquestra-office/secret}`.
+
+**Fica para o usuário verificar numa sessão real** (com `CLAUDE_CONFIG_DIR` temporário):
+
+1. um hook `async` em forma exec com `curl.exe` chega ao coletor no Windows (atividade aparece no escritório);
+2. o `curl` com `-o NUL` não deixa aviso nem texto na conversa;
+3. a permissão decidida no escritório volta para a sessão pelo `office-decision.mjs`;
+4. o `docker compose up` acha o segredo pelo caminho interpolado no Windows e no macOS, e o que acontece quando o arquivo falta;
+5. os mesmos números no macOS.
