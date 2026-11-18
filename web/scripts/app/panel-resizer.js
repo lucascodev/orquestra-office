@@ -1,3 +1,5 @@
+import { readPreference, writePreference } from "../infra/local-preferences.js";
+
 const WIDTH_KEY = "office.panelWidth";
 const WIDTH_PROPERTY = "--panel-width";
 const MIN_WIDTH = 320;
@@ -6,16 +8,8 @@ const KEY_STEP = 24;
 const KEY_DELTAS = { ArrowLeft: KEY_STEP, ArrowRight: -KEY_STEP };
 const RESIZING_CLASS = "is-resizing-panel";
 
-function readWidth() {
-  try { return Number(localStorage.getItem(WIDTH_KEY)) || null; } catch { return null; }
-}
-
-function writeWidth(width) {
-  try {
-    if (width === null) localStorage.removeItem(WIDTH_KEY);
-    else localStorage.setItem(WIDTH_KEY, String(width));
-  } catch { /* storage unavailable: the width lasts until the page closes */ }
-}
+const readWidth = () => Number(readPreference(WIDTH_KEY)) || null;
+const writeWidth = (width) => writePreference(WIDTH_KEY, width === null ? null : String(width));
 
 export function createPanelResizer({ handle, side, workspace, onResize }) {
   const maxWidth = () => Math.max(MIN_WIDTH, Math.round(workspace.clientWidth * MAX_SHARE_OF_WORKSPACE));

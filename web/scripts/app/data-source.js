@@ -1,7 +1,8 @@
-import { demoHistory, demoState, demoTerminal, queueDemoMessage, resolveDemoRequest, tickDemo } from "../data/demo-data.js";
-import { agentKeyOfSession, liveAgentsOf, liveSessionOf } from "../domain/office/live-sessions.js";
-import { officeApi } from "./office-api.js";
-import { runnerClient } from "./runner-client.js";
+import { liveAgentsOf, liveSessionOf } from "../domain/office/live-sessions.js";
+import { demoHistory, demoTerminal } from "../infra/demo/demo-terminal.js";
+import { demoState, queueDemoMessage, resolveDemoRequest, tickDemo } from "../infra/demo/demo-world.js";
+import { officeApi } from "../infra/office-api.js";
+import { runnerClient } from "../infra/runner-client.js";
 
 const DEMO_TICK_MS = 4_000;
 const RUNNER_POLL_MS = 4_000;

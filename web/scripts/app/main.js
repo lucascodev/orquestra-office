@@ -3,6 +3,7 @@ import { withAgentNames } from "../domain/office/agent-names.js";
 import { canReceiveMessages } from "../domain/office/can-receive-messages.js";
 import { agentKeyOfSession } from "../domain/office/live-sessions.js";
 import { sortedProjects } from "../domain/office/project-order.js";
+import { readPreference, writePreference } from "../infra/local-preferences.js";
 import { createRoomRenderer } from "../three/renderer.js";
 import { renderNoProjects, renderOffice } from "../view/office/room-view.js";
 import { describeStatus } from "../view/office/status-display.js";
@@ -33,7 +34,7 @@ const runnerOffBadge = document.getElementById("runner-off");
 
 let state = { mode: "connecting", projects: {}, pending: [], outbox: {}, usage: null, runner: { isAvailable: false, liveAgents: {} } };
 let awaitedAgentKey = null;
-let selected = (() => { try { return localStorage.getItem(SELECTED_KEY); } catch { return null; } })();
+let selected = readPreference(SELECTED_KEY);
 // Redrawing between press and release would swap the button under the pointer and swallow the click.
 let isPressing = false;
 let hasDeferredRender = false;
@@ -146,7 +147,7 @@ function openAgent(agentKey) {
 function selectProject(projectKey) {
   agentPanel.close();
   selected = projectKey;
-  try { localStorage.setItem(SELECTED_KEY, selected); } catch { /* memory only */ }
+  writePreference(SELECTED_KEY, selected);
   render();
 }
 
