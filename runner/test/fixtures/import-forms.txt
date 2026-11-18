@@ -1,0 +1,12 @@
+import { a } from "./a.js";
+import b, {
+  c,
+  d,
+} from '../b.js';
+import * as e from "./e.js";
+import "./side-effect.js";
+export { f } from "./f.js";
+export * from "node:path";
+const g = await import("./g.js");
+const text = "imported from somewhere";
+export const h = "./not-an-import.js";

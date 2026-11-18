@@ -1,30 +1,9 @@
 import { spawn } from "node:child_process";
+import { lineReader, parseEvent } from "./json-lines.js";
 
 const STREAM_ARGS = ["-p", "--input-format", "stream-json", "--output-format", "stream-json", "--verbose", "--include-partial-messages"];
 const STDERR_TAIL = 2_000;
 const STOP_GRACE_MS = 5_000;
-
-function lineReader(onLine) {
-  let buffer = "";
-  return (chunk) => {
-    buffer += chunk;
-    let end = buffer.indexOf("\n");
-    while (end >= 0) {
-      const line = buffer.slice(0, end).trim();
-      buffer = buffer.slice(end + 1);
-      if (line) onLine(line);
-      end = buffer.indexOf("\n");
-    }
-  };
-}
-
-function parseEvent(line) {
-  try {
-    return JSON.parse(line);
-  } catch {
-    return null;
-  }
-}
 
 export function createClaudeLauncher({ command = "claude", model = "" } = {}) {
   const args = model ? [...STREAM_ARGS, "--model", model] : STREAM_ARGS;
