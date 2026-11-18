@@ -2,9 +2,9 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import { THEMES } from "../scripts/data/themes.js";
 import { assignPlaces } from "../scripts/domain/behavior/room-places.js";
+import { createConversationTracker } from "../scripts/domain/conversations/conversation-tracker.js";
+import { conversationMoment, socialCircles, workConversations } from "../scripts/domain/conversations/conversations.js";
 import { layoutRoom } from "../scripts/domain/room/room-layout.js";
-import { createConversationTracker } from "../scripts/view/conversation-tracker.js";
-import { conversationMoment, socialCircles, workConversations } from "../scripts/view/conversations.js";
 
 const NOW = 1_800_000_000_000;
 const MAIN = "claude:m1";
