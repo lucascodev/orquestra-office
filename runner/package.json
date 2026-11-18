@@ -1,0 +1,12 @@
+{
+  "name": "orquestra-office-runner",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Opens Claude Code sessions on this machine for the office page and streams their terminal.",
+  "engines": { "node": ">=22" },
+  "scripts": {
+    "start": "node src/main.js",
+    "test": "node --test test/*.test.js"
+  }
+}

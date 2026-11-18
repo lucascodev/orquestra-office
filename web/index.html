@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Escritórios dos agentes</title>
+<link rel="stylesheet" href="styles/tokens.css">
+<link rel="stylesheet" href="styles/office.css">
+</head>
+<body class="app">
+<header class="toolbar">
+  <h1 class="app-name">Escritórios dos agentes</h1>
+  <div class="usage" id="usage" aria-label="Uso do plano"></div>
+  <button class="btn btn-sm btn-secondary" id="open-session" hidden>Abrir sessão…</button>
+  <span class="badge" id="runner-off" title="Rode node runner/src/main.js nesta máquina para abrir sessões pelo escritório." hidden>executor desligado</span>
+  <span class="badge mode" id="mode" role="status">conectando</span>
+</header>
+<nav class="tabs" id="tabs" role="tablist" aria-label="Salas"></nav>
+<main class="workspace">
+  <section class="office" id="office" aria-live="polite"></section>
+  <aside class="side" id="side" hidden>
+    <div class="side-resizer" id="side-resizer" role="separator" aria-orientation="vertical" aria-label="Largura do painel" title="Arraste para mudar a largura · duplo clique volta ao padrão" tabindex="0"></div>
+    <section class="card team" id="team" aria-label="Time"></section>
+    <section class="card sheet" id="sheet" aria-labelledby="sheet-title" hidden></section>
+  </aside>
+</main>
+<dialog class="dialog" id="new-session" aria-labelledby="new-session-title">
+  <form class="dialog-form">
+    <h2 class="dialog-title" id="new-session-title">Abrir sessão do Claude Code</h2>
+    <div class="dialog-body">
+      <div class="field"><label for="session-folder">Pasta do projeto</label>
+        <input class="input mono" id="session-folder" name="cwd" required autocomplete="off" spellcheck="false" placeholder="C:\projects\meu-projeto"></div>
+      <div class="field"><label for="session-prompt">Primeira mensagem</label>
+        <textarea class="textarea" id="session-prompt" name="prompt" rows="4" required maxlength="8000" placeholder="O que o agente deve fazer"></textarea></div>
+      <p class="pending-error" role="alert" hidden></p>
+    </div>
+    <div class="dialog-foot">
+      <button class="btn btn-secondary" type="button" data-cancel>Cancelar</button>
+      <button class="btn btn-primary" type="submit">Abrir sessão</button>
+    </div>
+  </form>
+</dialog>
+<script type="module" src="scripts/app/main.js"></script>
+</body>
+</html>

@@ -1,0 +1,17 @@
+name: orquestra-office
+
+services:
+  office:
+    build: ./collector
+    image: orquestra-office:local
+    container_name: orquestra-office
+    ports:
+      - "127.0.0.1:8420:8420"
+    volumes:
+      - ./web:/app/web:ro
+      - ./:/site:ro
+      - office-data:/data
+    restart: unless-stopped
+
+volumes:
+  office-data: {}

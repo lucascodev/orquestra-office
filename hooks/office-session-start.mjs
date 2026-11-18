@@ -1,0 +1,54 @@
+import { execFileSync } from "node:child_process";
+import { readdirSync } from "node:fs";
+import { basename, dirname, join } from "node:path";
+
+const OFFICE_URL = process.env.OFFICE_URL ?? "http://127.0.0.1:8420";
+const REPORT_TIMEOUT_MS = 1_500;
+const GIT_TIMEOUT_MS = 1_500;
+const TEAM_LIMIT = 40;
+const AGENT_FILE = /\.md$/i;
+
+async function readStdin() {
+  const chunks = [];
+  for await (const chunk of process.stdin) chunks.push(chunk);
+  return Buffer.concat(chunks).toString("utf8");
+}
+
+// A worktree shares the main repository's .git folder, so its parent is the project every worktree belongs to.
+function repositoryRoot(cwd) {
+  try {
+    const commonDir = execFileSync("git", ["rev-parse", "--path-format=absolute", "--git-common-dir"], { cwd, timeout: GIT_TIMEOUT_MS, stdio: ["ignore", "pipe", "ignore"], encoding: "utf8" }).trim();
+    return basename(commonDir) === ".git" ? dirname(commonDir) : "";
+  } catch {
+    return "";
+  }
+}
+
+// Only the file names are read: the role names, never what the agent files say.
+function definedTeam(projectRoot) {
+  try {
+    return readdirSync(join(projectRoot, ".claude", "agents")).filter((name) => AGENT_FILE.test(name)).map((name) => name.replace(AGENT_FILE, "")).slice(0, TEAM_LIMIT);
+  } catch {
+    return [];
+  }
+}
+
+async function reportToOffice(payload) {
+  try {
+    await fetch(`${OFFICE_URL}/events/claude`, {
+      method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload), signal: AbortSignal.timeout(REPORT_TIMEOUT_MS),
+    });
+  } catch {
+    // The office being down must never hold a session from starting.
+  }
+}
+
+// Nothing is printed: on SessionStart, anything a hook writes to stdout is added to the model's context.
+try {
+  const payload = JSON.parse(await readStdin());
+  const cwd = typeof payload.cwd === "string" && payload.cwd ? payload.cwd : process.cwd();
+  const repoRoot = repositoryRoot(cwd);
+  await reportToOffice({ ...payload, office: { repoRoot, team: definedTeam(repoRoot || cwd) } });
+} catch {
+  process.exitCode = 0;
+}

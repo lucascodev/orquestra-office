@@ -1,0 +1,6 @@
+services:
+  office:
+    ports:
+      - "${OFFICE_LAN_IP:?defina OFFICE_LAN_IP com o IP desta maquina na rede local}:8420:8420"
+    environment:
+      OFFICE_ALLOWED_HOSTS: ${OFFICE_LAN_IP}
