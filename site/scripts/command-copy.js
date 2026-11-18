@@ -1,6 +1,7 @@
+import { copyTextOf } from "./copy-text.js";
+
 const FEEDBACK_MS = 2_000;
 const ANNOUNCE_DELAY_MS = 50;
-const COMMAND_SEPARATOR = "\n";
 const ACTIVE_PANEL = '[role="tabpanel"]:not([hidden])';
 
 export function setupCommandCopy(section, clipboard = navigator.clipboard) {
@@ -40,7 +41,7 @@ export function setupCommandCopy(section, clipboard = navigator.clipboard) {
   async function copyActiveCommands() {
     const commands = commandsIn(section.querySelector(ACTIVE_PANEL));
     try {
-      await clipboard.writeText(commands.map((command) => command.textContent).join(COMMAND_SEPARATOR));
+      await clipboard.writeText(copyTextOf(commands.map((command) => command.textContent)));
       showResult("done", button.dataset.doneLabel, button.dataset.doneStatus);
     } catch {
       selectForManualCopy(commands);

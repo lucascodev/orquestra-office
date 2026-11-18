@@ -1,3 +1,4 @@
+import { isShownForWay } from "./install-way.js";
 import { tabIndexForKey } from "./tab-keys.js";
 
 const SELECTED = "aria-selected";
@@ -14,7 +15,7 @@ export function setupInstallTabs(section) {
       tab.tabIndex = isChosen ? 0 : -1;
     }
     const way = chosenTab.dataset.installTab;
-    for (const part of partsByWay) part.hidden = part.dataset.installWay !== way;
+    for (const part of partsByWay) part.hidden = !isShownForWay(part.dataset.installWay, way);
   }
 
   function moveWithKeyboard(event) {
