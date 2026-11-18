@@ -5,31 +5,14 @@ import assert from "node:assert/strict";
 import { changesOf } from "../src/claude/stream-changes.js";
 import { createRunner } from "../src/composition.js";
 import { createServer } from "../src/http/server.js";
+import { fakeClaudeLauncher } from "./support/fake-claude-process.js";
 
 const OFFICE = "http://localhost:8420";
 const JSON_HEADERS = { "Content-Type": "application/json", Origin: OFFICE };
 const SESSION_ID = "11111111-2222-3333-4444-555555555555";
 
-function fakeClaude() {
-  const processes = [];
-  const startProcess = ({ onChange, onExit }) => {
-    const sent = [];
-    const emit = (event) => changesOf(event).forEach(onChange);
-    const fake = {
-      sent, interrupts: 0,
-      emit,
-      send: (text) => { sent.push(text); emit({ type: "system", subtype: "init", session_id: SESSION_ID }); },
-      interrupt: () => { fake.interrupts += 1; },
-      stop: () => onExit({ code: 0, error: "" }),
-    };
-    processes.push(fake);
-    return fake;
-  };
-  return { startProcess, processes };
-}
-
 async function withRunner(run) {
-  const claude = fakeClaude();
+  const claude = fakeClaudeLauncher({ sessionId: SESSION_ID });
   const { server } = createRunner({ allowedOrigins: [OFFICE], startProcess: claude.startProcess });
   await new Promise((resolve) => server.listen(0, "127.0.0.1", resolve));
   const base = `http://127.0.0.1:${server.address().port}`;
@@ -74,11 +57,11 @@ test("a session needs a real folder and a first message", () => withRunner(async
 test("messages, interrupts and the transcript reach the right session", () => withRunner(async (base, claude) => {
   const session = await openSession(base);
   const [process] = claude.processes;
-  process.emit({ type: "stream_event", event: { type: "content_block_delta", delta: { type: "text_delta", text: "All gre" } } });
+  process.printEvent({ type: "stream_event", event: { type: "content_block_delta", delta: { type: "text_delta", text: "All gre" } } });
   assert.equal((await readSnapshot(base, session.id)).partial, "All gre");
 
-  process.emit({ type: "assistant", message: { content: [{ type: "text", text: "All green." }] } });
-  process.emit({ type: "result", is_error: false });
+  process.printEvent({ type: "assistant", message: { content: [{ type: "text", text: "All green." }] } });
+  process.printEvent({ type: "result", is_error: false });
   assert.equal((await post(`${base}/sessions/${session.id}/messages`, { text: "now commit" })).status, 200);
   assert.equal((await post(`${base}/sessions/${session.id}/interrupt`, {})).status, 200);
 
