@@ -3,7 +3,7 @@ import { mkdtempSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { test } from "node:test";
-import { backupConfig, backupStamp, backupsToPrune } from "../lib/config-backup.mjs";
+import { backupConfig, backupStamp, backupsToPrune, pruneBackups } from "../lib/config-backup.mjs";
 
 const SAME_INSTANT = new Date("2026-11-18T09:05:07.123Z");
 
@@ -50,6 +50,7 @@ test("keeps only the three most recent office backups of that file", (t) => {
   writeFileSync(join(dir, untouched[0]), "legacy");
 
   const kept = [1, 2, 3, 4, 5].map((second) => backupConfig(path, at(second))).slice(-3);
+  pruneBackups(path);
 
   const backups = readdirSync(dir).filter((name) => name.startsWith("settings.json.bak-2"));
   assert.deepEqual(backups.sort(), kept.map((backup) => backup.slice(dir.length + 1)).sort());
