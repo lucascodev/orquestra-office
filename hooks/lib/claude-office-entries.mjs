@@ -14,6 +14,10 @@ const scriptCommandPattern = (file) => new RegExp(`^node "[^"]*[\\\\/]${escapeRe
 const SESSION_START_COMMAND = scriptCommandPattern(SESSION_START_FILE);
 const STATUSLINE_COMMAND = scriptCommandPattern(STATUSLINE_FILE);
 
+// Recorded on --remove instead of dropping the section: with no commands array the next install would be taken for a
+// pre-manifest one, and the file-name pattern would claim third-party scripts again.
+export const REMOVED_OFFICE_ENTRIES = Object.freeze({ urls: Object.freeze([]), commands: Object.freeze([]) });
+
 const stringsIn = (list) => (Array.isArray(list) ? list.filter((item) => typeof item === "string") : []);
 
 // Installs made before the manifest existed are recognized by the exact URL at this office or the default one.

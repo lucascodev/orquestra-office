@@ -205,7 +205,7 @@ test("--remove takes the office out and keeps what belongs to the user", async (
   assert.deepEqual(readSettings(dir), { theme: "dark", hooks: { Stop: [{ hooks: [{ type: "command", command: "echo mine" }] }] } });
 });
 
-test("records what it wrote in orquestra-office.json and deletes the record on --remove", async (t) => {
+test("records what it wrote in orquestra-office.json and leaves an empty record on --remove", async (t) => {
   const dir = configDir(t);
 
   await install(dir);
@@ -216,7 +216,21 @@ test("records what it wrote in orquestra-office.json and deletes the record on -
 
   await install(dir, {}, ["--remove"]);
 
-  assert.equal(existsSync(join(dir, MANIFEST)), false);
+  assert.deepEqual(JSON.parse(readFileSync(join(dir, MANIFEST), "utf8")), { claude: { urls: [], commands: [] } });
+});
+
+test("a third-party status line that shares the office file name survives install, --remove and a new install", async (t) => {
+  const dir = configDir(t);
+  const thirdPartyStatusline = { type: "command", command: 'node "D:/other/office-statusline.mjs"' };
+  await install(dir);
+  writeFileSync(join(dir, "settings.json"), JSON.stringify({ ...readSettings(dir), statusLine: thirdPartyStatusline }));
+  await install(dir, {}, ["--remove"]);
+
+  const result = await install(dir);
+
+  assert.equal(result.code, 0);
+  assert.deepEqual(readSettings(dir).statusLine, thirdPartyStatusline);
+  assert.match(result.stdout, /You already have a statusLine, so it was left alone\./);
 });
 
 test("third-party hooks and status line that only look like the office survive install and --remove", async (t) => {
