@@ -29,6 +29,24 @@ describe("movement plan", () => {
     assert.deepEqual(routes, []);
   });
 
+  it("walks someone seen seated who now goes somewhere that is not a desk, like the door or the coffee, from where they were", () => {
+    for (const stop of [DOOR, COFFEE]) {
+      const { room, routes } = roomOf();
+      const lastSeen = { x: DESK.x, z: DESK.z, wasAtDesk: true };
+      const movement = plan(personOf({ lastSeen }), { stop, isUrgent: false }, { room });
+      assert.deepEqual(movement, { kind: "walk", from: lastSeen, path: [{ x: DESK.x, z: DESK.z }, { x: stop.x, z: stop.z }], isUrgent: false });
+      assert.deepEqual(routes, [{ from: { x: DESK.x, z: DESK.z }, to: stop }]);
+    }
+  });
+
+  it("walks someone already standing in the room to a new desk, even if they were last seen seated", () => {
+    const { room, routes } = roomOf();
+    const standing = personOf({ stop: DESK, position: { x: DESK.x, z: DESK.z }, lastSeen: { x: DESK.x, z: DESK.z, wasAtDesk: true } });
+    const movement = plan(standing, { stop: MOVED_DESK, isUrgent: true }, { room });
+    assert.equal(movement.kind, "walk");
+    assert.deepEqual(routes, [{ from: DESK, to: MOVED_DESK }]);
+  });
+
   it("walks someone back to the desk from where they were last seen when they were away from it", () => {
     const { room, routes } = roomOf();
     const lastSeen = { x: COFFEE.x, z: COFFEE.z, wasAtDesk: false };

@@ -7,7 +7,7 @@ import { THEMES } from "../scripts/data/themes.js";
 import { FREE_TIME } from "../scripts/domain/behavior/agent-reactions.js";
 import { assignPlaces } from "../scripts/domain/behavior/room-places.js";
 import { layoutRoom } from "../scripts/domain/room/room-layout.js";
-import { nearestLaneZ, routeBetween } from "../scripts/domain/room/room-routes.js";
+import { nearestLaneZ, routeBetween, routeWithin } from "../scripts/domain/room/room-routes.js";
 import { exitStop, seatStop } from "../scripts/domain/room/room-spots.js";
 import { planWall } from "../scripts/domain/room/wall-plan.js";
 
@@ -200,6 +200,20 @@ describe("routes", () => {
         assert.deepEqual(path.at(-1), { x: to.x, z: to.z });
       }
     }
+  });
+
+  it("brings a loose point into the nearest lane before walking", () => {
+    const route = routeWithin({ ...lanes, laneZs: [1, 4, 8] });
+    assert.deepEqual(route({ x: 2, z: 3.4 }, { x: 3, z: 7.5, laneZ: 8 }), [
+      { x: 2, z: 4 }, { x: 1, z: 4 }, { x: 1, z: 8 }, { x: 3, z: 8 }, { x: 3, z: 7.5 },
+    ]);
+  });
+
+  it("walks from a stop on its own lane exactly as a route between stops does", () => {
+    const routeLanes = { ...lanes, laneZs: [1, 4, 8] };
+    const meetingChair = { x: 6, z: 2, laneZ: 4, laneX: 5, spine: "right", approach: [{ x: 5, z: 3 }, { x: 6, z: 3 }] };
+    const desk = { x: 2, z: 7.5, laneZ: 8 };
+    assert.deepEqual(routeWithin(routeLanes)(meetingChair, desk), routeBetween(meetingChair, desk, routeLanes));
   });
 
   it("snaps to the nearest lane, keeping the first one on a tie", () => {
