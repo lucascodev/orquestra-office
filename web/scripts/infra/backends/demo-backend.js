@@ -1,10 +1,13 @@
+import { ownValueOf } from "../../domain/shared/own-value.js";
 import { demoHistory, demoTerminal } from "../demo/demo-terminal.js";
+import { demoThemesState } from "../demo/demo-themes.js";
 import { demoState, queueDemoMessage, resolveDemoRequest, tickDemo } from "../demo/demo-world.js";
 
 const DEMO_TICK_MS = 4_000;
 const DEMO_ONLY = "Na prévia com dados de exemplo não dá para abrir sessões.";
+const SCENES = { temas: demoThemesState };
 
-export function createDemoBackend() {
+export function createDemoBackend({ scene = null } = {}) {
   let world = null;
   let notify = () => {};
   let terminalChange = null;
@@ -13,7 +16,7 @@ export function createDemoBackend() {
 
   async function start(onChange) {
     notify = onChange;
-    world = demoState();
+    world = (ownValueOf(SCENES, scene) ?? demoState)();
     let step = 0;
     publish();
     setInterval(() => { tickDemo(world, step++); publish(); }, DEMO_TICK_MS);
