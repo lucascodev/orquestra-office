@@ -8,8 +8,10 @@ const SEAT_W = 1.25;
 const MIN_POD_W = 1.6;
 const ISLAND_SEATS = 6;
 const VACANT_POD_SEATS = [6, 4, 2];
+const POD_SIDE_MARGIN = 0.1;
+const ROOM_POD = { seatWidth: SEAT_W, sideMargin: POD_SIDE_MARGIN, depth: DESK_D, minWidth: MIN_POD_W };
 
-function teamsOf(project) {
+export function teamsOf(project) {
   const agents = Object.values(project.agents);
   const mains = agents.filter((a) => a.kind !== "subagent").sort((a, b) => a.startedAt - b.startedAt);
   return mains.map((main) => [main, ...agents.filter((a) => a.parentKey === main.key).sort((a, b) => a.startedAt - b.startedAt)]);
@@ -39,17 +41,17 @@ function rowsOf(islands) {
   return Array.from({ length: rowCount }, (_, i) => islands.slice(i * perRow, (i + 1) * perRow));
 }
 
-const podWidth = (seatCount) => Math.max(MIN_POD_W, Math.ceil(seatCount / 2) * SEAT_W + 0.2);
+const podWidth = (seatCount, shape = ROOM_POD) => Math.max(shape.minWidth, Math.ceil(seatCount / 2) * shape.seatWidth + 2 * shape.sideMargin);
 const deskCapacity = (occupants) => Math.max(2, Math.ceil(occupants / 2) * 2);
 
-function podAt(x, z, occupants, capacity) {
+export function podAt(x, z, occupants, capacity, shape = ROOM_POD) {
   const seats = Array.from({ length: capacity }, (_, i) => ({
     agent: occupants[i]?.agent ?? null,
     role: occupants[i]?.role ?? null,
-    cx: x + 0.1 + SEAT_W / 2 + Math.floor(i / 2) * SEAT_W,
+    cx: x + shape.sideMargin + shape.seatWidth / 2 + Math.floor(i / 2) * shape.seatWidth,
     direction: i % 2 === 0 ? 1 : -1,
   }));
-  return { desk: { x, z, w: podWidth(capacity), d: DESK_D }, seats };
+  return { desk: { x, z, w: podWidth(capacity, shape), d: shape.depth }, seats };
 }
 
 function placeRow(islands, z) {
