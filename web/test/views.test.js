@@ -158,6 +158,11 @@ describe("agent sheet", () => {
     assertMatchesRecording("identity-main", identityOf(agentOf("claude:a1")));
   });
 
+  it("marks an agent from an origin named like a built-in of every object as unknown", () => {
+    const unknownMark = agentMark(agentOf("shell:x1", { source: "shell" }));
+    assert.deepEqual(["toString", "constructor", "__proto__"].map((source) => agentMark(agentOf("x:x1", { source }))), [unknownMark, unknownMark, unknownMark]);
+  });
+
   it("names an agent of unknown origin and status without breaking the markup", () => {
     assertMatchesRecording("identity-unknown", identityOf(agentOf("shell:x1", { source: "shell", status: "mystery", label: "<b>x</b>" })));
   });

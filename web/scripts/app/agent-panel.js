@@ -1,3 +1,4 @@
+import { ownValueOf } from "../domain/shared/own-value.js";
 import { agentMark, originOf, statusBadge } from "../view/office/agent-badges.js";
 import { ago } from "../view/shared/format.js";
 import { renderAgentFacts, renderAgentIdentity, renderSheetShell } from "../view/sheet/agent-sheet-view.js";
@@ -93,7 +94,7 @@ export function createAgentPanel({ team, sheet, control }) {
     const status = sheet.querySelector(".composer-status");
     if (status && status.dataset.error !== "true") status.textContent = queueStatus(context.queued);
     if (isLive) {
-      slot("history-foot").textContent = LIVE_STATUS[context.liveStatus] ?? "";
+      slot("history-foot").textContent = ownValueOf(LIVE_STATUS, context.liveStatus) ?? "";
       return;
     }
     slot("history-foot").textContent = `atualizado ${ago(agent.updatedAt)} · ${agent.tools ?? 0} ferramentas`;

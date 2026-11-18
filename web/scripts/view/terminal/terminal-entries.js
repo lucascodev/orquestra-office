@@ -1,3 +1,4 @@
+import { ownValueOf } from "../../domain/shared/own-value.js";
 import { describeToolEntry, diffLines } from "../../domain/terminal/terminal-format.js";
 import { esc } from "../shared/escape-html.js";
 import { ago, clockTime } from "../shared/format.js";
@@ -51,7 +52,7 @@ const ENTRY_RENDERERS = {
   note: (entry) => `<div class="entry note">${esc(entry.text)} <span class="when">· ${ago(entry.at)}</span></div>`,
 };
 
-export const renderEntries = (entries) => entries.map((entry) => (ENTRY_RENDERERS[entry.kind] ?? ENTRY_RENDERERS.note)(entry)).join("");
+export const renderEntries = (entries) => entries.map((entry) => (ownValueOf(ENTRY_RENDERERS, entry.kind) ?? ENTRY_RENDERERS.note)(entry)).join("");
 
 export function renderHistory(entries) {
   return entries.length === 0 ? `<div class="entry note">Sem registros ainda.</div>` : renderEntries(entries);

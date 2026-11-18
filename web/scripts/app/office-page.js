@@ -2,6 +2,7 @@ import { themeById } from "../data/themes.js";
 import { withAgentNames } from "../domain/office/agent-names.js";
 import { canReceiveMessages } from "../domain/office/can-receive-messages.js";
 import { sortedProjects } from "../domain/office/project-order.js";
+import { ownValueOf } from "../domain/shared/own-value.js";
 import { readPreference, writePreference } from "../infra/local-preferences.js";
 import { renderNoProjects, renderOffice } from "../view/office/room-view.js";
 import { renderTabs } from "../view/office/tabs-view.js";
@@ -79,7 +80,7 @@ export function createOfficePage({ elements, source, agentPanel, room, newSessio
       return;
     }
     const focusedAgent = focused?.dataset?.agent;
-    modeEl.textContent = MODE_LABEL[state.mode] ?? state.mode;
+    modeEl.textContent = ownValueOf(MODE_LABEL, state.mode) ?? state.mode;
     modeEl.dataset.mode = state.mode;
     setHtml(usageEl, renderUsage(state.usage));
     openSessionButton.hidden = !state.runner.isAvailable;
