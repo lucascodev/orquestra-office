@@ -1,6 +1,7 @@
 import { createServer as createHttpServer } from "node:http";
 import { BODY_TOO_LARGE, sendJson } from "./json-io.js";
 import { createHostPolicy } from "./request-policy.js";
+import { requestUrlOf } from "./request-url.js";
 import { applySecurityHeaders } from "./security-headers.js";
 import { serveFile } from "./static-files.js";
 
@@ -15,7 +16,8 @@ export function createServer({ allowedHosts, webDir, hookRoutes, officeApi }) {
 
   async function route(req, res) {
     if (!hosts.allows(req)) return sendJson(res, 403, { error: "forbidden host" });
-    const url = new URL(req.url ?? "/", "http://localhost");
+    const url = requestUrlOf(req);
+    if (!url) return sendJson(res, 400, { error: "invalid url" });
 
     if (req.method === "POST" && hookRoutes.handles(url.pathname)) return hookRoutes.handle(req, res, url);
     if (req.method === "POST") return officeApi.post(req, res, url);

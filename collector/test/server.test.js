@@ -63,6 +63,11 @@ const rawRequest = (base, method, path) => new Promise((resolve, reject) => {
   req.end(method === "POST" ? "{}" : undefined);
 });
 
+test("a request target that is not a url is a 400 and the office keeps running", () => withServer(async (base) => {
+  assert.equal(await rawRequest(base, "GET", "//["), 400);
+  assert.equal((await fetch(`${base}/api/state`)).status, 200);
+}));
+
 test("a malformed escape in a page path is a 404 and the office keeps running", () => withServer(async (base) => {
   assert.equal(await rawRequest(base, "GET", `/${MALFORMED_ESCAPE}`), 404);
   assert.equal((await fetch(`${base}/api/state`)).status, 200);
