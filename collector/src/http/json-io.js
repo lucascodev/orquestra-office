@@ -1,15 +1,20 @@
+export const BODY_TOO_LARGE = "BODY_TOO_LARGE";
+
+const bodyTooLargeError = (limitBytes) => Object.assign(new Error(`request body is over ${limitBytes} bytes`), { code: BODY_TOO_LARGE });
+
+// Broken JSON reads as null, so a hook never blocks Claude Code; only a body over the limit is refused.
 export function readJsonBody(req, limitBytes) {
-  return new Promise((resolve) => {
+  return new Promise((resolve, reject) => {
     const chunks = [];
     let size = 0;
-    let overflow = false;
-    req.on("data", (chunk) => {
+    const collect = (chunk) => {
       size += chunk.length;
-      if (size > limitBytes) overflow = true;
-      else chunks.push(chunk);
-    });
+      if (size <= limitBytes) return chunks.push(chunk);
+      req.off("data", collect);
+      return reject(bodyTooLargeError(limitBytes));
+    };
+    req.on("data", collect);
     req.on("end", () => {
-      if (overflow) return resolve(null);
       try {
         resolve(JSON.parse(Buffer.concat(chunks).toString("utf8")));
       } catch {

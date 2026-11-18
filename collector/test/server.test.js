@@ -119,3 +119,29 @@ test("every response carries the headers that keep other sites from framing or r
     assert.deepEqual(securityHeadersOf(res), SECURITY_HEADERS, name);
   }
 }));
+
+const HOOK_BODY_LIMIT = 8 * 1024 * 1024;
+const API_BODY_LIMIT = 64 * 1024;
+const OVERSIZED_TEST_TIMEOUT_MS = 5_000;
+
+const postPadded = (base, path, bytes) => new Promise((resolve, reject) => {
+  const { hostname, port } = new URL(base);
+  const req = request({ hostname, port, method: "POST", path, headers: { "Content-Type": "application/json", "Content-Length": bytes } }, (res) => {
+    res.resume();
+    resolve(res.statusCode);
+  });
+  req.on("error", reject);
+  req.end(Buffer.concat([Buffer.from("{}"), Buffer.alloc(bytes - 2, " ")]));
+});
+
+test("a hook body over the limit is refused with 413 and the office keeps running", { timeout: OVERSIZED_TEST_TIMEOUT_MS }, () => withServer(async (base) => {
+  assert.equal(await postPadded(base, "/events/claude", HOOK_BODY_LIMIT + 1), 413);
+  assert.equal(await postPadded(base, "/events/claude", HOOK_BODY_LIMIT), 200);
+  assert.equal((await fetch(`${base}/api/state`)).status, 200);
+}));
+
+test("an office API body over the limit is refused with 413 and the office keeps running", { timeout: OVERSIZED_TEST_TIMEOUT_MS }, () => withServer(async (base) => {
+  assert.equal(await postPadded(base, "/api/agents/message", API_BODY_LIMIT + 1), 413);
+  assert.equal(await postPadded(base, "/api/agents/message", API_BODY_LIMIT), 404);
+  assert.equal((await fetch(`${base}/api/state`)).status, 200);
+}));
