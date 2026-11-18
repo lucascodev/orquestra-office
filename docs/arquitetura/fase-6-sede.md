@@ -331,8 +331,8 @@ export function assignPlaces({ agents, now, spots, freeSince, previous }) {
 
 | Dado | Onde | Serve para |
 |---|---|---|
-| Fila de pedidos com prazo | `pending[]` com `id`, `agentKey`, `kind`, `toolName`, `summary`, `detail` (o comando), `questions`, `createdAt`, `expiresAt` (`control/domain/pending-decisions.js`) | alerta, "1 de N", tempo até voltar ao terminal; só memória |
-| Atividade recente | `agent.log` (20 últimas por agente) e `agent.action` | último evento da linha do tempo, status por extenso na ficha |
+| Fila de pedidos com prazo | `pending[]` com `id`, `agentKey`, `kind`, `toolName`, `summaryId`, `subject`, `detail` (o comando), `questions`, `createdAt`, `expiresAt` (`control/domain/pending-decisions.js`) | alerta, "1 de N", tempo até voltar ao terminal; só memória |
+| Atividade recente | `agent.log` (20 últimas por agente, cada uma com `at`, `actionId` e `subject`) e `agent.actionId` com `agent.subject` | último evento da linha do tempo, status por extenso na ficha |
 | Números do dia por projeto | `project.stats` (pedidos, ferramentas, turnos, tokens, custo), com o dia em UTC | ficha da ilha |
 | Uso do plano | `usage.rateLimits` de uma conta só | substituído por `accounts` |
 | Tema | `project.template` | ilha |
@@ -365,7 +365,7 @@ Fatia: `{ start, workingMs, workingAgentMs, needsYouMs, needsYouAgentMs, needsYo
 
 **Contas.** `accounts: { [id]: { id, label, rateLimits, updatedAt } }`. `recordUsage` grava a leitura na conta da leitura (ou na conta `default`, rótulo "Claude", quando o hook ainda não manda conta). A conta sem leitura há 8 dias sai no `sweep`. Durante a transição, `usage` continua publicado com a leitura mais recente, para a página antiga; ele sai no passo de troca.
 
-**Feed.** Entrada: `{ at, agentKey, projectKey, name, label, kind, text }` e, com a fase 5, os campos estruturados que ela definir para a ação (`activity`, `subject`). O nome vai gravado na entrada, então o feed continua certo depois que o agente expira e o nome é reaproveitado.
+**Feed.** Entrada: `{ at, agentKey, projectKey, name, label, kind, actionId, subject }`, sem `text`: a frase é montada no web a partir de `actionId` e `subject`, como no resto da página desde a fase 5. O nome vai gravado na entrada, então o feed continua certo depois que o agente expira e o nome é reaproveitado.
 
 ### 6.3 Contrato
 
@@ -448,7 +448,7 @@ components:
         nextBefore: { type: [integer, "null"] }
     ActivityEntry:
       type: object
-      required: [at, agentKey, projectKey, name, label, kind, text]
+      required: [at, agentKey, projectKey, name, label, kind, actionId, subject]
       properties:
         at: { type: integer }
         agentKey: { type: string }
@@ -456,7 +456,8 @@ components:
         name: { type: string }
         label: { type: string }
         kind: { enum: [main, subagent] }
-        text: { type: string, maxLength: 120 }
+        actionId: { type: string }
+        subject: { type: [string, "null"] }
 ```
 
 Entrada dos hooks, acrescentada ao corpo que a linha de status e o `SessionStart` já mandam: `office.account = { id, label }`. O coletor aceita só `id` no formato do contrato e `label` com letras, números, espaço, ponto, hífen e sublinhado, até 24 caracteres; fora disso, a leitura vai para `default`.
