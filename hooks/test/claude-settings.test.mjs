@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { join } from "node:path";
 import { test } from "node:test";
-import { isForeignStatusline, withOfficeHooks, withOfficeSettings, withOfficeStatusline } from "../lib/claude-settings.mjs";
+import { isForeignStatusline, officeEntries, withOfficeHooks, withOfficeSettings, withOfficeStatusline } from "../lib/claude-settings.mjs";
 
 const HOOKS_DIR = join("/opt", "office", "hooks");
 const OTHER_HOOKS_DIR = join("/home", "me", "old-office", "hooks");
@@ -72,26 +72,63 @@ test("an empty group is not taken for an office group", () => {
 test("the user's status line stays untouched on install and on remove", () => {
   assert.deepEqual(withOfficeSettings(userSettings(), INSTALL).statusLine, USER_STATUSLINE);
   assert.deepEqual(withOfficeSettings(userSettings(), REMOVE).statusLine, USER_STATUSLINE);
-  assert.equal(isForeignStatusline(USER_STATUSLINE), true);
+  assert.equal(isForeignStatusline(USER_STATUSLINE, INSTALL), true);
 });
 
 test("the office status line is added on install and taken out on remove", () => {
   const installed = withOfficeStatusline({ theme: "dark" }, INSTALL);
 
   assert.deepEqual(installed, { theme: "dark", statusLine: { type: "command", command: `node "${join(HOOKS_DIR, "office-statusline.mjs")}"` } });
-  assert.equal(isForeignStatusline(installed.statusLine), false);
-  assert.equal(isForeignStatusline(undefined), false);
+  assert.equal(isForeignStatusline(installed.statusLine, INSTALL), false);
+  assert.equal(isForeignStatusline(undefined, INSTALL), false);
   assert.deepEqual(withOfficeStatusline(installed, REMOVE), { theme: "dark" });
 });
 
-test("installing from another folder replaces the old entries, recognized by file name", () => {
-  const fromOldFolder = withOfficeSettings({}, { ...INSTALL, hooksDir: OTHER_HOOKS_DIR, officeUrl: "http://10.0.0.9:9999" });
+test("an install from another folder, made before the manifest existed, is replaced without duplicating", () => {
+  const fromOldFolder = withOfficeSettings({}, { ...INSTALL, hooksDir: OTHER_HOOKS_DIR });
 
   const reinstalled = withOfficeSettings(fromOldFolder, INSTALL);
 
   assert.deepEqual(reinstalled, withOfficeSettings({}, INSTALL));
   assert.deepEqual(sessionStartCommands(reinstalled), [`node "${join(HOOKS_DIR, "office-session-start.mjs")}"`]);
+});
+
+test("entries recorded in the manifest are replaced even when they point at another office", () => {
+  const oldInstall = { ...INSTALL, hooksDir: OTHER_HOOKS_DIR, officeUrl: "http://localhost:9999" };
+  const fromOldOffice = withOfficeSettings({}, oldInstall);
+
+  const reinstalled = withOfficeSettings(fromOldOffice, { ...INSTALL, recorded: officeEntries(oldInstall) });
+
+  assert.deepEqual(reinstalled, withOfficeSettings({}, INSTALL));
   assert.ok(allHooks(reinstalled).filter((hook) => hook.type === "http").every((hook) => hook.url.startsWith(`${OFFICE_URL}/`)));
+});
+
+test("the manifest lists the exact urls and commands an install writes", () => {
+  assert.deepEqual(officeEntries(INSTALL), {
+    urls: [`${OFFICE_URL}/events/claude`, `${OFFICE_URL}/hooks/claude/stop`, `${OFFICE_URL}/hooks/claude/permission`, `${OFFICE_URL}/hooks/claude/question`],
+    commands: [`node "${join(HOOKS_DIR, "office-session-start.mjs")}"`, `node "${join(HOOKS_DIR, "office-statusline.mjs")}"`],
+  });
+});
+
+test("third-party entries that only look like the office survive install and remove", () => {
+  const settings = {
+    statusLine: { type: "command", command: "bash ~/bin/wrap-office-statusline.mjs.sh" },
+    hooks: {
+      Stop: [{ hooks: [{ type: "http", url: "https://audit.example.com/hooks/claude" }] }],
+      SessionStart: [{ hooks: [{ type: "command", command: "node ~/tools/my-office-session-start.mjs --audit" }] }],
+      PostToolUse: [
+        { hooks: [{ type: "http", url: `${OFFICE_URL}/events/claude?copy=1` }] },
+        { hooks: [{ type: "command", command: `node "${join(HOOKS_DIR, "office-session-start.mjs")}" --audit` }] },
+      ],
+    },
+  };
+
+  const installed = withOfficeSettings(settings, INSTALL);
+
+  assert.deepEqual(installed.statusLine, settings.statusLine);
+  for (const [event, groups] of Object.entries(settings.hooks)) assert.deepEqual(installed.hooks[event].slice(0, groups.length), groups);
+  assert.deepEqual(withOfficeSettings(installed, REMOVE), settings);
+  assert.equal(isForeignStatusline(settings.statusLine, INSTALL), true);
 });
 
 test("leaves the settings it receives untouched", () => {

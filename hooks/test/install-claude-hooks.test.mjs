@@ -8,6 +8,8 @@ import { HOOKS_DIR, runHookScript } from "./support/run-hook-script.mjs";
 
 const INSTALLER = "install-claude-hooks.mjs";
 const DEFAULT_OFFICE_URL = "http://127.0.0.1:8420";
+const MANIFEST = "orquestra-office.json";
+const OLD_HOOKS_DIR = join(tmpdir(), "old-checkout", "hooks");
 
 function configDir(t) {
   const dir = mkdtempSync(join(tmpdir(), "office-claude-cli-"));
@@ -148,6 +150,82 @@ test("--remove takes the office out and keeps what belongs to the user", async (
   assert.equal(result.code, 0);
   assert.match(result.stdout, /Office hooks removed from /);
   assert.deepEqual(readSettings(dir), { theme: "dark", hooks: { Stop: [{ hooks: [{ type: "command", command: "echo mine" }] }] } });
+});
+
+test("records what it wrote in orquestra-office.json and deletes the record on --remove", async (t) => {
+  const dir = configDir(t);
+
+  await install(dir);
+
+  const { claude } = JSON.parse(readFileSync(join(dir, MANIFEST), "utf8"));
+  assert.deepEqual(new Set(claude.urls), new Set(httpHookUrls(readSettings(dir))));
+  assert.deepEqual(claude.commands, [readSettings(dir).hooks.SessionStart[0].hooks[0].command, readSettings(dir).statusLine.command]);
+
+  await install(dir, {}, ["--remove"]);
+
+  assert.equal(existsSync(join(dir, MANIFEST)), false);
+});
+
+test("third-party hooks and status line that only look like the office survive install and --remove", async (t) => {
+  const dir = configDir(t);
+  const settings = {
+    statusLine: { type: "command", command: "bash ~/bin/wrap-office-statusline.mjs.sh" },
+    hooks: {
+      Stop: [{ hooks: [{ type: "http", url: "https://audit.example.com/hooks/claude" }] }],
+      SessionStart: [{ hooks: [{ type: "command", command: "node ~/tools/my-office-session-start.mjs --audit" }] }],
+    },
+  };
+  writeFileSync(join(dir, "settings.json"), JSON.stringify(settings));
+
+  await install(dir);
+  const installed = readSettings(dir);
+  await install(dir, {}, ["--remove"]);
+
+  assert.deepEqual(installed.statusLine, settings.statusLine);
+  assert.deepEqual(installed.hooks.Stop[0], settings.hooks.Stop[0]);
+  assert.deepEqual(installed.hooks.SessionStart[0], settings.hooks.SessionStart[0]);
+  assert.deepEqual(readSettings(dir), settings);
+});
+
+test("an install from another folder, made before the manifest existed, is replaced without duplicating", async (t) => {
+  const dir = configDir(t);
+  const oldScript = (file) => `node "${join(OLD_HOOKS_DIR, file)}"`;
+  writeFileSync(join(dir, "settings.json"), JSON.stringify({
+    statusLine: { type: "command", command: oldScript("office-statusline.mjs") },
+    hooks: {
+      SessionStart: [{ hooks: [{ type: "command", command: oldScript("office-session-start.mjs"), timeout: 5 }] }],
+      Stop: [{ hooks: [{ type: "http", url: `${DEFAULT_OFFICE_URL}/hooks/claude/stop`, timeout: 3, onFailure: "continue" }] }],
+    },
+  }));
+
+  await install(dir);
+
+  const settings = readSettings(dir);
+  assert.equal(settings.statusLine.command, `node "${join(HOOKS_DIR, "office-statusline.mjs")}"`);
+  assert.deepEqual(settings.hooks.SessionStart.flatMap((group) => group.hooks).map((hook) => hook.command), [`node "${join(HOOKS_DIR, "office-session-start.mjs")}"`]);
+  assert.equal(settings.hooks.Stop.length, 1);
+});
+
+test("reinstalling with another OFFICE_URL replaces the previous install through the manifest", async (t) => {
+  const dir = configDir(t);
+  await install(dir, { OFFICE_URL: "http://localhost:9999" });
+
+  await install(dir);
+
+  const settings = readSettings(dir);
+  assert.ok(httpHookUrls(settings).every((url) => url.startsWith(`${DEFAULT_OFFICE_URL}/`)));
+  assert.equal(settings.hooks.Stop.length, 1);
+});
+
+test("refuses a manifest that is not a JSON object, exits 1 and changes nothing", async (t) => {
+  const dir = configDir(t);
+  writeFileSync(join(dir, MANIFEST), "{ broken");
+
+  const result = await install(dir);
+
+  assert.equal(result.code, 1);
+  assert.match(result.stderr, /orquestra-office\.json.+Nothing was changed\./);
+  assert.deepEqual(readdirSync(dir), [MANIFEST]);
 });
 
 test("creates the config folder when it does not exist yet", async (t) => {

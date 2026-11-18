@@ -1,4 +1,4 @@
-const isPlainObject = (value) => typeof value === "object" && value !== null && !Array.isArray(value);
+import { isPlainObject } from "./plain-object.mjs";
 
 export function settingsShapeProblem(settings) {
   if (!isPlainObject(settings)) return "the settings is not an object";
