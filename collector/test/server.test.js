@@ -107,7 +107,7 @@ const SECURITY_HEADERS = {
   "content-security-policy": "frame-ancestors 'none'",
   "x-content-type-options": "nosniff",
   "cross-origin-resource-policy": "same-origin",
-  "referrer-policy": "no-referrer",
+  "referrer-policy": "same-origin",
 };
 const securityHeadersOf = (res) => Object.fromEntries(Object.keys(SECURITY_HEADERS).map((name) => [name, res.headers.get(name)]));
 
