@@ -7,7 +7,6 @@ import { HOOKS_DIR, runHookScript } from "./support/run-hook-script.mjs";
 
 const INSTALLER = "install-claude-hooks.mjs";
 const DEFAULT_OFFICE_URL = "http://127.0.0.1:8420";
-const BACKUP_NAME = /^settings\.json\.bak-\d{8}-\d{6}$/;
 
 function configDir(t) {
   const dir = mkdtempSync(join(tmpdir(), "office-claude-cli-"));
@@ -17,7 +16,7 @@ function configDir(t) {
 
 const install = (dir, env = {}, args = []) => runHookScript(INSTALLER, { env: { CLAUDE_CONFIG_DIR: dir, ...env }, args });
 const readSettings = (dir) => JSON.parse(readFileSync(join(dir, "settings.json"), "utf8"));
-const backupsIn = (dir) => readdirSync(dir).filter((name) => BACKUP_NAME.test(name));
+const backupsIn = (dir) => readdirSync(dir).filter((name) => name.startsWith("settings.json.bak-"));
 
 test("installs hooks and status line pointing at this hooks folder and the default office", async (t) => {
   const dir = configDir(t);
@@ -67,6 +66,20 @@ test("refuses unreadable JSON, exits 1 and leaves the file untouched", async (t)
   assert.equal(readFileSync(join(dir, "settings.json"), "utf8"), "{ not json");
   assert.deepEqual(backupsIn(dir), []);
 });
+
+for (const content of ["null", '{"hooks":"x"}', '{"hooks":{"PreToolUse":null}}', '"abc"', "[1,2]"]) {
+  test(`refuses JSON that is not a settings object, without a backup: ${content}`, async (t) => {
+    const dir = configDir(t);
+    writeFileSync(join(dir, "settings.json"), content);
+
+    const result = await install(dir);
+
+    assert.equal(result.code, 1);
+    assert.match(result.stderr, /is not a settings object: .+\. Nothing was changed\./);
+    assert.equal(readFileSync(join(dir, "settings.json"), "utf8"), content);
+    assert.deepEqual(backupsIn(dir), []);
+  });
+}
 
 test("warns and keeps a status line that belongs to the user", async (t) => {
   const dir = configDir(t);

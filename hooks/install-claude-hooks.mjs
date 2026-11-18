@@ -3,6 +3,7 @@ import { homedir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { isForeignStatusline, withOfficeSettings } from "./lib/claude-settings.mjs";
+import { settingsShapeProblem } from "./lib/claude-settings-shape.mjs";
 import { backupConfig } from "./lib/config-backup.mjs";
 import { officeUrlFrom } from "./lib/office-url.mjs";
 
@@ -18,6 +19,11 @@ function loadSettings() {
     settings = JSON.parse(readFileSync(settingsPath, "utf8"));
   } catch {
     console.error(`Could not read ${settingsPath} as JSON. Nothing was changed.`);
+    process.exit(1);
+  }
+  const shapeProblem = settingsShapeProblem(settings);
+  if (shapeProblem) {
+    console.error(`${settingsPath} is not a settings object: ${shapeProblem}. Nothing was changed.`);
     process.exit(1);
   }
   console.log(`Backup: ${backupConfig(settingsPath)}`);
