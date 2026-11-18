@@ -7,7 +7,7 @@ const COST_NOTE = "Estimativa do próprio Claude Code, a preço de tabela.";
 
 function dayStats(project) {
   const agents = Object.values(project.agents);
-  const sessions = agents.filter((a) => a.kind !== "subagent" && !a.endedAt).length;
+  const sessions = agents.filter((agent) => agent.kind !== "subagent" && !agent.endedAt).length;
   const stats = project.stats ?? {};
   return [
     [sessions, "Sessões abertas"], [stats.prompts ?? 0, "Pedidos hoje"],
@@ -23,7 +23,7 @@ function statCell([value, label, note = ""], isAlert = false) {
 export function renderOffice(project) {
   const theme = themeById(project.template);
   const needs = needsYou(project);
-  const options = THEMES.map((t) => `<option value="${t.id}"${t.id === theme.id ? " selected" : ""}>${esc(t.name)}</option>`).join("");
+  const options = THEMES.map((themeOption) => `<option value="${themeOption.id}"${themeOption.id === theme.id ? " selected" : ""}>${esc(themeOption.name)}</option>`).join("");
   const isEmpty = Object.keys(project.agents).length === 0;
   return `<header class="page-head">
       <div class="page-id">

@@ -14,7 +14,7 @@ function agentRow(agent, request, queued) {
 }
 
 export function renderTeam(project, { pendingByAgent, outbox }) {
-  const agents = Object.values(project.agents).sort((a, b) => (b.status === "needs_you") - (a.status === "needs_you") || b.updatedAt - a.updatedAt);
+  const agents = Object.values(project.agents).sort((first, second) => (second.status === "needs_you") - (first.status === "needs_you") || second.updatedAt - first.updatedAt);
   const rows = agents.map((agent) => agentRow(agent, pendingByAgent.get(agent.key), outbox[agent.key])).join("");
   return `<header class="panel-head"><h2 class="eyebrow">Quem está aqui</h2><span class="muted mono">${agents.length}</span></header>
     <ul class="team-list">${rows || `<li class="empty-note">Ninguém nesta sala agora.</li>`}</ul>`;
