@@ -53,3 +53,73 @@ test("nothing in src imports from outside src other than node built-ins", () => 
       .map((specifier) => `${shown(file)} -> ${specifier}`));
   assert.deepEqual(leaks, []);
 });
+
+const COMPOSITION = "composition";
+const COMPOSITION_ROOTS = new Set(["composition.js", "main.js"]);
+const CONTEXT_LAYERS = new Set(["domain", "application", "infra"]);
+const TOP_LEVEL_LAYERS = new Set(["shared", "events", "history", "claude", "codex", "http"]);
+const BUILTIN_LAYERS = new Set(["infra", "http", COMPOSITION]);
+const HTTP_BUILTIN = "node:http";
+const PROCESS_STATE = /\bprocess\.(?:env|cwd)\b/;
+
+// Besides these, a layer may always import its own layer, and the composition root may import anything.
+// events/ only holds the re-export the runner still imports; phase 2 deletes it together with its entry here.
+const ALLOWED_LAYERS = {
+  shared: [],
+  events: ["shared"],
+  domain: ["shared"],
+  application: ["domain", "history", "shared"],
+  infra: ["domain"],
+  history: ["shared"],
+  claude: ["office/domain", "shared"],
+  codex: ["office/domain", "shared"],
+  http: ["application", "domain", "claude", "codex", "history", "shared"],
+};
+
+const pathInSrc = (path) => relative(SRC_DIR, path).split(sep).join("/");
+const builtinImportsOf = (file) => importsOf(readFileSync(file, "utf8")).filter((specifier) => specifier.startsWith(BUILTIN_PREFIX));
+
+function layerOf(path) {
+  const inSrc = pathInSrc(path);
+  if (COMPOSITION_ROOTS.has(inSrc)) return COMPOSITION;
+  const [top, second] = inSrc.split("/");
+  if (CONTEXT_LAYERS.has(second)) return second;
+  return TOP_LEVEL_LAYERS.has(top) ? top : null;
+}
+
+function mayImport(file, target) {
+  const layer = layerOf(file);
+  const targetLayer = layerOf(target);
+  if (layer === COMPOSITION || layer === targetLayer) return true;
+  return (ALLOWED_LAYERS[layer] ?? []).some((scope) => scope === targetLayer || pathInSrc(target).startsWith(`${scope}/`));
+}
+
+test("every file in src sits in a known layer", () => {
+  assert.deepEqual(scriptsUnder(SRC_DIR).filter((file) => !layerOf(file)).map(shown), []);
+});
+
+test("each layer imports only the layers the architecture allows", () => {
+  const violations = scriptsUnder(SRC_DIR)
+    .flatMap(relativeImportsOf)
+    .filter(({ file, target }) => !mayImport(file, target))
+    .map(({ file, specifier }) => `${shown(file)} (${layerOf(file)}) -> ${specifier}`);
+  assert.deepEqual(violations, []);
+});
+
+test("only infra, http and the composition root use Node built-ins", () => {
+  const violations = scriptsUnder(SRC_DIR)
+    .filter((file) => !BUILTIN_LAYERS.has(layerOf(file)))
+    .flatMap((file) => builtinImportsOf(file).map((specifier) => `${shown(file)} -> ${specifier}`));
+  assert.deepEqual(violations, []);
+});
+
+test("nothing outside http imports node:http", () => {
+  const violations = scriptsUnder(SRC_DIR)
+    .filter((file) => layerOf(file) !== "http" && builtinImportsOf(file).includes(HTTP_BUILTIN))
+    .map(shown);
+  assert.deepEqual(violations, []);
+});
+
+test("the composition takes its configuration as an argument instead of reading the environment or the working directory", () => {
+  assert.doesNotMatch(readFileSync(join(SRC_DIR, "composition.js"), "utf8"), PROCESS_STATE);
+});
