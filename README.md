@@ -163,9 +163,14 @@ node hooks/install-codex-notify.mjs
 
 Abra http://localhost:8420. As sessões do Claude Code e do Codex abertas **depois** da instalação aparecem sozinhas.
 
-Depois de atualizar esta pasta, rode de novo os dois primeiros comandos: o primeiro reconstrói o coletor e o segundo atualiza os hooks.
+Depois de atualizar esta pasta, rode de novo os três comandos: o primeiro reconstrói o coletor e os outros dois atualizam os hooks.
 
-Os dois scripts fazem backup do arquivo antes de mexer (`settings.json.bak-<data>` e `config.toml.bak-<data>`), não apagam hooks seus e podem rodar de novo sem duplicar nada. O do Codex não sobrescreve um `notify` que você já tenha: ele avisa e não muda nada.
+Os dois scripts só mexem no que o escritório gravou. As URLs e os comandos exatos ficam anotados em `orquestra-office.json`, na mesma pasta da configuração, e um hook seu que apenas se pareça com o do escritório fica onde está. Eles podem rodar de novo sem duplicar nada e, quando não há nada a mudar, não gravam nem fazem backup. O do Codex não sobrescreve um `notify` que você já tenha: ele avisa e não muda nada.
+
+- **Backup.** Antes de gravar, cada script copia o arquivo para `settings.json.bak-<data>` ou `config.toml.bak-<data>` e guarda só os três backups mais recentes. A cópia é inteira: se o `env` do seu `settings.json` tiver tokens ou senhas, o backup também terá. No macOS e no Linux o backup fica legível só pelo seu usuário; no Windows ele herda as permissões da pasta.
+- **Gravação.** O arquivo é trocado de uma vez, e um `settings.json` que seja symlink continua symlink. Se o Claude Code salvar o arquivo enquanto o script roda, nada é gravado e o script pede para rodar de novo.
+- **Endereço.** Os hooks falam com `http://127.0.0.1:8420`. Para usar outra porta, defina `OFFICE_URL` antes de instalar, com um endereço desta máquina (`127.0.0.1`, `localhost` ou `[::1]`) e sem caminho. Endereço de outra máquina só com `--allow-remote-office` e `https://`, porque os hooks mandam para lá os comandos e as respostas das ferramentas e recebem de lá as decisões de permissão. Os dois scripts gravados (`office-session-start.mjs` e `office-statusline.mjs`) leem `OFFICE_URL` durante a sessão e só aceitam um endereço desta máquina; com outro valor, usam o padrão.
+- **Pasta.** O caminho desta pasta vai dentro do comando gravado, então o instalador recusa um caminho com caracteres que o shell interpreta, como `$`, crase, aspas ou `;`.
 
 ## Desinstalar
 
@@ -174,6 +179,8 @@ node hooks/install-claude-hooks.mjs --remove
 node hooks/install-codex-notify.mjs --remove
 docker compose down
 ```
+
+O `--remove` tira só o que o escritório gravou e a anotação correspondente em `orquestra-office.json`. Se o arquivo de configuração não existir, ele não cria nada.
 
 Se o container estiver parado, os hooks falham rápido e o Claude Code continua normalmente (`onFailure: "continue"`).
 
