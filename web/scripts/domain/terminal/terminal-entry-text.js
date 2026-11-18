@@ -3,8 +3,8 @@ import { ownValueOf } from "../shared/own-value.js";
 import { fillPhrase } from "../text/fill-phrase.js";
 import { toolSummaryText } from "./tool-summary-text.js";
 
-export function terminalEntryText(entry, phrases = TERMINAL_NOTES) {
-  const phrase = entry.textId ? ownValueOf(phrases, entry.textId) : undefined;
+export function terminalEntryText(entry) {
+  const phrase = entry.textId ? ownValueOf(TERMINAL_NOTES, entry.textId) : undefined;
   if (!phrase) return entry.text ?? "";
   return fillPhrase(phrase, {
     subject: entry.subject,

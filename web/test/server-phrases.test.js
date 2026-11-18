@@ -42,6 +42,13 @@ describe("what the agent is doing", () => {
     for (const actionId of ["something-new", ...INHERITED_NAMES]) assert.equal(agentActionText({ actionId, action: "fazendo algo" }), "fazendo algo");
   });
 
+  it("can be handed straight to map, which also passes the index", () => {
+    assert.deepEqual([{ actionId: "running", subject: "npm" }].map(agentActionText), ["rodando npm"]);
+    assert.deepEqual([{ actionId: "running", subject: "npm" }].map(logEntryText), ["rodando npm"]);
+    assert.deepEqual([{ summaryId: "read-file", subject: "a.md" }].map(toolSummaryText), ["Ler a.md"]);
+    assert.deepEqual([{ textId: "turn-interrupted" }].map(terminalEntryText), ["turno interrompido"]);
+  });
+
   it("is written the same way for each line of the agent's log", () => {
     assert.equal(logEntryText({ at: 1, actionId: "running", subject: "npm", text: "ignored" }), "rodando npm");
     assert.equal(logEntryText({ at: 1, text: "rodando npm" }), "rodando npm");
