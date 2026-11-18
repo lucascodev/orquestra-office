@@ -50,3 +50,9 @@ test("a state saved with actions as text is written back and loads again the sam
   office.stop();
   assert.deepEqual(createOffice({ webDir: WEB_DIR, dataDir }).store.snapshot(), loaded);
 }));
+
+test("a new action replaces the text of an agent loaded from a state with text actions", () => withSavedState(({ office }) => {
+  office.store.apply(normalizeClaudeEvent({ session_id: "legacy1", cwd: "c:/projetos/antigo", hook_event_name: "Stop" }, LATER));
+  const agent = projectIn(office).agents[MAIN_KEY];
+  assert.deepEqual([agent.action, agent.actionId, agent.subject], [undefined, "turn-finished", null]);
+}));

@@ -17,7 +17,6 @@ export function normalizeCodexEvent(payload, now = Date.now()) {
     status: "waiting",
     actionId: AGENT_ACTION.TURN_FINISHED_WAITING,
     subject: null,
-    action: "terminou o turno e espera você",
     counts: "turns",
   };
 }
