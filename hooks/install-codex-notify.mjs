@@ -45,7 +45,8 @@ if (result.foreignNotifyLine !== undefined) {
   process.exit(1);
 }
 
-const { isUnchanged, backupPath } = commitConfig({ path: configPath, originalText, nextText: configText(result.lines) });
+const { isUnchanged, hasChangedMeanwhile, backupPath } = commitConfig({ path: configPath, originalText, nextText: configText(result.lines) });
+if (hasChangedMeanwhile) fail(`${configPath} was saved by another program while the installer ran. Run the installer again`);
 writeManifestFile(configDir, withManifestSection(manifest, MANIFEST_SECTION, isRemoving ? null : officeNotifyEntries(options)));
 if (backupPath) console.log(`Backup: ${backupPath}`);
 if (isUnchanged) console.log(`${configPath} is already up to date. Nothing was changed.`);

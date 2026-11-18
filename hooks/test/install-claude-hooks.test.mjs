@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { existsSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, lstatSync, mkdtempSync, readdirSync, readFileSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { test } from "node:test";
@@ -251,6 +251,26 @@ test("--remove without settings.json creates nothing and says there was nothing 
   assert.equal(result.code, 0);
   assert.match(result.stdout, /Nothing to remove: .*settings\.json does not exist\./);
   assert.deepEqual(readdirSync(parent), []);
+});
+
+test("a settings.json that is a symlink to a dotfiles folder stays a symlink", async (t) => {
+  const dir = configDir(t);
+  const target = join(configDir(t), "settings.json");
+  writeFileSync(target, JSON.stringify({ model: "opus" }));
+  try {
+    symlinkSync(target, join(dir, "settings.json"), "file");
+  } catch (error) {
+    if (error.code !== "EPERM") throw error;
+    t.skip("creating symlinks needs Developer Mode or admin on Windows");
+    return;
+  }
+
+  const result = await install(dir);
+
+  assert.equal(result.code, 0);
+  assert.ok(lstatSync(join(dir, "settings.json")).isSymbolicLink());
+  assert.equal(JSON.parse(readFileSync(target, "utf8")).model, "opus");
+  assert.ok(JSON.parse(readFileSync(target, "utf8")).hooks);
 });
 
 test("creates the config folder when it does not exist yet", async (t) => {

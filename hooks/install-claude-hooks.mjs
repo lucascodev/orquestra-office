@@ -60,7 +60,8 @@ if (isForeignStatusline(settings.statusLine, options)) {
 }
 
 const nextText = `${JSON.stringify(withOfficeSettings(settings, options), null, 2)}\n`;
-const { isUnchanged, backupPath } = commitConfig({ path: settingsPath, originalText, nextText });
+const { isUnchanged, hasChangedMeanwhile, backupPath } = commitConfig({ path: settingsPath, originalText, nextText });
+if (hasChangedMeanwhile) fail(`${settingsPath} was saved by another program while the installer ran. Run the installer again`);
 writeManifestFile(configDir, withManifestSection(manifest, MANIFEST_SECTION, isRemoving ? null : officeEntries(options)));
 if (backupPath) console.log(`Backup: ${backupPath}`);
 if (isUnchanged) console.log(`${settingsPath} is already up to date. Nothing was changed.`);
