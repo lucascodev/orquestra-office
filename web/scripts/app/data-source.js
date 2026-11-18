@@ -8,7 +8,7 @@ export function createDataSource(onState) {
 
   function publish({ mode, office, runner }) {
     sessions = runner.sessions;
-    onState({ mode, projects: { ...office.projects }, pending: office.pending ?? [], outbox: office.outbox ?? {}, usage: office.usage ?? null, runner: { isAvailable: runner.isAvailable, liveAgents: liveAgentsOf(runner.sessions) } });
+    onState({ mode, projects: { ...office.projects }, pending: office.pending ?? [], outbox: office.outbox ?? {}, usage: office.usage ?? null, security: office.security ?? null, runner: { isAvailable: runner.isAvailable, liveAgents: liveAgentsOf(runner.sessions) } });
   }
 
   // Without a collector the page falls back to the demo: a backend that cannot connect gives way to the next one.
@@ -43,5 +43,8 @@ export function createDataSource(onState) {
     watchTerminal,
     interruptSession: onLiveSession((session) => backend.interruptSession(session)),
     stopSession: onLiveSession((session) => backend.stopSession(session)),
+    listDevices: async () => backend.listDevices(),
+    pairDevice: async () => backend.pairDevice(),
+    revokeDevice: async (id) => backend.revokeDevice(id),
   };
 }

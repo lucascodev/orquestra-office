@@ -5,7 +5,8 @@ import { createDemoBackend } from "../scripts/infra/backends/demo-backend.js";
 import { createLiveBackend } from "../scripts/infra/backends/live-backend.js";
 
 const BACKEND_METHODS = [
-  "closeProject", "decide", "interruptSession", "loadHistory", "openSession", "sendMessage", "setTemplate", "start", "stopSession", "watchTerminal",
+  "closeProject", "decide", "interruptSession", "listDevices", "loadHistory", "openSession", "pairDevice", "revokeDevice", "sendMessage", "setTemplate",
+  "start", "stopSession", "watchTerminal",
 ];
 const LIVE_SESSION = { id: "run-1", sessionId: "a1", cwd: "c:/demo", status: "working" };
 const LIVE_AGENT = "claude:a1";
@@ -87,7 +88,7 @@ describe("data source", () => {
     const states = [];
     const { backend } = fakeBackend({ connects: true, sessions: [LIVE_SESSION, { ...LIVE_SESSION, id: "run-2", sessionId: "z9", status: "ended" }] });
     await createDataSource((state) => states.push(state)).start([backend]);
-    assert.deepEqual(states, [{ mode: "fake", projects: {}, pending: [], outbox: {}, usage: null, runner: { isAvailable: true, liveAgents: { [LIVE_AGENT]: "working" } } }]);
+    assert.deepEqual(states, [{ mode: "fake", projects: {}, pending: [], outbox: {}, usage: null, security: null, runner: { isAvailable: true, liveAgents: { [LIVE_AGENT]: "working" } } }]);
   });
 });
 
@@ -141,5 +142,78 @@ describe("live backend", () => {
       [RUNNER_MESSAGES, "POST", { text: "oi" }],
       [OFFICE_MESSAGES, "POST", { key: QUEUED_AGENT, text: "olá" }],
     ]);
+  });
+});
+
+const PAIRING_CODE = "AAECAwQFBgcICQoLDA0ODw";
+const jsonResponse = (status, body) => ({ ok: status >= 200 && status < 300, status, json: async () => body });
+
+describe("live backend pairing", () => {
+  it("shows the unpaired page instead of falling back to the demo when the collector answers 401", async (context) => {
+    context.mock.method(globalThis, "fetch", async () => jsonResponse(401, { error: "unpaired", isSecretMissing: true }));
+    const states = [];
+
+    const isStarted = await createLiveBackend().start((state) => states.push(state));
+
+    assert.equal(isStarted, true);
+    assert.deepEqual(states.map((state) => state.mode), ["unpaired"]);
+    assert.equal(states[0].office.security.isSecretMissing, true);
+  });
+
+  it("still gives way to the demo when there is no collector at all", async (context) => {
+    context.mock.method(globalThis, "fetch", async () => { throw new TypeError("fetch failed"); });
+
+    assert.equal(await createLiveBackend().start(() => {}), false);
+  });
+
+  it("redeems the code from the address before loading the office", async (context) => {
+    const requests = [];
+    context.mock.method(globalThis, "fetch", async (url, init = {}) => {
+      requests.push([url, init.method ?? "GET", init.body ? JSON.parse(init.body) : null]);
+      return url === "/api/state" ? jsonResponse(401, { error: "unpaired" }) : jsonResponse(204, null);
+    });
+
+    await createLiveBackend({ pairingCode: PAIRING_CODE, deviceLabel: "Chrome no Windows" }).start(() => {});
+
+    assert.deepEqual(requests.slice(0, 2), [
+      ["/api/pairings/redeem", "POST", { code: PAIRING_CODE, label: "Chrome no Windows" }],
+      ["/api/state", "GET", null],
+    ]);
+  });
+
+  it("lists, pairs and revokes devices through the office API", async (context) => {
+    const requests = [];
+    context.mock.method(globalThis, "fetch", async (url, init = {}) => {
+      requests.push([url, init.method ?? "GET"]);
+      if (url === "/api/devices") return jsonResponse(200, { devices: [{ id: "d1" }] });
+      return jsonResponse(url === "/api/pairings" ? 200 : 204, { code: PAIRING_CODE, expiresAt: NOW, urls: [] });
+    });
+    const backend = createLiveBackend();
+
+    assert.deepEqual(await backend.listDevices(), [{ id: "d1" }]);
+    assert.equal((await backend.pairDevice()).code, PAIRING_CODE);
+    assert.equal(await backend.revokeDevice("d 1"), true);
+    assert.deepEqual(requests, [["/api/devices", "GET"], ["/api/pairings", "POST"], ["/api/devices/d%201/revoke", "POST"]]);
+  });
+});
+
+describe("demo backend pairing", () => {
+  beforeEach(() => mock.timers.enable({ apis: ["setInterval", "Date"], now: NOW }));
+  afterEach(() => mock.timers.reset());
+
+  it("shows example devices and a pairing code without a single request to the API", async (context) => {
+    const fetchCalls = context.mock.method(globalThis, "fetch", async () => { throw new Error("the demo must not call the API"); });
+    const backend = createDemoBackend();
+    await backend.start(() => {});
+
+    const devices = await backend.listDevices();
+    const issued = await backend.pairDevice();
+    const wasRevoked = await backend.revokeDevice(devices[1].id);
+
+    assert.equal(devices.length, 2);
+    assert.match(issued.urls[0], /#pair=/);
+    assert.equal(wasRevoked, true);
+    assert.equal((await backend.listDevices()).length, 1);
+    assert.equal(fetchCalls.mock.callCount(), 0);
   });
 });

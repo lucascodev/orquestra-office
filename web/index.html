@@ -13,8 +13,10 @@
   <div class="usage" id="usage" aria-label="Uso do plano"></div>
   <button class="btn btn-sm btn-secondary" id="open-session" hidden>Abrir sessão…</button>
   <span class="badge" id="runner-off" title="Rode node runner/src/main.js nesta máquina para abrir sessões pelo escritório." hidden>executor desligado</span>
+  <button class="btn btn-sm btn-secondary" id="devices-button" hidden>Aparelhos</button>
   <span class="badge mode" id="mode" role="status">conectando</span>
 </header>
+<div class="notices" id="security-notice"></div>
 <nav class="tabs" id="tabs" role="tablist" aria-label="Salas"></nav>
 <main class="workspace">
   <section class="office" id="office" aria-live="polite"></section>
@@ -39,6 +41,19 @@
       <button class="btn btn-primary" type="submit">Abrir sessão</button>
     </div>
   </form>
+</dialog>
+<dialog class="dialog" id="devices" aria-labelledby="devices-title">
+  <div class="dialog-form">
+    <h2 class="dialog-title" id="devices-title">Aparelhos pareados</h2>
+    <div class="dialog-body">
+      <div data-devices></div>
+      <div data-pairing-code hidden></div>
+    </div>
+    <div class="dialog-foot">
+      <button class="btn btn-secondary" type="button" data-close>Fechar</button>
+      <button class="btn btn-primary" type="button" data-pair>Parear aparelho</button>
+    </div>
+  </div>
 </dialog>
 <script type="module" src="scripts/app/main.js"></script>
 </body>

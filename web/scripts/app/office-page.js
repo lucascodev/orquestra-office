@@ -4,7 +4,9 @@ import { canReceiveMessages } from "../domain/office/can-receive-messages.js";
 import { sortedProjects } from "../domain/office/project-order.js";
 import { ownValueOf } from "../domain/shared/own-value.js";
 import { readPreference, writePreference } from "../infra/local-preferences.js";
+import { renderUnpaired } from "../view/office/pairing-view.js";
 import { renderNoProjects, renderOffice } from "../view/office/room-view.js";
+import { renderSecurityNotice } from "../view/office/security-notice-view.js";
 import { renderTabs } from "../view/office/tabs-view.js";
 import { renderTeam } from "../view/office/team-view.js";
 import { renderUsage } from "../view/office/usage-view.js";
@@ -14,13 +16,15 @@ const SELECTED_KEY = "office.selected";
 const RELATIVE_TIMES_REFRESH_MS = 30_000;
 const MODE_LABEL = {
   connecting: "conectando", live: "ao vivo", offline: "sem conexão com o coletor",
-  demo: "prévia com dados de exemplo",
+  demo: "prévia com dados de exemplo", unpaired: "navegador não pareado",
 };
+const MODES_WITH_DEVICES = new Set(["live", "demo"]);
 
-export function createOfficePage({ elements, source, agentPanel, room, newSessionDialog }) {
+export function createOfficePage({ elements, source, agentPanel, room, newSessionDialog, devicesDialog, isOnThisMachine }) {
   const { tabs: tabsEl, office: officeEl, side: sideEl, team: teamEl, mode: modeEl, usage: usageEl, openSession: openSessionButton, runnerOff: runnerOffBadge } = elements;
+  const { devices: devicesButton, security: securityEl } = elements;
 
-  let state = { mode: "connecting", projects: {}, pending: [], outbox: {}, usage: null, runner: { isAvailable: false, liveAgents: {} } };
+  let state = { mode: "connecting", projects: {}, pending: [], outbox: {}, usage: null, security: null, runner: { isAvailable: false, liveAgents: {} } };
   let awaitedAgentKey = null;
   let selected = readPreference(SELECTED_KEY);
   // Redrawing between press and release would swap the button under the pointer and swallow the click.
@@ -84,6 +88,12 @@ export function createOfficePage({ elements, source, agentPanel, room, newSessio
     modeEl.dataset.mode = state.mode;
     setHtml(usageEl, renderUsage(state.usage));
     openSessionButton.hidden = !state.runner.isAvailable;
+    devicesButton.hidden = !MODES_WITH_DEVICES.has(state.mode);
+    setHtml(securityEl, state.mode === "live" ? renderSecurityNotice(state.security) : "");
+    if (state.mode === "unpaired") {
+      renderUnpairedPage();
+      return;
+    }
     runnerOffBadge.hidden = state.mode !== "live" || state.runner.isAvailable;
     const awaitedProject = awaitedAgentKey ? Object.values(state.projects).find((candidate) => candidate.agents[awaitedAgentKey]) : null;
     if (awaitedProject) selected = awaitedProject.key;
@@ -101,6 +111,13 @@ export function createOfficePage({ elements, source, agentPanel, room, newSessio
       awaitedAgentKey = null;
       openAgent(arrivedKey);
     }
+  }
+
+  function renderUnpairedPage() {
+    agentPanel.close();
+    sideEl.hidden = true;
+    setHtml(tabsEl, "");
+    setHtml(officeEl, renderUnpaired({ isOnThisMachine, isSecretMissing: state.security?.isSecretMissing === true }));
   }
 
   function openAgent(agentKey) {
@@ -145,6 +162,8 @@ export function createOfficePage({ elements, source, agentPanel, room, newSessio
   officeEl.addEventListener("click", (event) => {
     if (event.target.closest("[data-close-room]") && selected) source.closeProject(selected);
   });
+
+  devicesButton.addEventListener("click", () => devicesDialog.show());
 
   openSessionButton.addEventListener("click", () => {
     newSessionDialog.show(currentProject()?.key ?? "");

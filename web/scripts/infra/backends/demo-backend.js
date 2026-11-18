@@ -1,3 +1,4 @@
+import { demoDevices, demoPairingCode } from "../demo/demo-devices.js";
 import { demoHistory, demoTerminal } from "../demo/demo-terminal.js";
 import { demoState, queueDemoMessage, resolveDemoRequest, tickDemo } from "../demo/demo-world.js";
 
@@ -8,6 +9,7 @@ export function createDemoBackend() {
   let world = null;
   let notify = () => {};
   let terminalChange = null;
+  let devices = demoDevices(Date.now());
 
   const publish = () => notify({ mode: "demo", office: world, runner: world.runner });
 
@@ -54,6 +56,13 @@ export function createDemoBackend() {
     return () => { terminalChange = null; };
   }
 
+  async function revokeDevice(id) {
+    const remaining = devices.filter((device) => device.id !== id);
+    const wasRevoked = remaining.length < devices.length;
+    devices = remaining;
+    return wasRevoked;
+  }
+
   return {
     start,
     setTemplate,
@@ -65,5 +74,8 @@ export function createDemoBackend() {
     watchTerminal,
     interruptSession: async () => false,
     stopSession: async () => false,
+    listDevices: async () => devices.map((device) => ({ ...device })),
+    pairDevice: async () => demoPairingCode(Date.now()),
+    revokeDevice,
   };
 }
