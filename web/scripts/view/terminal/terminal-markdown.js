@@ -1,7 +1,7 @@
-import DOMPurify from "../../vendor/purify.es.js";
-import hljs from "../../vendor/highlight.min.js";
-import { Marked } from "../../vendor/marked.esm.js";
-import { esc } from "./format.js";
+import DOMPurify from "../../../vendor/purify.es.js";
+import hljs from "../../../vendor/highlight.min.js";
+import { Marked } from "../../../vendor/marked.esm.js";
+import { esc } from "../shared/escape-html.js";
 
 const PLAIN_TEXT = "texto";
 

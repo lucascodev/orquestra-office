@@ -1,7 +1,8 @@
-import { renderAgentFacts, renderAgentIdentity, renderPendingCard, renderSheetShell } from "../view/control-view.js";
-import { ago } from "../view/format.js";
-import { agentMark, originOf, statusBadge } from "../view/office-view.js";
-import { renderEntries, renderHistory } from "../view/terminal-entries.js";
+import { agentMark, originOf, statusBadge } from "../view/office/agent-badges.js";
+import { ago } from "../view/shared/format.js";
+import { renderAgentFacts, renderAgentIdentity, renderSheetShell } from "../view/sheet/agent-sheet-view.js";
+import { renderPendingCard } from "../view/sheet/pending-request-view.js";
+import { renderEntries, renderHistory } from "../view/terminal/terminal-entries.js";
 import { submitDecision, toggleOption } from "./decision-actions.js";
 import { createTerminalPane } from "./terminal-pane.js";
 

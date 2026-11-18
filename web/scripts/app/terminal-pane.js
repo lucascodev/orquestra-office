@@ -1,5 +1,5 @@
-import { icon } from "../view/icons.js";
-import { renderMarkdown } from "../view/terminal-markdown.js";
+import { icon } from "../view/shared/icons.js";
+import { renderMarkdown } from "../view/terminal/terminal-markdown.js";
 
 const NEAR_BOTTOM_PX = 40;
 const COPIED_LABEL_MS = 1_500;

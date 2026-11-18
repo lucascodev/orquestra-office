@@ -3,10 +3,13 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { after, before, describe, it, mock } from "node:test";
 import { fileURLToPath } from "node:url";
-import {
-  renderAgentFacts, renderAgentIdentity, renderPendingCard, renderPendingStrip, renderSheetShell, renderUsage,
-} from "../scripts/view/control-view.js";
-import { agentMark, originOf, renderOffice, renderTabs, renderTeam, statusBadge } from "../scripts/view/office-view.js";
+import { agentMark, originOf, statusBadge } from "../scripts/view/office/agent-badges.js";
+import { renderOffice } from "../scripts/view/office/room-view.js";
+import { renderTabs } from "../scripts/view/office/tabs-view.js";
+import { renderTeam } from "../scripts/view/office/team-view.js";
+import { renderUsage } from "../scripts/view/office/usage-view.js";
+import { renderAgentFacts, renderAgentIdentity, renderSheetShell } from "../scripts/view/sheet/agent-sheet-view.js";
+import { renderPendingCard, renderPendingStrip } from "../scripts/view/sheet/pending-request-view.js";
 
 // ago(), clockTime() and resetTime() print in the machine's time zone; the recorded pages are in UTC.
 process.env.TZ = "UTC";

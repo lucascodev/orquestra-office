@@ -2,8 +2,6 @@ const THOUSAND = 1_000;
 const MILLION = 1_000_000;
 const DAY_MS = 86_400_000;
 
-export const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
-
 export function ago(ms) {
   if (!ms) return "";
   const s = Math.max(0, (Date.now() - ms) / 1000);
