@@ -10,5 +10,5 @@ export const STATUS = {
 
 export const ACTIVE_STATUSES = new Set(["working", "reviewing", "needs_you", "waiting", "blocked"]);
 
-export const statusOf = (agent) => (STATUS[agent.status] ? agent.status : "idle");
+export const statusOf = (agent) => (Object.hasOwn(STATUS, agent.status) ? agent.status : "idle");
 export const describeStatus = (status) => (STATUS[status] ?? STATUS.idle).label;

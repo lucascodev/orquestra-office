@@ -80,4 +80,9 @@ describe("agent status", () => {
     assert.equal(statusOf({ status: "dancing" }), "idle");
     assert.equal(statusOf({}), "idle");
   });
+
+  it("shows a status named after a built-in object property as free", () => {
+    const inherited = ["toString", "constructor", "__proto__", "hasOwnProperty"];
+    assert.deepEqual(inherited.map((status) => statusOf({ status })), inherited.map(() => "idle"));
+  });
 });
