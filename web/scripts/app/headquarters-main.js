@@ -33,7 +33,7 @@ addStylesheet();
 document.body.classList.add("is-headquarters");
 const office = document.getElementById("office");
 const showStats = params.get(MEASURE_PARAM) === MEASURE_ON ? createMeter(office) : () => {};
-const headquarters = createHeadquartersRenderer({ onFrame: showStats, describeStatus });
+const headquarters = createHeadquartersRenderer({ onFrame: showStats, describeStatus, onPick: (key) => headquarters.follow(key) });
 if (headquarters) office.prepend(headquarters.element);
 else office.textContent = NO_WEBGL;
 

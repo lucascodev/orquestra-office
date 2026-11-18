@@ -1,4 +1,4 @@
-import { frameBounds, ISOMETRIC_VIEW } from "../../domain/camera/viewpoint.js";
+import { clampToMap, frameBounds, ISOMETRIC_VIEW, transitionAt, zoomLimits } from "../../domain/camera/viewpoint.js";
 import { THREE } from "../kit.js";
 
 const CAMERA_DISTANCE = 120;
@@ -12,6 +12,7 @@ const SUN_INTENSITY = 1.1;
 const SHADOW_MAP_SIZE = 2048;
 const SHADOW_BIAS = -0.002;
 const SHADOW_MARGIN = 2;
+const PLACEHOLDER_SIZE = 1;
 
 function directionOf({ yaw, pitch }) {
   return new THREE.Vector3(Math.sin(yaw) * Math.cos(pitch), Math.sin(pitch), Math.cos(yaw) * Math.cos(pitch));
@@ -26,18 +27,19 @@ function aimSun(sun, bounds) {
   sun.shadow.camera.updateProjectionMatrix();
 }
 
-// Applies a viewpoint of domain/camera/viewpoint.js ({ target on the ground, scale in CSS pixels per unit}) to an
-// orthographic camera at the angle of the approved plan, and keeps the sun's shadow over the whole map.
-export function createCameraRig({ view = ISOMETRIC_VIEW } = {}) {
+// Applies a viewpoint of domain/camera/viewpoint.js ({ target on the ground, scale in CSS pixels per unit }) to an
+// orthographic camera at the angle of the approved plan, glides between viewpoints and keeps the sun's shadow over the map.
+export function createCameraRig({ view = ISOMETRIC_VIEW, isMotionReduced = false } = {}) {
   const camera = new THREE.OrthographicCamera(-1, 1, 1, -1, CAMERA_NEAR, CAMERA_FAR);
   const sun = new THREE.DirectionalLight(SUN_COLOR, SUN_INTENSITY);
   sun.castShadow = true;
   sun.shadow.mapSize.set(SHADOW_MAP_SIZE, SHADOW_MAP_SIZE);
   sun.shadow.bias = SHADOW_BIAS;
   const direction = directionOf(view);
-  let viewport = { width: 1, height: 1 };
-  let bounds = null;
+  let viewport = { width: PLACEHOLDER_SIZE, height: PLACEHOLDER_SIZE };
+  let map = null;
   let viewpoint = null;
+  let glide = null;
 
   function apply(next) {
     viewpoint = next;
@@ -51,19 +53,64 @@ export function createCameraRig({ view = ISOMETRIC_VIEW } = {}) {
     camera.updateMatrixWorld();
   }
 
-  const frameWhole = () => apply(frameBounds({ bounds, viewport, insets: FRAME_INSETS, view }));
+  const framed = (bounds) => frameBounds({ bounds, viewport, insets: FRAME_INSETS, view });
+  const limits = () => zoomLimits(framed(map).scale);
+  const keptOnMap = (next) => clampToMap(next, map);
+  const hasRealViewport = () => viewport.width > PLACEHOLDER_SIZE && viewport.height > PLACEHOLDER_SIZE;
 
-  // Bounds are the map on the ground plus the height of the tallest thing on it.
-  function frame(nextBounds) {
-    bounds = nextBounds;
-    aimSun(sun, bounds);
-    frameWhole();
+  function frameWhole() {
+    glide = null;
+    apply(framed(map));
   }
 
+  // The map is the ground the camera may look at plus the height of the tallest thing on it; it grows with each row of islands.
+  function setMap(nextMap) {
+    map = nextMap;
+    aimSun(sun, map);
+    if (viewpoint) apply(keptOnMap(viewpoint));
+    else frameWhole();
+  }
+
+  // A resize keeps what the viewer was looking at; only the first real size frames the whole map.
   function setViewport(width, height) {
-    viewport = { width: Math.max(1, width), height: Math.max(1, height) };
-    if (bounds) frameWhole();
+    const wasReal = hasRealViewport();
+    viewport = { width: Math.max(PLACEHOLDER_SIZE, width), height: Math.max(PLACEHOLDER_SIZE, height) };
+    if (!map) return;
+    if (!viewpoint || !wasReal) frameWhole();
+    else apply(keptOnMap(viewpoint));
   }
 
-  return { camera, sun, frame, setViewport, apply, viewpoint: () => viewpoint, viewport: () => viewport };
+  function jumpTo(next) {
+    glide = null;
+    apply(keptOnMap(next));
+  }
+
+  function glideTo(next, now) {
+    if (isMotionReduced) {
+      jumpTo(next);
+      return;
+    }
+    glide = { from: viewpoint, to: keptOnMap(next), startedAt: now };
+  }
+
+  function glideToBounds(bounds, now) {
+    const next = framed(bounds);
+    glideTo({ ...next, scale: Math.min(next.scale, limits().max) }, now);
+  }
+
+  const retarget = (target) => { if (glide) glide.to = keptOnMap({ ...glide.to, target }); };
+
+  // Returns whether the camera moved, so the scene knows it must be drawn again.
+  function step(now) {
+    if (!glide) return false;
+    const { viewpoint: next, isDone } = transitionAt(glide.from, glide.to, now - glide.startedAt, { isMotionReduced });
+    apply(next);
+    if (isDone) glide = null;
+    return true;
+  }
+
+  return {
+    camera, sun, setMap, setViewport, apply, jumpTo, glideTo, glideToBounds, retarget, step, frameWhole, limits,
+    isGliding: () => glide !== null, viewpoint: () => viewpoint, viewport: () => viewport,
+  };
 }

@@ -1,3 +1,5 @@
+import { boundsToFrameAt, wholeHeadquartersBounds } from "../../domain/camera/frame-target.js";
+import { panBy, screenToGround, zoomAt } from "../../domain/camera/viewpoint.js";
 import { layoutHeadquarters } from "../../domain/headquarters/headquarters-layout.js";
 import { headquartersSpots } from "../../domain/headquarters/headquarters-spots.js";
 import { headquartersRoutes } from "../../domain/navigation/headquarters-routes.js";
@@ -9,13 +11,17 @@ import { monumentSign } from "../furniture/monument-sign.js";
 import { buildYard } from "../furniture/yard.js";
 import { THREE } from "../kit.js";
 import { createAreaLabels } from "./area-labels.js";
+import { attachCameraInput } from "./camera-input.js";
 import { createCameraRig } from "./camera-rig.js";
 import { createHeadquartersPeople } from "./headquarters-people.js";
 import { batchStatic } from "./static-batch.js";
 
 const ART_PIXEL = 2;
 const AMBIENT_INTENSITY = 2.3;
-const SIGN_CAP_ALLOWANCE = 0.2;
+const FOLLOW_MIN_ZOOM = 2;
+const FOLLOW_STILL = 1e-3;
+const MAP_LABEL = "Mapa da Sede";
+const MAP_INSTRUCTIONS = "Arraste ou use as setas para mover, a roda, a pinça ou + e - para aproximar e afastar, duplo clique para enquadrar uma sala, 0 para enquadrar a Sede inteira e Esc para parar de seguir um agente.";
 const FRAME_MS = 1000 / 12;
 const MAX_STEP_SECONDS = 0.25;
 const ROUTINE_CHECK_MS = 2_000;
@@ -58,7 +64,15 @@ export function createHeadquartersRenderer({ onFrame = () => {}, onPick = () => 
   labelLayer.className = "hq-labels";
   const tagLayer = document.createElement("div");
   tagLayer.className = "room-tags hq-tags";
-  stage.append(canvas, labelLayer, tagLayer);
+  const instructions = document.createElement("p");
+  instructions.className = "hq-instructions";
+  instructions.id = "hq-map-instructions";
+  instructions.textContent = MAP_INSTRUCTIONS;
+  stage.tabIndex = 0;
+  stage.setAttribute("role", "region");
+  stage.setAttribute("aria-label", MAP_LABEL);
+  stage.setAttribute("aria-describedby", instructions.id);
+  stage.append(canvas, labelLayer, tagLayer, instructions);
 
   let renderer;
   try {
@@ -70,11 +84,11 @@ export function createHeadquartersRenderer({ onFrame = () => {}, onPick = () => 
   renderer.shadowMap.type = THREE.BasicShadowMap;
   renderer.setPixelRatio(1);
 
+  const isMotionReduced = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false;
   const scene = new THREE.Scene();
-  const rig = createCameraRig();
+  const rig = createCameraRig({ isMotionReduced });
   scene.add(new THREE.AmbientLight("#ffffff", AMBIENT_INTENSITY), rig.sun, rig.sun.target);
 
-  const isMotionReduced = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false;
   const people = createHeadquartersPeople({ scene, tagLayer, onPick, describeStatus, isMotionReduced });
   const labels = createAreaLabels(labelLayer);
   const raycaster = new THREE.Raycaster();
@@ -87,6 +101,7 @@ export function createHeadquartersRenderer({ onFrame = () => {}, onPick = () => 
   let isDirty = true;
   let lastStep = 0;
   let lastRoutineCheck = 0;
+  let followedKey = null;
 
   function replace(previous, next) {
     if (previous) {
@@ -102,7 +117,7 @@ export function createHeadquartersRenderer({ onFrame = () => {}, onPick = () => 
     if (key === siteKey) return;
     siteKey = key;
     site = replace(site, buildSite(layout));
-    rig.frame({ ...layout.bounds, maxY: layout.yard.flagpole.height + SIGN_CAP_ALLOWANCE });
+    rig.setMap(wholeHeadquartersBounds(layout));
   }
 
   function showIslands() {
@@ -162,10 +177,49 @@ export function createHeadquartersRenderer({ onFrame = () => {}, onPick = () => 
     isDirty = true;
   }
 
+  const groundOf = (person) => ({ x: person.root.position.x, z: person.root.position.z });
+
+  function stopFollowing() {
+    if (!followedKey) return;
+    followedKey = null;
+    people.highlight(null);
+  }
+
+  // Following glides to the agent first and then sticks to the hip on every frame.
+  function keepFollowing() {
+    if (!followedKey) return;
+    const person = people.personOf(followedKey);
+    if (!person) {
+      stopFollowing();
+      return;
+    }
+    const target = groundOf(person);
+    if (rig.isGliding()) {
+      rig.retarget(target);
+      return;
+    }
+    const current = rig.viewpoint().target;
+    if (Math.hypot(current.x - target.x, current.z - target.z) < FOLLOW_STILL) return;
+    rig.jumpTo({ ...rig.viewpoint(), target });
+    isDirty = true;
+  }
+
+  function follow(key) {
+    const person = people.personOf(key);
+    if (!person) return;
+    followedKey = key;
+    people.highlight(key);
+    const scale = Math.max(rig.viewpoint().scale, rig.limits().min * FOLLOW_MIN_ZOOM);
+    rig.glideTo({ target: groundOf(person), scale }, performance.now());
+    isDirty = true;
+  }
+
   function tick(now) {
     requestAnimationFrame(tick);
     if (!layout || !canvas.isConnected || document.hidden) return;
     stepPeople(now);
+    keepFollowing();
+    if (rig.step(now)) isDirty = true;
     if (!isDirty) return;
     isDirty = false;
     people.follow(rig.camera, now / 1000);
@@ -174,21 +228,58 @@ export function createHeadquartersRenderer({ onFrame = () => {}, onPick = () => 
     onFrame({ calls: renderer.info.render.calls, triangles: renderer.info.render.triangles });
   }
 
-  function agentAt({ clientX, clientY }) {
-    const rect = canvas.getBoundingClientRect();
-    const pointer = new THREE.Vector2(((clientX - rect.left) / rect.width) * 2 - 1, -((clientY - rect.top) / rect.height) * 2 + 1);
-    raycaster.setFromCamera(pointer, rig.camera);
+  function agentAt({ x, y }) {
+    const { width, height } = rig.viewport();
+    raycaster.setFromCamera(new THREE.Vector2((x / width) * 2 - 1, -(y / height) * 2 + 1), rig.camera);
     const hit = raycaster.intersectObjects(people.bodies(), true)[0];
     for (let node = hit?.object; node; node = node.parent) if (node.userData.agentKey) return node.userData.agentKey;
     return null;
   }
 
-  canvas.addEventListener("click", (event) => { const key = agentAt(event); if (key) onPick(key); });
-  canvas.addEventListener("pointermove", (event) => { canvas.style.cursor = agentAt(event) ? "pointer" : "default"; });
+  function moveCamera(next) {
+    if (!layout) return;
+    stopFollowing();
+    rig.jumpTo(next(rig.viewpoint()));
+    isDirty = true;
+  }
+
+  function glideCamera(bounds) {
+    stopFollowing();
+    rig.glideToBounds(bounds, performance.now());
+    isDirty = true;
+  }
+
+  const center = () => ({ x: rig.viewport().width / 2, y: rig.viewport().height / 2 });
+  const zoomBy = (factor, at) => moveCamera((viewpoint) => zoomAt(viewpoint, { factor, at, viewport: rig.viewport(), limits: rig.limits() }));
+
+  attachCameraInput({ surface: canvas, region: stage }, {
+    pan: (dx, dy) => moveCamera((viewpoint) => panBy(viewpoint, { dx, dy })),
+    zoomAt: zoomBy,
+    zoomAtCenter: (factor) => zoomBy(factor, center()),
+    frameAt: (at) => {
+      if (layout) glideCamera(boundsToFrameAt(layout, screenToGround(rig.viewpoint(), at, rig.viewport())));
+    },
+    frameWhole: () => {
+      if (layout) glideCamera(wholeHeadquartersBounds(layout));
+    },
+    stopFollowing,
+    pick: (at) => {
+      const key = layout ? agentAt(at) : null;
+      if (key) onPick(key);
+    },
+  });
+
+  canvas.addEventListener("pointermove", (event) => {
+    const rect = canvas.getBoundingClientRect();
+    canvas.style.cursor = layout && agentAt({ x: event.clientX - rect.left, y: event.clientY - rect.top }) ? "pointer" : "";
+  });
   new ResizeObserver(resize).observe(stage);
   requestAnimationFrame(tick);
 
   const invalidate = () => { isDirty = true; };
 
-  return { element: stage, show, resize, invalidate, scene, rig, layoutShown: () => layout };
+  return {
+    element: stage, show, resize, invalidate, follow, stopFollowing, scene, rig,
+    layoutShown: () => layout, followedKey: () => followedKey,
+  };
 }

@@ -193,8 +193,16 @@ export function createHeadquartersPeople({ scene, tagLayer, onPick, describeStat
     }
   }
 
+  function highlight(followedKey) {
+    for (const [key, { tag }] of people) {
+      const isFollowed = key === followedKey;
+      tag.element.classList.toggle("is-followed", isFollowed);
+      tag.element.setAttribute("aria-pressed", String(isFollowed));
+    }
+  }
+
   const bodies = () => [...people.values()].map(({ person }) => person.root);
   const personOf = (key) => people.get(key)?.person ?? null;
 
-  return { show, arrange, step, follow, bodies, personOf, hasPeople: () => people.size > 0 };
+  return { show, arrange, step, follow, highlight, bodies, personOf, hasPeople: () => people.size > 0 };
 }
