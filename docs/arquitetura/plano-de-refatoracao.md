@@ -1,6 +1,6 @@
 # Plano de refatoração: camadas, Clean Architecture e Clean Code
 
-Data: 2026-11-18. Estado: proposta, nada foi alterado no código. Decisão registrada em `docs/adr/0001-arquitetura-em-camadas.md`.
+Data: 2026-11-18. Estado: fases 0 a 2 executadas (rede de segurança, collector e runner); fases 3 a 5 pendentes. Decisão registrada em `docs/adr/0001-arquitetura-em-camadas.md`.
 
 ## 1. Resumo
 
