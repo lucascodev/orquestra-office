@@ -5,11 +5,12 @@ import { requestUrlOf } from "./request-url.js";
 import { applySecurityHeaders } from "./security-headers.js";
 import { serveFile } from "./static-files.js";
 
-export function createServer({ allowedHosts, webDir, hookRoutes, officeApi }) {
+const API_PREFIX = "/api/";
+
+export function createServer({ allowedHosts, webDir, hookRoutes, pairingRoutes, officeApi }) {
   const hosts = createHostPolicy(allowedHosts);
 
   async function handleGet(req, res, url) {
-    if (officeApi.handlesGet(url.pathname)) return officeApi.get(req, res, url);
     if (await serveFile(res, webDir, url.pathname)) return undefined;
     return sendJson(res, 404, {});
   }
@@ -20,7 +21,9 @@ export function createServer({ allowedHosts, webDir, hookRoutes, officeApi }) {
     if (!url) return sendJson(res, 400, { error: "invalid url" });
 
     if (req.method === "POST" && hookRoutes.handles(url.pathname)) return hookRoutes.handle(req, res, url);
-    if (req.method === "POST") return officeApi.post(req, res, url);
+    if (pairingRoutes.handles(req.method, url.pathname)) return pairingRoutes.handle(req, res, url);
+    if (url.pathname.startsWith(API_PREFIX)) return officeApi.handle(req, res, url);
+    if (req.method === "POST") return sendJson(res, 404, {});
     if (req.method !== "GET") return sendJson(res, 405, {});
     return handleGet(req, res, url);
   }

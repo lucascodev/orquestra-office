@@ -4,6 +4,7 @@ import { createOffice } from "../src/composition.js";
 import { postActivity, postSigned } from "./support/hook-client.js";
 import { listenOnFetchablePort } from "./support/listen-on-fetchable-port.js";
 import { processWideSecretFile } from "./support/office-secret.js";
+import { pairBrowser } from "./support/panel-client.js";
 
 const JSON_HEADERS = { "Content-Type": "application/json" };
 const SESSION = { session_id: "s1", cwd: "/tmp/demo" };
@@ -15,15 +16,22 @@ const NO_VIEWER_TEST_TIMEOUT_MS = 1_000;
 async function withOffice(run, { holdMs = HOLD_MS } = {}) {
   const { server, store, decisions } = createOffice({ webDir: "/nonexistent", holdMs, secretFile: processWideSecretFile() });
   const base = await listenOnFetchablePort(server);
-  try { await run(base, store, decisions); } finally { server.closeAllConnections(); server.close(); }
+  try {
+    cookies.set(base, (await pairBrowser(base)).cookie);
+    await run(base, store, decisions);
+  } finally { server.closeAllConnections(); server.close(); }
 }
 
-const post = (url, body, headers = JSON_HEADERS) => fetch(url, { method: "POST", headers, body: JSON.stringify(body) });
-const stateOf = async (base) => (await fetch(`${base}/api/state`)).json();
+// Every test runs as the office page of a paired browser: its cookie, and its own origin on POSTs unless a test sends another.
+const cookies = new Map();
+const asPage = (url, headers = {}) => ({ Cookie: cookies.get(new URL(url).origin), ...headers });
+const fetchPage = (url, { headers, ...init } = {}) => fetch(url, { ...init, headers: asPage(url, headers) });
+const post = (url, body, headers = JSON_HEADERS) => fetch(url, { method: "POST", headers: asPage(url, { Origin: new URL(url).origin, ...headers }), body: JSON.stringify(body) });
+const stateOf = async (base) => (await fetchPage(`${base}/api/state`)).json();
 
 async function openOfficePage(base) {
   const viewer = new AbortController();
-  const stream = await fetch(`${base}/api/stream`, { signal: viewer.signal });
+  const stream = await fetchPage(`${base}/api/stream`, { signal: viewer.signal });
   await stream.body.getReader().read();
   return viewer;
 }
@@ -128,7 +136,7 @@ test("history keeps the conversation text, the office state never does", () => w
   await postActivity(base, "/events/claude", { ...SESSION, hook_event_name: "PreToolUse", tool_name: "Bash", tool_input: { command: "git mv secret.js vault.js" } });
   await postSigned(base, "/hooks/claude/stop", { ...SESSION, hook_event_name: "Stop", last_assistant_message: "Renamed it." });
 
-  const { entries } = await (await fetch(`${base}/api/agents/history?key=${encodeURIComponent("claude:s1")}`)).json();
+  const { entries } = await (await fetchPage(`${base}/api/agents/history?key=${encodeURIComponent("claude:s1")}`)).json();
   assert.deepEqual(entries.map((entry) => entry.kind), ["prompt", "tool", "reply"]);
   assert.equal(entries[1].detail, "git mv secret.js vault.js");
 
@@ -170,7 +178,7 @@ const CROSS_SITE = { "Sec-Fetch-Site": "cross-site" };
 
 test("a page from another site cannot watch the office, so it cannot hold permissions away from the terminal", () => withOffice(async (base) => {
   const viewer = new AbortController();
-  const stream = await fetch(`${base}/api/stream`, { headers: CROSS_SITE, signal: viewer.signal });
+  const stream = await fetchPage(`${base}/api/stream`, { headers: CROSS_SITE, signal: viewer.signal });
   try {
     assert.equal(stream.status, 403);
     assert.deepEqual((await permissionHook(base)).body, { decision: null });
@@ -181,18 +189,18 @@ test("a page from another site cannot watch the office, so it cannot hold permis
 }));
 
 test("a page from another site cannot read the office state or a session history", () => withOffice(async (base) => {
-  assert.equal((await fetch(`${base}/api/state`, { headers: CROSS_SITE })).status, 403);
-  assert.equal((await fetch(`${base}/api/agents/history?key=claude:s1`, { headers: CROSS_SITE })).status, 403);
+  assert.equal((await fetchPage(`${base}/api/state`, { headers: CROSS_SITE })).status, 403);
+  assert.equal((await fetchPage(`${base}/api/agents/history?key=claude:s1`, { headers: CROSS_SITE })).status, 403);
 }));
 
 const FOREIGN_ORIGIN = { Origin: "http://evil.example" };
 
 test("over plain HTTP on the LAN, where browsers send no fetch metadata, a page from another origin cannot watch or read the office", { timeout: NO_VIEWER_TEST_TIMEOUT_MS }, () => withOffice(async (base) => {
   const viewer = new AbortController();
-  const stream = await fetch(`${base}/api/stream`, { headers: FOREIGN_ORIGIN, signal: viewer.signal });
+  const stream = await fetchPage(`${base}/api/stream`, { headers: FOREIGN_ORIGIN, signal: viewer.signal });
   try {
     assert.equal(stream.status, 403);
-    assert.equal((await fetch(`${base}/api/state`, { headers: FOREIGN_ORIGIN })).status, 403);
+    assert.equal((await fetchPage(`${base}/api/state`, { headers: FOREIGN_ORIGIN })).status, 403);
     assert.deepEqual((await permissionHook(base)).body, { decision: null });
     assert.deepEqual((await stateOf(base)).pending, []);
   } finally {
@@ -201,12 +209,12 @@ test("over plain HTTP on the LAN, where browsers send no fetch metadata, a page 
 }));
 
 test("another port of the same host cannot read the office either", () => withOffice(async (base) => {
-  assert.equal((await fetch(`${base}/api/state`, { headers: { "Sec-Fetch-Site": "same-site" } })).status, 403);
+  assert.equal((await fetchPage(`${base}/api/state`, { headers: { "Sec-Fetch-Site": "same-site" } })).status, 403);
 }));
 
 test("the office page itself and requests without fetch metadata still read the office", () => withOffice(async (base) => {
-  assert.equal((await fetch(`${base}/api/state`, { headers: { "Sec-Fetch-Site": "same-origin" } })).status, 200);
-  assert.equal((await fetch(`${base}/api/state`, { headers: { "Sec-Fetch-Site": "none" } })).status, 200);
-  assert.equal((await fetch(`${base}/api/state`)).status, 200);
-  assert.equal((await fetch(`${base}/api/state`, { headers: { Origin: base } })).status, 200);
+  assert.equal((await fetchPage(`${base}/api/state`, { headers: { "Sec-Fetch-Site": "same-origin" } })).status, 200);
+  assert.equal((await fetchPage(`${base}/api/state`, { headers: { "Sec-Fetch-Site": "none" } })).status, 200);
+  assert.equal((await fetchPage(`${base}/api/state`)).status, 200);
+  assert.equal((await fetchPage(`${base}/api/state`, { headers: { Origin: base } })).status, 200);
 }));

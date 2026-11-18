@@ -1,5 +1,5 @@
 import { createHmac, timingSafeEqual } from "node:crypto";
-import { readFileSync, statSync } from "node:fs";
+import { readFileSync } from "node:fs";
 import { ACTIVITY_TOKEN_LABEL, KEY_ID_LABEL } from "../../shared/auth/signed-message.js";
 
 const KEY_BYTES = 32;
@@ -29,23 +29,23 @@ function isSameDigest(encoded, expected) {
   return given.toString("base64url") === encoded && given.length === expected.length && timingSafeEqual(given, expected);
 }
 
-// The secret is read again only when the file changes, so a rotated secret takes effect without a restart.
+// The file is a few bytes, so it is read on every use: a rotated secret takes effect at once, without a restart.
+// Comparing modification times instead missed a rotation written within the same clock tick on Windows.
 export function createOfficeKey({ secretFile }) {
-  let seenVersion = null;
+  let seenText = null;
   let loaded = null;
 
   function current() {
     if (!secretFile) return null;
     try {
-      const { mtimeMs, size, ino } = statSync(secretFile);
-      const version = `${mtimeMs}:${size}:${ino}`;
-      if (version !== seenVersion) {
-        loaded = keyFrom(parseKey(readFileSync(secretFile, "utf8")));
-        seenVersion = version;
+      const text = readFileSync(secretFile, "utf8");
+      if (text !== seenText) {
+        loaded = keyFrom(parseKey(text));
+        seenText = text;
       }
       return loaded;
     } catch {
-      seenVersion = null;
+      seenText = null;
       loaded = null;
       return null;
     }
