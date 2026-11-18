@@ -186,9 +186,12 @@ cd ../runner
 npm test
 cd ..
 node --test web/test/*.test.js
+node --test hooks/test/*.test.mjs
 ```
 
 Os testes de `web/test` cobrem as regras de comportamento dos bonecos (onde cada um fica, a demora antes de levantar, os gestos, os pensamentos e as conversas) e a formatação do terminal, que não dependem do navegador.
+
+Os testes de `hooks/test` rodam os instaladores com `CLAUDE_CONFIG_DIR` e `CODEX_HOME` numa pasta temporária e os dois hooks contra um escritório falso em `127.0.0.1`, então não mexem na sua configuração. A montagem do `settings.json` e do `config.toml` fica em `hooks/lib`, separada da leitura e da gravação dos arquivos. Os dois hooks gravados no `settings.json` (`office-session-start.mjs` e `office-statusline.mjs`) não mudam de nome nem de lugar, porque as sessões abertas apontam para eles.
 
 A página não tem etapa de build: as bibliotecas ficam copiadas em `web/vendor`, com a licença de cada uma ao lado.
 
