@@ -57,16 +57,14 @@ test("nothing in src imports from outside src other than node built-ins", () => 
 const COMPOSITION = "composition";
 const COMPOSITION_ROOTS = new Set(["composition.js", "main.js"]);
 const CONTEXT_LAYERS = new Set(["domain", "application", "infra"]);
-const TOP_LEVEL_LAYERS = new Set(["shared", "events", "history", "claude", "codex", "http"]);
+const TOP_LEVEL_LAYERS = new Set(["shared", "history", "claude", "codex", "http"]);
 const BUILTIN_LAYERS = new Set(["infra", "http", COMPOSITION]);
 const HTTP_BUILTIN = "node:http";
 const PROCESS_STATE = /\bprocess\.(?:env|cwd)\b/;
 
 // Besides these, a layer may always import its own layer, and the composition root may import anything.
-// events/ only holds the re-export the runner still imports; phase 2 deletes it together with its entry here.
 const ALLOWED_LAYERS = {
   shared: [],
-  events: ["shared"],
   domain: ["shared"],
   application: ["domain", "history", "shared"],
   infra: ["domain"],

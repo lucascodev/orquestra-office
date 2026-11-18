@@ -1,5 +1,6 @@
 import { spawn } from "node:child_process";
 import { lineReader, parseEvent } from "./json-lines.js";
+import { changesOf } from "./stream-changes.js";
 
 const STREAM_ARGS = ["-p", "--input-format", "stream-json", "--output-format", "stream-json", "--verbose", "--include-partial-messages"];
 const STDERR_TAIL = 2_000;
@@ -8,7 +9,7 @@ const STOP_GRACE_MS = 5_000;
 export function createClaudeLauncher({ command = "claude", model = "" } = {}) {
   const args = model ? [...STREAM_ARGS, "--model", model] : STREAM_ARGS;
 
-  return function startClaudeProcess({ cwd, onEvent, onExit }) {
+  return function startClaudeProcess({ cwd, onChange, onExit }) {
     const child = spawn(command, args, { cwd, stdio: ["pipe", "pipe", "pipe"], windowsHide: true });
     let stderrTail = "";
     let hasExited = false;
@@ -26,7 +27,7 @@ export function createClaudeLauncher({ command = "claude", model = "" } = {}) {
     child.stdout.setEncoding("utf8");
     child.stdout.on("data", lineReader((line) => {
       const event = parseEvent(line);
-      if (event) onEvent(event);
+      if (event) changesOf(event).forEach(onChange);
     }));
     child.stderr.setEncoding("utf8");
     child.stderr.on("data", (chunk) => { stderrTail = (stderrTail + chunk).slice(-STDERR_TAIL); });

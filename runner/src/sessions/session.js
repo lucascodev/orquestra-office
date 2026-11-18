@@ -1,5 +1,4 @@
 import { randomUUID } from "node:crypto";
-import { changesOf } from "./transcript.js";
 
 const ENTRY_LIMIT = 400;
 
@@ -52,7 +51,7 @@ export function createSession({ cwd, startProcess, now = Date.now }) {
     sessionWaiters.clear();
   }
 
-  const process = startProcess({ cwd, onEvent: (event) => changesOf(event).forEach(apply), onExit: end });
+  const process = startProcess({ cwd, onChange: apply, onExit: end });
 
   function send(text) {
     if (isEnded()) return false;

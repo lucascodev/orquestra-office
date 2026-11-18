@@ -1,4 +1,5 @@
-import { clip, summarizeTool } from "../../../collector/src/events/tool-summary.js";
+import { summarizeTool } from "../../../collector/src/shared/claude/summarize-tool.js";
+import { clip } from "../../../collector/src/shared/text/clip.js";
 
 const TEXT_LIMIT = 8_000;
 const INTERRUPTED = "aborted_streaming";

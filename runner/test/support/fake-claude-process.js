@@ -1,10 +1,10 @@
 export function fakeClaudeLauncher() {
   const processes = [];
-  const startProcess = ({ cwd, onEvent, onExit }) => {
+  const startProcess = ({ cwd, onChange, onExit }) => {
     const fake = {
       cwd,
       sent: [],
-      emit: onEvent,
+      emit: onChange,
       exit: onExit,
       send: (text) => { fake.sent.push(text); },
       interrupt: () => {},

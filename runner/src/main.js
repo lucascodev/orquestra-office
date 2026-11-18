@@ -1,5 +1,5 @@
 import { createServer } from "./http/server.js";
-import { createClaudeLauncher } from "./sessions/claude-process.js";
+import { createClaudeLauncher } from "./claude/claude-process.js";
 import { createSessionRegistry } from "./sessions/session-registry.js";
 
 const DEFAULT_PORT = 8421;

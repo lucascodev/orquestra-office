@@ -3,7 +3,7 @@ import { tmpdir } from "node:os";
 import assert from "node:assert/strict";
 import { createServer } from "../src/http/server.js";
 import { createSessionRegistry } from "../src/sessions/session-registry.js";
-import { changesOf } from "../src/sessions/transcript.js";
+import { changesOf } from "../src/claude/stream-changes.js";
 
 const OFFICE = "http://localhost:8420";
 const JSON_HEADERS = { "Content-Type": "application/json", Origin: OFFICE };
@@ -11,12 +11,13 @@ const SESSION_ID = "11111111-2222-3333-4444-555555555555";
 
 function fakeClaude() {
   const processes = [];
-  const startProcess = ({ onEvent, onExit }) => {
+  const startProcess = ({ onChange, onExit }) => {
     const sent = [];
+    const emit = (event) => changesOf(event).forEach(onChange);
     const fake = {
       sent, interrupts: 0,
-      emit: onEvent,
-      send: (text) => { sent.push(text); onEvent({ type: "system", subtype: "init", session_id: SESSION_ID }); },
+      emit,
+      send: (text) => { sent.push(text); emit({ type: "system", subtype: "init", session_id: SESSION_ID }); },
       interrupt: () => { fake.interrupts += 1; },
       stop: () => onExit({ code: 0, error: "" }),
     };

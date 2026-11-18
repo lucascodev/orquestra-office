@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { lineReader, parseEvent } from "../src/sessions/json-lines.js";
+import { lineReader, parseEvent } from "../src/claude/json-lines.js";
 
 function collectLines() {
   const lines = [];
