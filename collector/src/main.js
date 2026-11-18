@@ -1,7 +1,7 @@
 import { createPendingDecisions } from "./control/pending-decisions.js";
 import { createServer } from "./http/server.js";
-import { createOfficeStore } from "./office/office-store.js";
-import { createPersistence } from "./office/persistence.js";
+import { createOfficeStore } from "./office/domain/office-store.js";
+import { createOfficeStateFile } from "./office/infra/office-state-file.js";
 
 const DEFAULT_HOLD_SECONDS = 120;
 
@@ -11,7 +11,7 @@ const webDir = process.env.WEB_DIR ?? "../web";
 const holdSeconds = Number(process.env.OFFICE_HOLD_SECONDS) || DEFAULT_HOLD_SECONDS;
 const allowedHosts = (process.env.OFFICE_ALLOWED_HOSTS ?? "").split(",").map((host) => host.trim()).filter(Boolean);
 
-const persistence = createPersistence(dataDir);
+const persistence = createOfficeStateFile(dataDir);
 const store = createOfficeStore(persistence.load());
 store.onChange(() => persistence.scheduleSave(store.snapshot()));
 

@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { mkdtemp, readdir, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { createPersistence } from "../src/office/persistence.js";
+import { createOfficeStateFile as createPersistence } from "../src/office/infra/office-state-file.js";
 
 const STATE_FILE = "office.json";
 const SAVE_DELAY_MS = 2_000;

@@ -2,7 +2,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { normalizeClaudeEvent } from "../src/events/claude-event.js";
 import { normalizeCodexEvent } from "../src/events/codex-event.js";
-import { createOfficeStore } from "../src/office/office-store.js";
+import { createOfficeStore } from "../src/office/domain/office-store.js";
 
 const claude = (event, extra = {}, at = 1000) =>
   normalizeClaudeEvent({ session_id: "s1", cwd: "C:\\projetos\\orquestra", hook_event_name: event, ...extra }, at);

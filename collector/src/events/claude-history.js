@@ -1,4 +1,4 @@
-import { agentKeyOf } from "../office/agent-key.js";
+import { agentKeyOf } from "../office/domain/agent-key.js";
 import { clip } from "../shared/text/clip.js";
 import { summarizeTool } from "../shared/claude/summarize-tool.js";
 

@@ -3,7 +3,7 @@ import { join } from "node:path";
 
 const SAVE_DELAY_MS = 2_000;
 
-export function createPersistence(dataDir) {
+export function createOfficeStateFile(dataDir) {
   const file = join(dataDir, "office.json");
   let timer = null;
 

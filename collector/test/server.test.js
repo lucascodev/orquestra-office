@@ -3,7 +3,7 @@ import { request } from "node:http";
 import { fileURLToPath } from "node:url";
 import assert from "node:assert/strict";
 import { createServer } from "../src/http/server.js";
-import { createOfficeStore } from "../src/office/office-store.js";
+import { createOfficeStore } from "../src/office/domain/office-store.js";
 
 async function withServer(run, options = {}) {
   const store = createOfficeStore();

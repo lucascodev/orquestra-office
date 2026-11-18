@@ -1,35 +1,15 @@
-import { baseName } from "../events/describe-tool.js";
-import { agentKeyOf, mainAgentKey } from "./agent-key.js";
+import { agentKeyOf, mainAgentKey, sessionIdOfKey } from "./agent-key.js";
+import { hasAgentExpired, isBreakOver, isRoomAbandoned } from "./agent-expiry.js";
+import { dayOf, freshStats, growthOf } from "./daily-stats.js";
+import { baseName } from "./path-name.js";
+import { projectKeyOf } from "./project-key.js";
 import { isTemplate, nextTemplate } from "./templates.js";
 
 const LOG_LIMIT = 20;
-const BREAK_TO_IDLE_MS = 10 * 60_000;
-const ENDED_SUBAGENT_TTL_MS = 15 * 60_000;
-const ENDED_SESSION_TTL_MS = 30 * 60_000;
-const SILENT_SESSION_TTL_MS = 6 * 60 * 60_000;
-const QUIET_PROJECT_TTL_MS = 30 * 24 * 60 * 60_000;
 const SOURCE_LABEL = { claude: "Claude Code", codex: "Codex" };
-
-function projectKeyOf(cwd) {
-  const normalized = String(cwd || "sem-pasta").replace(/\\/g, "/").replace(/\/+$/, "");
-  return /^[a-z]:\//i.test(normalized) ? normalized.toLowerCase() : normalized;
-}
-
-function dayOf(ms) {
-  return new Date(ms).toISOString().slice(0, 10);
-}
 
 function emptyState() {
   return { projects: {}, sessions: {}, meters: {}, usage: { rateLimits: null, updatedAt: 0 } };
-}
-
-function freshStats(day) {
-  return { day, prompts: 0, tools: 0, turns: 0, tokens: 0, costUsd: 0 };
-}
-
-// A counter that drops below its last reading was reset (for example by /clear), so the new value is all new spend.
-function growthOf(previous, current) {
-  return current >= previous ? current - previous : current;
 }
 
 export function createOfficeStore(initial) {
@@ -137,28 +117,22 @@ export function createOfficeStore(initial) {
     let changed = false;
     for (const [key, project] of Object.entries(state.projects)) {
       for (const [agentKey, agent] of Object.entries(project.agents)) {
-        const quiet = now - agent.updatedAt;
-        const ended = agent.endedAt ? now - agent.endedAt : null;
-        const expired =
-          (agent.kind === "subagent" && ended !== null && ended > ENDED_SUBAGENT_TTL_MS) ||
-          (agent.kind === "main" && ended !== null && ended > ENDED_SESSION_TTL_MS) ||
-          quiet > SILENT_SESSION_TTL_MS;
-        if (expired) {
+        if (hasAgentExpired(agent, now)) {
           delete project.agents[agentKey];
           changed = true;
-        } else if (agent.status === "break" && quiet > BREAK_TO_IDLE_MS) {
+        } else if (isBreakOver(agent, now)) {
           agent.status = "idle";
           changed = true;
         }
       }
-      if (Object.keys(project.agents).length === 0 && now - project.updatedAt > QUIET_PROJECT_TTL_MS) {
+      if (isRoomAbandoned(project, now)) {
         delete state.projects[key];
         changed = true;
       }
     }
     for (const [sessionId, projectKey] of Object.entries(state.sessions)) {
       const project = state.projects[projectKey];
-      const alive = project && Object.keys(project.agents).some((agentKey) => agentKey.split(":")[1] === sessionId);
+      const alive = project && Object.keys(project.agents).some((agentKey) => sessionIdOfKey(agentKey) === sessionId);
       if (!alive) {
         delete state.sessions[sessionId];
         delete state.meters[sessionId];

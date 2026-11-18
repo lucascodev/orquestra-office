@@ -2,7 +2,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { createPendingDecisions } from "../src/control/pending-decisions.js";
 import { createServer } from "../src/http/server.js";
-import { createOfficeStore } from "../src/office/office-store.js";
+import { createOfficeStore } from "../src/office/domain/office-store.js";
 
 const JSON_HEADERS = { "Content-Type": "application/json" };
 const SESSION = { session_id: "s1", cwd: "/tmp/demo" };

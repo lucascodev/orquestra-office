@@ -1,10 +1,5 @@
+import { baseName } from "../office/domain/path-name.js";
 import { ASK_TOOLS, DELEGATE_TOOLS, EDIT_TOOLS, READ_TOOLS, SHELL_TOOLS, TODO_TOOLS, WEB_TOOLS, WRITE_TOOLS } from "../shared/claude/tool-names.js";
-
-export function baseName(path) {
-  if (typeof path !== "string" || path.length === 0) return "";
-  const parts = path.split(/[\\/]+/).filter(Boolean);
-  return parts.at(-1) ?? "";
-}
 
 function firstWord(command) {
   if (typeof command !== "string") return "";

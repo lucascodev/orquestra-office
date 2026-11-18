@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { createSessionHistory } from "../src/office/session-history.js";
+import { createSessionHistory } from "../src/history/session-history.js";
 
 const ENTRY_LIMIT = 200;
 const AGENT_LIMIT = 300;
