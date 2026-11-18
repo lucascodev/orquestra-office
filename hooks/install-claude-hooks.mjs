@@ -6,6 +6,7 @@ import { isForeignStatusline, officeEntries, withOfficeSettings } from "./lib/cl
 import { settingsShapeProblem } from "./lib/claude-settings-shape.mjs";
 import { commitConfig } from "./lib/config-commit.mjs";
 import { envValue } from "./lib/env-value.mjs";
+import { hooksDirProblem } from "./lib/hooks-dir.mjs";
 import { manifestSection, withManifestSection } from "./lib/install-manifest.mjs";
 import { manifestPath, readManifestFile, writeManifestFile } from "./lib/manifest-file.mjs";
 import { ALLOW_REMOTE_FLAG, installerOfficeUrl } from "./lib/office-url.mjs";
@@ -22,6 +23,8 @@ const officeUrlResult = installerOfficeUrl(process.env, { allowRemote: process.a
 if (officeUrlResult.problem) fail(`OFFICE_URL was refused: ${officeUrlResult.problem}`);
 const officeUrl = officeUrlResult.origin;
 const hooksDir = dirname(fileURLToPath(import.meta.url));
+const unsafeHooksDir = isRemoving ? null : hooksDirProblem(hooksDir);
+if (unsafeHooksDir) fail(`Could not install: ${unsafeHooksDir}`);
 const configDir = envValue(process.env, "CLAUDE_CONFIG_DIR") ?? join(homedir(), ".claude");
 const settingsPath = join(configDir, "settings.json");
 

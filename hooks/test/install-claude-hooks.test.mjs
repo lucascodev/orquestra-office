@@ -1,10 +1,10 @@
 import assert from "node:assert/strict";
-import { existsSync, lstatSync, mkdtempSync, readdirSync, readFileSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
+import { cpSync, existsSync, lstatSync, mkdtempSync, readdirSync, readFileSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { test } from "node:test";
 import { fakeHome } from "./support/fake-home.mjs";
-import { HOOKS_DIR, runHookScript } from "./support/run-hook-script.mjs";
+import { HOOKS_DIR, runHookScript, runScript } from "./support/run-hook-script.mjs";
 
 const INSTALLER = "install-claude-hooks.mjs";
 const DEFAULT_OFFICE_URL = "http://127.0.0.1:8420";
@@ -272,6 +272,23 @@ test("a settings.json that is a symlink to a dotfiles folder stays a symlink", a
   assert.equal(JSON.parse(readFileSync(target, "utf8")).model, "opus");
   assert.ok(JSON.parse(readFileSync(target, "utf8")).hooks);
 });
+
+const UNSAFE_FOLDER_NAMES = ["odd$(touch pwned)", "odd`touch pwned`", "odd;touch pwned", ...(process.platform === "win32" ? [] : ['odd"quote'])];
+
+for (const folderName of UNSAFE_FOLDER_NAMES) {
+  test(`refuses to install from a folder whose name a shell would run: ${folderName}`, async (t) => {
+    const copy = join(configDir(t), folderName, "hooks");
+    cpSync(join(HOOKS_DIR, "lib"), join(copy, "lib"), { recursive: true });
+    cpSync(join(HOOKS_DIR, INSTALLER), join(copy, INSTALLER));
+    const dir = configDir(t);
+
+    const result = await runScript(join(copy, INSTALLER), { env: { CLAUDE_CONFIG_DIR: dir } });
+
+    assert.equal(result.code, 1);
+    assert.match(result.stderr, /not safe in a shell command.+Nothing was changed\./s);
+    assert.deepEqual(readdirSync(dir), []);
+  });
+}
 
 test("creates the config folder when it does not exist yet", async (t) => {
   const dir = join(configDir(t), "nested", "claude");
