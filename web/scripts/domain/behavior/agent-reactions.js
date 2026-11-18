@@ -15,6 +15,9 @@ export const FREE_TIME = [
   { id: "copier", reaction: "copying" },
   { id: "board", reaction: "drawing" },
   { id: "meeting", reaction: "meeting" },
+  { id: "pingpong", reaction: "playing" },
+  { id: "arcade", reaction: "gaming" },
+  { id: "puff", reaction: "resting" },
   { id: "sofa", reaction: "resting" },
   { id: "plant", reaction: "watering" },
 ];
@@ -48,14 +51,15 @@ export function isHandingOver(agent, now) {
   return agent.kind === "subagent" && Boolean(agent.endedAt) && now !== null && now - agent.endedAt < HANDOFF_MS;
 }
 
-function personalOrder(agentKey) {
+// Each catalog lists the activities it offers, in a fixed order: the same agent then gets the same personal order in it.
+function personalOrder(agentKey, activityIds) {
   const random = rng(hashOf(agentKey));
-  return FREE_TIME.map((activity) => [random(), activity.id]).sort(([a], [b]) => a - b).map(([, id]) => id);
+  return activityIds.map((id) => [random(), id]).sort(([a], [b]) => a - b).map(([, id]) => id);
 }
 
 // A null "now" (reduced motion) freezes people on their first choice.
-export function freeTimePreferences(agent, now, freeSince) {
-  const order = personalOrder(agent.key);
+export function freeTimePreferences(agent, now, freeSince, activityIds) {
+  const order = personalOrder(agent.key, activityIds);
   const { lingerMs, freeTimeSlotMs } = temperamentOf(agent.key);
   const slot = now === null ? 0 : Math.max(0, Math.floor((now - freeSince - lingerMs) / freeTimeSlotMs));
   const start = slot % order.length;

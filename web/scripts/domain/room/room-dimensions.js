@@ -1,6 +1,7 @@
 export const STANDING_HIP = 0.91;
 export const CHAIR_HIP = 0.54;
 export const SOFA_HIP = 0.47;
+export const PUFF_HIP = 0.44;
 
 export const DESK_SEAT_INSET = 0.4;
 export const MEETING_SEAT_X = 0.9;

@@ -40,6 +40,7 @@ function yardAt(depth) {
     trees: YARD.trees.map(at),
     benches: YARD.benches.map(at),
     arrival: at(YARD.arrival),
+    exit: at(YARD.exit),
   };
 }
 

@@ -106,3 +106,50 @@ export const CONVIVENCE_CORNERS = [
 ];
 
 export const RECEPTION_WATER_COOLER = { id: "reception-water-cooler", kind: "waterCooler", areaId: "reception", x: 25, fromFront: 3, w: 0.8, d: 1.2, height: 1.1 };
+
+// "access" is where a spot leaves the walkways; "approach" lists the turns from there, walked backwards on the way out.
+const PANTRY_AISLE = { x: 10.7, z: 5.2 };
+const MEETING_AISLE = { x: 0.9, z: 5.2 };
+const SOFA_AISLE = { x: 24.4, z: 5.2 };
+const GAMES_WEST = { x: 15.8, z: 5.2 };
+const behindCounter = (x) => [{ x: 10.7, z: 2.3 }, { x, z: 2.3 }];
+const behindMeetingTable = (x) => [{ x: 0.9, z: 0.95 }, { x, z: 0.95 }];
+const behindCoffeeTable = (x) => [{ x: 24.4, z: 2.6 }, { x, z: 2.6 }];
+
+export const FREE_TIME_SPOTS = [
+  { areaId: "pantry", activityId: "coffee", x: 10.4, z: 1.55, faces: "back", access: PANTRY_AISLE, approach: behindCounter(10.4) },
+  { areaId: "pantry", activityId: "coffee", x: 11.2, z: 1.55, faces: "back", access: PANTRY_AISLE, approach: behindCounter(11.2) },
+  { areaId: "pantry", activityId: "coffee", x: 12, z: 1.55, faces: "back", access: PANTRY_AISLE, approach: behindCounter(12) },
+  { areaId: "pantry", activityId: "coffee", x: 8.6, z: 3.5, faces: "east", access: { x: 8.6, z: 5.2 } },
+  { areaId: "pantry", activityId: "coffee", x: 10.4, z: 3.5, faces: "west", access: { x: 10.4, z: 5.2 } },
+  { areaId: "pantry", activityId: "coffee", x: 11, z: 3.9, faces: "east", access: { x: 11, z: 5.2 } },
+  { areaId: "pantry", activityId: "coffee", x: 12.8, z: 3.9, faces: "west", access: { x: 12.8, z: 5.2 } },
+  { areaId: "pantry", activityId: "window", x: 9, z: 1.55, faces: "back", access: PANTRY_AISLE, approach: behindCounter(9) },
+  { areaId: "meeting", activityId: "board", x: 3.4, z: 0.75, faces: "back", access: MEETING_AISLE, approach: behindMeetingTable(3.4) },
+  { areaId: "meeting", activityId: "meeting", x: 2.05, z: 1.65, faces: "front", posture: "chair", access: MEETING_AISLE, approach: behindMeetingTable(2.05) },
+  { areaId: "meeting", activityId: "meeting", x: 3.45, z: 1.65, faces: "front", posture: "chair", access: MEETING_AISLE, approach: behindMeetingTable(3.45) },
+  { areaId: "meeting", activityId: "meeting", x: 4.85, z: 1.65, faces: "front", posture: "chair", access: MEETING_AISLE, approach: behindMeetingTable(4.85) },
+  { areaId: "meeting", activityId: "meeting", x: 2.05, z: 4.25, faces: "back", posture: "chair", access: { x: 2.05, z: 5.2 } },
+  { areaId: "meeting", activityId: "meeting", x: 3.45, z: 4.25, faces: "back", posture: "chair", access: { x: 3.45, z: 5.2 } },
+  { areaId: "meeting", activityId: "meeting", x: 4.85, z: 4.25, faces: "back", posture: "chair", access: { x: 4.85, z: 5.2 } },
+  { areaId: "games", activityId: "pingpong", x: 14.6, z: 2.8, faces: "east", access: GAMES_WEST, approach: [{ x: 15.8, z: 4.2 }, { x: 14.6, z: 4.2 }] },
+  { areaId: "games", activityId: "pingpong", x: 18.4, z: 2.8, faces: "west", access: { x: 18.4, z: 5.2 } },
+  { areaId: "games", activityId: "arcade", x: 19.4, z: 1.6, faces: "back", access: { x: 19.4, z: 5.2 } },
+  { areaId: "games", activityId: "puff", x: 15.05, z: 5.05, faces: "back", posture: "puff", access: GAMES_WEST },
+  { areaId: "lounge", activityId: "sofa", x: 21.5, z: 1.5, faces: "front", posture: "sofa", access: SOFA_AISLE, approach: behindCoffeeTable(21.5) },
+  { areaId: "lounge", activityId: "sofa", x: 22.5, z: 1.5, faces: "front", posture: "sofa", access: SOFA_AISLE, approach: behindCoffeeTable(22.5) },
+  { areaId: "lounge", activityId: "sofa", x: 23.5, z: 1.5, faces: "front", posture: "sofa", access: SOFA_AISLE, approach: behindCoffeeTable(23.5) },
+  { areaId: "lounge", activityId: "plant", x: 25.2, z: 1.75, faces: "back", access: { x: 25.2, z: 5.2 } },
+  { areaId: "reception", activityId: "plant", x: 25.4, z: 10.3, faces: "back", access: { x: 25.4, z: 14 } },
+];
+
+// Offsets from the corner of the island place, like CONVIVENCE_CORNERS; access is on the walkway in front of the island.
+export const CONVIVENCE_SPOTS = [
+  [
+    { areaId: "work", activityId: "water", dx: 1.6, dz: 1.5, faces: "back", access: { dx: 1.6, dz: 2.65 } },
+    { areaId: "work", activityId: "plant", dx: 3.05, dz: 2, faces: "back", access: { dx: 3.05, dz: 2.65 } },
+  ],
+  [{ areaId: "work", activityId: "plant", dx: 2.05, dz: 1.6, faces: "back", access: { dx: 2.05, dz: 2.65 } }],
+];
+
+export const RECEPTION_WATER_SPOT = { areaId: "reception", activityId: "water", x: 24.5, fromFront: 2.4, faces: "east", access: { x: 24, fromFront: 2.4 } };

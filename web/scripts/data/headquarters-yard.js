@@ -36,4 +36,5 @@ export const YARD = {
     { x: 17, beyondFront: 6.4, w: 1.4, d: 0.4, height: 0.45 },
   ],
   arrival: { x: 22.7, beyondFront: 3 },
+  exit: { x: 22.75, beyondFront: 0.6 },
 };

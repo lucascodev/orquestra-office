@@ -4,6 +4,7 @@ import {
 } from "./room-dimensions.js";
 
 const COFFEE_SPOTS = 3;
+const ROOM_ACTIVITIES = ["coffee", "water", "window", "books", "filing", "copier", "board", "meeting", "sofa", "plant"];
 const FACING_CAMERA = 0;
 const FACING_WALL = Math.PI;
 const FACING_RIGHT = Math.PI / 2;
@@ -89,5 +90,5 @@ export function besideDeskStop(desk, side) {
 }
 
 export function roomSpots(layout) {
-  return { desks: seatStops(layout), freeTime: freeTimeSpots(layout), exit: exitStop(layout) };
+  return { desks: seatStops(layout), freeTime: freeTimeSpots(layout), exit: exitStop(layout), activities: ROOM_ACTIVITIES };
 }

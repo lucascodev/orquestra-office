@@ -5,7 +5,7 @@ import { besideDeskStop, roomSpots } from "../room/room-spots.js";
 
 // Shared spots go out in key order, so the same people keep the same spot between redraws.
 export function assignPlaces(agents, now, layout, freeSince) {
-  const { desks, freeTime, exit } = roomSpots(layout);
+  const { desks, freeTime, exit, activities } = roomSpots(layout);
   const places = new Map();
   for (const agent of [...agents].sort((a, b) => a.key.localeCompare(b.key))) {
     const desk = desks.get(agent.key);
@@ -20,7 +20,7 @@ export function assignPlaces(agents, now, layout, freeSince) {
       places.set(agent.key, { stop: desk, reaction: JUST_FINISHED, isUrgent: false });
       continue;
     }
-    const activity = freeTimePreferences(agent, now, since).find((id) => freeTime[id]?.length > 0);
+    const activity = freeTimePreferences(agent, now, since, activities).find((id) => freeTime[id]?.length > 0);
     places.set(agent.key, activity
       ? { stop: freeTime[activity].shift(), reaction: freeTimeReaction(activity), isUrgent: false, isFreeTime: true }
       : { stop: desk, reaction: AT_DESK_WITH_NOTHING_TO_DO, isUrgent: false });
