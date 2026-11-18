@@ -7,6 +7,4 @@ export const ENTRY_TEXT = Object.freeze({
   QUESTION_ANSWERED: "question-answered",
   TURN_INTERRUPTED: "turn-interrupted",
   TURN_FAILED: "turn-failed",
-  SESSION_CRASHED: "session-crashed",
-  SESSION_ENDED: "session-ended",
 });
