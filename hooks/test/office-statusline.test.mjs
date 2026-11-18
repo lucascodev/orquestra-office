@@ -10,6 +10,7 @@ const FULL_STATUS = JSON.stringify({
   rate_limits: { five_hour: { used_percentage: 12.6 }, seven_day: { used_percentage: 40 } },
   cost: { total_cost_usd: 1.234 },
 });
+const FULL_STATUS_LINE = "Opus · 5 h 13% · semana 40% · US$ 1.23\n";
 
 test("forwards the raw status JSON to the office and prints the line", async (t) => {
   const office = await startFakeOffice(t);
@@ -53,11 +54,11 @@ for (const officeUrl of BLANK_OFFICE_URLS) {
 }
 
 for (const officeUrl of REFUSED_OFFICE_URLS) {
-  test(`a refused OFFICE_URL "${officeUrl}" turns the hook off: no report, no output, exit 0`, async (t) => {
+  test(`a refused OFFICE_URL "${officeUrl}" skips the report but still prints the line, exit 0`, async (t) => {
     const result = await runRecordingFetch(t, SCRIPT, { env: { OFFICE_URL: officeUrl }, input: FULL_STATUS });
 
     assert.deepEqual(result.urls, []);
-    assert.equal(result.stdout, "");
+    assert.equal(result.stdout, FULL_STATUS_LINE);
     assert.equal(result.stderr, "");
     assert.equal(result.code, 0);
   });

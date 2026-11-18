@@ -5,9 +5,9 @@ import { statusLineText } from "./lib/status-line-text.mjs";
 const OFFICE_URL = officeUrlFrom(process.env);
 const REPORT_TIMEOUT_MS = 800;
 
-if (OFFICE_URL === null) process.exit(0);
-
+// A refused OFFICE_URL only stops the report; the terminal keeps its status line.
 async function reportToOffice(body) {
+  if (OFFICE_URL === null) return;
   try {
     await fetch(`${OFFICE_URL}/events/statusline`, {
       method: "POST", headers: { "Content-Type": "application/json" }, body, signal: AbortSignal.timeout(REPORT_TIMEOUT_MS),
