@@ -1,4 +1,4 @@
-import { createPendingDecisions } from "./control/pending-decisions.js";
+import { createPendingDecisions } from "./control/domain/pending-decisions.js";
 import { createServer } from "./http/server.js";
 import { createOfficeStore } from "./office/domain/office-store.js";
 import { createOfficeStateFile } from "./office/infra/office-state-file.js";

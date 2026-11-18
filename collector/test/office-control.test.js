@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { createPendingDecisions } from "../src/control/pending-decisions.js";
+import { createPendingDecisions } from "../src/control/domain/pending-decisions.js";
 import { createServer } from "../src/http/server.js";
 import { createOfficeStore } from "../src/office/domain/office-store.js";
 

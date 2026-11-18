@@ -1,5 +1,3 @@
-import { randomUUID } from "node:crypto";
-
 const DEFAULT_HOLD_MS = 120_000;
 
 export function createPendingDecisions({ holdMs = DEFAULT_HOLD_MS, now = Date.now } = {}) {
@@ -18,7 +16,7 @@ export function createPendingDecisions({ holdMs = DEFAULT_HOLD_MS, now = Date.no
   }
 
   function hold(request) {
-    const id = randomUUID();
+    const id = crypto.randomUUID();
     const createdAt = now();
     const answer = new Promise((resolve) => {
       const timer = setTimeout(() => settle(id, null), holdMs);
