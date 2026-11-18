@@ -7,7 +7,6 @@ import { fakeHome } from "./support/fake-home.mjs";
 import { runHookScript } from "./support/run-hook-script.mjs";
 
 const INSTALLER = "install-codex-notify.mjs";
-const BACKUP_NAME = /^config\.toml\.bak-\d{8}-\d{6}$/;
 const OFFICE_NOTIFY = 'notify = ["curl", "-s", "--noproxy", "*", "-m", "3", "-X", "POST", "-H", "Content-Type: application/json", "http://127.0.0.1:8420/events/codex", "--data-raw"]';
 const NOTIFY_BEFORE_NOPROXY = 'notify = ["curl", "-s", "-m", "3", "-X", "POST", "-H", "Content-Type: application/json", "http://127.0.0.1:8420/events/codex", "--data-raw"]';
 const MANIFEST = "orquestra-office.json";
@@ -20,7 +19,7 @@ function codexHome(t) {
 
 const install = (dir, env = {}, args = []) => runHookScript(INSTALLER, { env: { CODEX_HOME: dir, ...env }, args });
 const readConfig = (dir) => readFileSync(join(dir, "config.toml"), "utf8");
-const backupsIn = (dir) => readdirSync(dir).filter((name) => BACKUP_NAME.test(name));
+const backupsIn = (dir) => readdirSync(dir).filter((name) => name.startsWith("config.toml.bak-"));
 
 test("creates config.toml with the office notify when there is none", async (t) => {
   const dir = codexHome(t);
@@ -90,6 +89,19 @@ test("backs up the existing config with its original content and normalizes line
   assert.equal(readFileSync(join(dir, backup), "utf8"), original);
   assert.match(result.stdout, new RegExp(`^Backup: .*${backup}$`, "m"));
   assert.equal(readConfig(dir), `${OFFICE_NOTIFY}\nmodel = "o3"\n\n[profiles.a]\nfoo = 1\n`);
+});
+
+test("running again with nothing to change writes nothing and makes no backup", async (t) => {
+  const dir = codexHome(t);
+  writeFileSync(join(dir, "config.toml"), 'model = "o3"\n');
+  await install(dir);
+
+  const result = await install(dir);
+
+  assert.equal(result.code, 0);
+  assert.match(result.stdout, /config\.toml is already up to date\. Nothing was changed\./);
+  assert.equal(readConfig(dir), `${OFFICE_NOTIFY}\nmodel = "o3"\n`);
+  assert.equal(backupsIn(dir).length, 1);
 });
 
 test("refuses a notify that belongs to someone else, exits 1 and changes nothing", async (t) => {

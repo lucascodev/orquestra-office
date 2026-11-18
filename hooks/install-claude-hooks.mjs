@@ -1,10 +1,10 @@
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { isForeignStatusline, officeEntries, withOfficeSettings } from "./lib/claude-settings.mjs";
 import { settingsShapeProblem } from "./lib/claude-settings-shape.mjs";
-import { backupConfig } from "./lib/config-backup.mjs";
+import { commitConfig } from "./lib/config-commit.mjs";
 import { envValue } from "./lib/env-value.mjs";
 import { manifestSection, withManifestSection } from "./lib/install-manifest.mjs";
 import { manifestPath, readManifestFile, writeManifestFile } from "./lib/manifest-file.mjs";
@@ -33,11 +33,11 @@ function loadManifest() {
   }
 }
 
-function loadSettings() {
-  if (!existsSync(settingsPath)) return {};
+function parseSettings(text) {
+  if (text === null) return {};
   let settings;
   try {
-    settings = JSON.parse(readFileSync(settingsPath, "utf8"));
+    settings = JSON.parse(text);
   } catch {
     fail(`Could not read ${settingsPath} as JSON`);
   }
@@ -52,17 +52,17 @@ if (isRemoving && !existsSync(settingsPath)) {
   console.log(`Nothing to remove: ${settingsPath} does not exist.`);
   process.exit(0);
 }
-const settings = loadSettings();
+const originalText = existsSync(settingsPath) ? readFileSync(settingsPath, "utf8") : null;
+const settings = parseSettings(originalText);
 const options = { isRemoving, officeUrl, hooksDir, recorded: manifestSection(manifest, MANIFEST_SECTION) };
-const updated = withOfficeSettings(settings, options);
 if (isForeignStatusline(settings.statusLine, options)) {
   console.log("You already have a statusLine, so it was left alone. Usage limits, tokens and cost need the office statusline.");
 }
 
-if (existsSync(settingsPath)) console.log(`Backup: ${backupConfig(settingsPath)}`);
-mkdirSync(configDir, { recursive: true });
-writeFileSync(settingsPath, `${JSON.stringify(updated, null, 2)}\n`);
+const nextText = `${JSON.stringify(withOfficeSettings(settings, options), null, 2)}\n`;
+const { isUnchanged, backupPath } = commitConfig({ path: settingsPath, originalText, nextText });
 writeManifestFile(configDir, withManifestSection(manifest, MANIFEST_SECTION, isRemoving ? null : officeEntries(options)));
-console.log(isRemoving
-  ? `Office hooks removed from ${settingsPath}.`
-  : `Office hooks installed in ${settingsPath}. New Claude Code sessions will show up at ${officeUrl}.`);
+if (backupPath) console.log(`Backup: ${backupPath}`);
+if (isUnchanged) console.log(`${settingsPath} is already up to date. Nothing was changed.`);
+else if (isRemoving) console.log(`Office hooks removed from ${settingsPath}.`);
+else console.log(`Office hooks installed in ${settingsPath}. New Claude Code sessions will show up at ${officeUrl}.`);

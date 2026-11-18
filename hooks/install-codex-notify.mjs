@@ -1,8 +1,8 @@
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { join } from "node:path";
 import { applyNotify, configLines, configText, officeNotifyEntries } from "./lib/codex-config.mjs";
-import { backupConfig } from "./lib/config-backup.mjs";
+import { commitConfig } from "./lib/config-commit.mjs";
 import { envValue } from "./lib/env-value.mjs";
 import { manifestSection, withManifestSection } from "./lib/install-manifest.mjs";
 import { manifestPath, readManifestFile, writeManifestFile } from "./lib/manifest-file.mjs";
@@ -36,18 +36,18 @@ if (isRemoving && !existsSync(configPath)) {
   console.log(`Nothing to remove: ${configPath} does not exist.`);
   process.exit(0);
 }
+const originalText = existsSync(configPath) ? readFileSync(configPath, "utf8") : null;
 const options = { isRemoving, officeUrl, recorded: manifestSection(manifest, MANIFEST_SECTION) };
-const lines = existsSync(configPath) ? configLines(readFileSync(configPath, "utf8")) : [];
-const result = applyNotify(lines, options);
+const result = applyNotify(originalText === null ? [] : configLines(originalText), options);
 
 if (result.foreignNotifyLine !== undefined) {
   console.error(`${configPath} already has another notify command:\n  ${result.foreignNotifyLine}\nNothing was changed. Codex accepts a single notify command; merge them by hand if you want both.`);
   process.exit(1);
 }
 
-if (existsSync(configPath)) console.log(`Backup: ${backupConfig(configPath)}`);
-
-mkdirSync(configDir, { recursive: true });
-writeFileSync(configPath, configText(result.lines));
+const { isUnchanged, backupPath } = commitConfig({ path: configPath, originalText, nextText: configText(result.lines) });
 writeManifestFile(configDir, withManifestSection(manifest, MANIFEST_SECTION, isRemoving ? null : officeNotifyEntries(options)));
-console.log(isRemoving ? `Office notify removed from ${configPath}.` : `Office notify installed in ${configPath}. Codex turns will show up at ${officeUrl}.`);
+if (backupPath) console.log(`Backup: ${backupPath}`);
+if (isUnchanged) console.log(`${configPath} is already up to date. Nothing was changed.`);
+else if (isRemoving) console.log(`Office notify removed from ${configPath}.`);
+else console.log(`Office notify installed in ${configPath}. Codex turns will show up at ${officeUrl}.`);

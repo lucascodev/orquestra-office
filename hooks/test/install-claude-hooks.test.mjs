@@ -104,6 +104,20 @@ test("backs up an existing settings file with its original content before rewrit
   assert.equal(readSettings(dir).model, "opus");
 });
 
+test("running again with nothing to change writes nothing and makes no backup", async (t) => {
+  const dir = configDir(t);
+  writeFileSync(join(dir, "settings.json"), JSON.stringify({ model: "opus" }));
+  await install(dir);
+  const installed = readFileSync(join(dir, "settings.json"), "utf8");
+
+  const result = await install(dir);
+
+  assert.equal(result.code, 0);
+  assert.match(result.stdout, /settings\.json is already up to date\. Nothing was changed\./);
+  assert.equal(readFileSync(join(dir, "settings.json"), "utf8"), installed);
+  assert.equal(backupsIn(dir).length, 1);
+});
+
 test("refuses unreadable JSON, exits 1 and leaves the file untouched", async (t) => {
   const dir = configDir(t);
   writeFileSync(join(dir, "settings.json"), "{ not json");
