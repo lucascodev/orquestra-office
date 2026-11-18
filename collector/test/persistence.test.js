@@ -60,3 +60,16 @@ test("a scheduled save waits for the delay and then writes the latest state", (t
   t.mock.timers.tick(1);
   assert.deepEqual(persistence.load(), SAVED_STATE);
 }));
+
+test("a corrupted state file is reported before the office starts empty", (t) => withDataDir(async (dir) => {
+  const reportError = t.mock.method(console, "error", () => {});
+  await writeFile(join(dir, STATE_FILE), "{\"projects\": {");
+  assert.equal(createPersistence(dir).load(), null);
+  assert.equal(reportError.mock.callCount(), 1);
+}));
+
+test("a missing state file is not reported, since it only means the first start", (t) => withDataDir(async (dir) => {
+  const reportError = t.mock.method(console, "error", () => {});
+  assert.equal(createPersistence(dir).load(), null);
+  assert.equal(reportError.mock.callCount(), 0);
+}));

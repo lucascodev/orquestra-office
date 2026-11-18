@@ -2,6 +2,7 @@ import { mkdirSync, readFileSync, renameSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 
 const SAVE_DELAY_MS = 2_000;
+const MISSING_FILE = "ENOENT";
 
 export function createOfficeStateFile(dataDir) {
   const file = join(dataDir, "office.json");
@@ -24,7 +25,8 @@ export function createOfficeStateFile(dataDir) {
     load() {
       try {
         return JSON.parse(readFileSync(file, "utf8"));
-      } catch {
+      } catch (error) {
+        if (error.code !== MISSING_FILE) console.error(`could not read office state, starting empty: ${error.code ?? error.message}`);
         return null;
       }
     },
