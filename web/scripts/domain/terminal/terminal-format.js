@@ -1,11 +1,13 @@
 import { CODE_LANGUAGES, TOOL_GLYPHS, TOOL_KINDS } from "../../data/terminal-tools.js";
 import { ownValueOf } from "../shared/own-value.js";
+import { toolSummaryText } from "./tool-summary-text.js";
 
 const TOOL_TEXT = /^([\w.-]+)(?::\s*(.*))?$/s;
 const WRITE_SUMMARY = /^Escrever\s+(.+)$/;
 const DIFF_MARKS = { "- ": "del", "+ ": "add" };
 const DETAIL_FORMAT_BY_KIND = { edit: "diff", shell: "command", write: "code" };
 const MCP_PREFIX = "mcp__";
+const WRITE_FILE_SUMMARY = "write-file";
 
 export function languageOfFile(path) {
   const name = String(path ?? "").split(/[\\/]/).pop().toLowerCase();
@@ -19,17 +21,28 @@ function kindOf(toolName) {
   return ownValueOf(TOOL_KINDS, toolName) ?? "other";
 }
 
-function languageOf(kind, summary, detail) {
+function languageOf(kind, writtenFile, detail) {
   if (kind === "shell") return "bash";
-  if (kind === "write") return languageOfFile(WRITE_SUMMARY.exec(summary)?.[1]);
+  if (kind === "write") return languageOfFile(writtenFile);
   if (kind === "other" && /^\s*[{[]/.test(detail)) return "json";
   return null;
 }
 
-export function describeToolEntry({ text, detail = "" }) {
+function toolOfFields(entry) {
+  const writtenFile = entry.summaryId === WRITE_FILE_SUMMARY ? entry.subject : null;
+  return { toolName: entry.toolName, summary: toolSummaryText(entry), writtenFile };
+}
+
+function toolOfText(text) {
   const [, toolName = String(text ?? ""), summary = ""] = TOOL_TEXT.exec(String(text ?? "")) ?? [];
+  return { toolName, summary, writtenFile: WRITE_SUMMARY.exec(summary)?.[1] };
+}
+
+export function describeToolEntry(entry) {
+  const { toolName, summary, writtenFile } = typeof entry.toolName === "string" ? toolOfFields(entry) : toolOfText(entry.text);
+  const detail = entry.detail ?? "";
   const kind = kindOf(toolName);
-  const language = languageOf(kind, summary, detail);
+  const language = languageOf(kind, writtenFile, detail);
   const format = DETAIL_FORMAT_BY_KIND[kind] ?? (language ? "code" : "text");
   return { toolName, summary, kind, glyph: TOOL_GLYPHS[kind], format, language };
 }

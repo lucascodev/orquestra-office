@@ -1,4 +1,4 @@
-import { freshestThoughts, thoughtAt } from "../../domain/behavior/agent-thoughts.js";
+import { freshestThoughts, thoughtAt, thoughtSubjectOf } from "../../domain/behavior/agent-thoughts.js";
 import { createFreeTimeClock } from "../../domain/behavior/free-time-clock.js";
 import { planMovement } from "../../domain/behavior/movement-plan.js";
 import { assignPlaces } from "../../domain/behavior/room-places.js";
@@ -101,7 +101,7 @@ export function createRoomRenderer({ onPick, describeStatus }) {
     if (!agent || !current || !person.root.visible) return null;
     const reactionId = isWalking(person) && person.isHurrying ? HURRYING_THOUGHTS : current.reactionId;
     return thoughtAt({
-      agentKey: person.key, reactionId, action: agent.action,
+      agentKey: person.key, reactionId, subject: thoughtSubjectOf(agent),
       sinceSeconds: current.since, nowSeconds: seconds, gapSeconds: person.temperament.thoughtGapSeconds,
     });
   }

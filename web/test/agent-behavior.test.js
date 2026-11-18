@@ -96,7 +96,7 @@ describe("seated fidgets", () => {
 });
 
 describe("thoughts", () => {
-  const thought = (overrides) => thoughtAt({ agentKey: KEY, reactionId: "typing", action: "editando people.js", sinceSeconds: 0, nowSeconds: 1, gapSeconds: 10, ...overrides });
+  const thought = (overrides) => thoughtAt({ agentKey: KEY, reactionId: "typing", subject: "people.js", sinceSeconds: 0, nowSeconds: 1, gapSeconds: 10, ...overrides });
 
   it("has a thought shortly after starting something and then stays quiet for a while", () => {
     assert.equal(thought({ nowSeconds: 0.2 }), null);
@@ -107,7 +107,8 @@ describe("thoughts", () => {
   it("names the file or command the agent is dealing with and never leaves the slot empty", () => {
     const texts = Array.from({ length: 40 }, (_, cycle) => thought({ nowSeconds: 1 + cycle * 14.5 })?.text).filter(Boolean);
     assert.ok(texts.every((text) => !text.includes("{alvo}")));
-    const withoutSubject = Array.from({ length: 40 }, (_, cycle) => thought({ action: "procurando no código", nowSeconds: 1 + cycle * 14.5 })?.text).filter(Boolean);
+    assert.ok(texts.some((text) => text.includes("people.js")));
+    const withoutSubject = Array.from({ length: 40 }, (_, cycle) => thought({ subject: null, nowSeconds: 1 + cycle * 14.5 })?.text).filter(Boolean);
     assert.ok(withoutSubject.every((text) => !text.includes("{alvo}")));
   });
 
