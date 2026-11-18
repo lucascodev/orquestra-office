@@ -1,127 +1,47 @@
 import { liveAgentsOf, liveSessionOf } from "../domain/office/live-sessions.js";
-import { demoHistory, demoTerminal } from "../infra/demo/demo-terminal.js";
-import { demoState, queueDemoMessage, resolveDemoRequest, tickDemo } from "../infra/demo/demo-world.js";
-import { officeApi } from "../infra/office-api.js";
-import { runnerClient } from "../infra/runner-client.js";
-
-const DEMO_TICK_MS = 4_000;
-const RUNNER_POLL_MS = 4_000;
-const DEMO_ONLY = "Na prévia com dados de exemplo não dá para abrir sessões.";
 
 export function createDataSource(onState) {
-  let mode = "connecting";
-  let local = { projects: {} };
-  let runner = { isAvailable: false, sessions: [] };
-  let demoTerminalChange = null;
+  let backend = null;
+  let sessions = [];
 
-  const isDemo = () => mode === "demo";
-  const liveSessionFor = (agentKey) => liveSessionOf(runner.sessions, agentKey);
+  const liveSessionFor = (agentKey) => liveSessionOf(sessions, agentKey);
 
-  const publish = () => {
-    onState({ mode, projects: { ...local.projects }, pending: local.pending ?? [], outbox: local.outbox ?? {}, usage: local.usage ?? null, runner: { isAvailable: runner.isAvailable, liveAgents: liveAgentsOf(runner.sessions) } });
-  };
-
-  function startDemo() {
-    mode = "demo";
-    local = demoState();
-    runner = local.runner;
-    let step = 0;
-    publish();
-    setInterval(() => { tickDemo(local, step++); publish(); }, DEMO_TICK_MS);
+  function publish({ mode, office, runner }) {
+    sessions = runner.sessions;
+    onState({ mode, projects: { ...office.projects }, pending: office.pending ?? [], outbox: office.outbox ?? {}, usage: office.usage ?? null, runner: { isAvailable: runner.isAvailable, liveAgents: liveAgentsOf(runner.sessions) } });
   }
 
-  async function refreshRunner() {
-    const sessions = await runnerClient.listSessions();
-    const next = { isAvailable: sessions !== null, sessions: sessions ?? [] };
-    if (JSON.stringify(next) === JSON.stringify(runner)) return;
-    runner = next;
-    publish();
-  }
-
-  function startLive() {
-    mode = "live";
-    const stream = new EventSource("/api/stream");
-    stream.addEventListener("state", (event) => { local = JSON.parse(event.data); mode = "live"; publish(); });
-    stream.onerror = () => { mode = "offline"; publish(); };
-    refreshRunner();
-    setInterval(refreshRunner, RUNNER_POLL_MS);
-  }
-
-  async function start() {
-    try {
-      const response = await fetch("/api/state", { cache: "no-store" });
-      if (!response.ok) throw new Error(String(response.status));
-      local = await response.json();
-      publish();
-      startLive();
-    } catch {
-      startDemo();
+  // Without a collector the page falls back to the demo: a backend that cannot connect gives way to the next one.
+  async function start(backends) {
+    for (const candidate of backends) {
+      backend = candidate;
+      if (await candidate.start(publish)) return;
     }
   }
 
-  async function setTemplate(projectKey, template) {
-    if (!isDemo()) {
-      await officeApi.setTemplate(projectKey, template);
-      return;
-    }
-    local.projects[projectKey].template = template;
-    publish();
-  }
-
-  async function decide(requestId, body) {
-    if (!isDemo()) return officeApi.decide(requestId, body);
-    const wasResolved = resolveDemoRequest(local, requestId, body);
-    publish();
-    return wasResolved;
-  }
-
-  async function sendMessage(agentKey, text) {
-    const session = liveSessionFor(agentKey);
-    if (isDemo() && session) {
-      demoTerminalChange?.({ type: "entry", entry: { at: Date.now(), kind: "prompt", text, detail: "" } });
-      return true;
-    }
-    if (session) return runnerClient.send(session.id, text);
-    if (!isDemo()) return officeApi.sendMessage(agentKey, text);
-    const wasQueued = queueDemoMessage(local, agentKey);
-    publish();
-    return wasQueued;
-  }
-
-  const loadHistory = async (agent) => (isDemo() ? demoHistory(agent) : officeApi.loadHistory(agent.key));
-
-  async function closeProject(projectKey) {
-    if (!isDemo()) return officeApi.closeProject(projectKey);
-    const { [projectKey]: closed, ...open } = local.projects;
-    local = { ...local, projects: open };
-    publish();
-    return Boolean(closed);
-  }
-
-  async function openSession(cwd, prompt) {
-    if (isDemo()) return { error: DEMO_ONLY };
-    const outcome = await runnerClient.openSession(cwd, prompt);
-    await refreshRunner();
-    return outcome;
-  }
+  const sendMessage = async (agentKey, text) => backend.sendMessage(agentKey, text, liveSessionFor(agentKey));
 
   function watchTerminal(agent, handlers) {
     const session = liveSessionFor(agent.key);
     if (!session) return () => {};
-    if (!isDemo()) return runnerClient.watch(session.id, handlers);
-    demoTerminalChange = handlers.onChange;
-    handlers.onSnapshot(demoTerminal(agent));
-    return () => { demoTerminalChange = null; };
+    return backend.watchTerminal(agent, session, handlers);
   }
 
   const onLiveSession = (action) => async (agentKey) => {
     const session = liveSessionFor(agentKey);
-    return Boolean(session) && !isDemo() && action(session.id);
+    return Boolean(session) && action(session);
   };
 
   return {
-    start, setTemplate, decide, sendMessage, loadHistory, closeProject, openSession, watchTerminal,
-    interruptSession: onLiveSession(runnerClient.interrupt),
-    stopSession: onLiveSession(runnerClient.stop),
+    start,
+    setTemplate: async (projectKey, template) => backend.setTemplate(projectKey, template),
+    decide: async (requestId, body) => backend.decide(requestId, body),
+    sendMessage,
+    loadHistory: async (agent) => backend.loadHistory(agent),
+    closeProject: async (projectKey) => backend.closeProject(projectKey),
+    openSession: async (cwd, prompt) => backend.openSession(cwd, prompt),
+    watchTerminal,
+    interruptSession: onLiveSession((session) => backend.interruptSession(session)),
+    stopSession: onLiveSession((session) => backend.stopSession(session)),
   };
 }

@@ -6,6 +6,17 @@ async function postJson(url, body) {
 }
 
 export const officeApi = {
+  async loadState() {
+    const response = await fetch("/api/state", { cache: "no-store" });
+    if (!response.ok) throw new Error(String(response.status));
+    return response.json();
+  },
+  watchState({ onState, onError }) {
+    const stream = new EventSource("/api/stream");
+    stream.addEventListener("state", (event) => onState(JSON.parse(event.data)));
+    stream.onerror = onError;
+    return () => stream.close();
+  },
   decide: (id, body) => postJson(`/api/decisions/${encodeURIComponent(id)}`, body),
   sendMessage: (agentKey, text) => postJson("/api/agents/message", { key: agentKey, text }),
   setTemplate: (projectKey, template) => postJson(`/api/projects/${encodeURIComponent(projectKey)}/template`, { template }),

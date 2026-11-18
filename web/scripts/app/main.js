@@ -3,6 +3,8 @@ import { withAgentNames } from "../domain/office/agent-names.js";
 import { canReceiveMessages } from "../domain/office/can-receive-messages.js";
 import { agentKeyOfSession } from "../domain/office/live-sessions.js";
 import { sortedProjects } from "../domain/office/project-order.js";
+import { createDemoBackend } from "../infra/backends/demo-backend.js";
+import { createLiveBackend } from "../infra/backends/live-backend.js";
 import { readPreference, writePreference } from "../infra/local-preferences.js";
 import { createRoomRenderer } from "../three/renderer.js";
 import { renderNoProjects, renderOffice } from "../view/office/room-view.js";
@@ -17,6 +19,8 @@ import { createNewSessionDialog } from "./new-session-dialog.js";
 import { createPanelResizer } from "./panel-resizer.js";
 
 const SELECTED_KEY = "office.selected";
+const MODE_PARAM = "modo";
+const DEMO_MODE = "demo";
 const MODE_LABEL = {
   connecting: "conectando", live: "ao vivo", offline: "sem conexão com o coletor",
   demo: "prévia com dados de exemplo",
@@ -195,4 +199,5 @@ window.addEventListener("pointercancel", releasePress);
 document.addEventListener("keydown", (event) => { if (event.key === "Escape") agentPanel.close(); });
 setInterval(render, 30_000);
 
-source.start();
+const isDemoRequested = new URLSearchParams(window.location.search).get(MODE_PARAM) === DEMO_MODE;
+source.start(isDemoRequested ? [createDemoBackend()] : [createLiveBackend(), createDemoBackend()]);
