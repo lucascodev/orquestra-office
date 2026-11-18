@@ -6,8 +6,15 @@ import { normalizeCodexEvent } from "../../collector/src/codex/codex-event.js";
 import { createDeliverQueuedMessages } from "../../collector/src/control/application/deliver-queued-messages.js";
 import { createHoldPermission } from "../../collector/src/control/application/hold-permission.js";
 import { createHoldQuestion } from "../../collector/src/control/application/hold-question.js";
+import { AGENT_ACTION } from "../../collector/src/office/domain/agent-actions.js";
+import { TOOL_SUMMARY } from "../../collector/src/shared/claude/tool-summary-ids.js";
+import { ENTRY_TEXT } from "../../collector/src/shared/terminal/entry-text-ids.js";
 import { changesOf } from "../../runner/src/claude/stream-changes.js";
+import { SESSION_ENTRY } from "../../runner/src/sessions/session-entry-ids.js";
 import { createSession } from "../../runner/src/sessions/session.js";
+import { AGENT_ACTIONS } from "../scripts/data/text/pt-br/agent-actions.js";
+import { TERMINAL_NOTES } from "../scripts/data/text/pt-br/terminal-notes.js";
+import { TOOL_SUMMARIES } from "../scripts/data/text/pt-br/tool-summaries.js";
 import { agentActionText, logEntryText } from "../scripts/domain/office/agent-action-text.js";
 import { terminalEntryText } from "../scripts/domain/terminal/terminal-entry-text.js";
 import { describeToolEntry } from "../scripts/domain/terminal/terminal-format.js";
@@ -175,5 +182,37 @@ describe("phrases the page writes from the collector's and the runner's fields",
       const tool = describeToolEntry(withoutText(entry));
       assert.deepEqual([tool.toolName, tool.summary], expected);
     }
+  });
+});
+
+const DEMO_ONLY_ACTION_IDS = ["no-task"];
+
+const PHRASE_SETS = [
+  { name: "agent actions", catalog: AGENT_ACTIONS, publishedIds: Object.values(AGENT_ACTION), demoOnlyIds: DEMO_ONLY_ACTION_IDS },
+  { name: "tool summaries", catalog: TOOL_SUMMARIES, publishedIds: Object.values(TOOL_SUMMARY), demoOnlyIds: [] },
+  { name: "terminal notes", catalog: TERMINAL_NOTES, publishedIds: [...Object.values(ENTRY_TEXT), ...Object.values(SESSION_ENTRY)], demoOnlyIds: [] },
+];
+
+const isFilledText = (text) => typeof text === "string" && text.trim() !== "";
+const isFilledPhrase = (phrase) => isFilledText(phrase) || (isFilledText(phrase?.withSubject) && isFilledText(phrase?.withoutSubject));
+
+describe("ids the collector and the runner publish", () => {
+  for (const { name, catalog, publishedIds } of PHRASE_SETS) {
+    it(`each have a phrase among the ${name}`, () => {
+      const missing = publishedIds.filter((id) => !Object.hasOwn(catalog, id) || !isFilledPhrase(catalog[id]));
+      assert.deepEqual(missing, []);
+    });
+  }
+
+  for (const { name, catalog, publishedIds, demoOnlyIds } of PHRASE_SETS) {
+    it(`are the only keys of the ${name}, besides the ones only the demo uses`, () => {
+      const known = new Set([...publishedIds, ...demoOnlyIds]);
+      assert.deepEqual(Object.keys(catalog).filter((id) => !known.has(id)), []);
+    });
+  }
+
+  it("never repeat a terminal note between the collector and the runner, which share one catalog", () => {
+    const runnerIds = new Set(Object.values(SESSION_ENTRY));
+    assert.deepEqual(Object.values(ENTRY_TEXT).filter((id) => runnerIds.has(id)), []);
   });
 });
