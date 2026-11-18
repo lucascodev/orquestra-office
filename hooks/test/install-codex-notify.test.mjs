@@ -4,6 +4,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { test } from "node:test";
 import { fakeHome } from "./support/fake-home.mjs";
+import { makeUnwritable, READ_ONLY_SKIP } from "./support/read-only.mjs";
 import { runHookScript } from "./support/run-hook-script.mjs";
 
 const INSTALLER = "install-codex-notify.mjs";
@@ -89,6 +90,25 @@ test("backs up the existing config with its original content and normalizes line
   assert.equal(readFileSync(join(dir, backup), "utf8"), original);
   assert.match(result.stdout, new RegExp(`^Backup: .*${backup}$`, "m"));
   assert.equal(readConfig(dir), `${OFFICE_NOTIFY}\nmodel = "o3"\n\n[profiles.a]\nfoo = 1\n`);
+});
+
+test("a config.toml that cannot be replaced exits 1 with a short message, no stack trace and no backup", { skip: READ_ONLY_SKIP }, async (t) => {
+  const dir = codexHome(t);
+  const original = 'model = "o3"\n';
+  writeFileSync(join(dir, "config.toml"), original);
+  const restore = makeUnwritable(dir, "config.toml");
+
+  let result;
+  try {
+    result = await install(dir);
+  } finally {
+    restore();
+  }
+
+  assert.equal(result.code, 1);
+  assert.match(result.stderr, /^Could not save .*config\.toml \(\w+\).*\. Nothing was changed\.\n$/);
+  assert.equal(readConfig(dir), original);
+  assert.deepEqual(backupsIn(dir), []);
 });
 
 test("running again with nothing to change writes nothing and makes no backup", async (t) => {

@@ -30,6 +30,14 @@ function loadManifest() {
   }
 }
 
+function commitOrFail(change) {
+  try {
+    return commitConfig(change);
+  } catch (error) {
+    return fail(`Could not save ${change.path} (${error.code ?? error.message}); check that it is not read-only or open in another program`);
+  }
+}
+
 const manifest = loadManifest();
 if (isRemoving && !existsSync(configPath)) {
   writeManifestFile(configDir, withManifestSection(manifest, MANIFEST_SECTION, null));
@@ -45,7 +53,7 @@ if (result.foreignNotifyLine !== undefined) {
   process.exit(1);
 }
 
-const { isUnchanged, hasChangedMeanwhile, backupPath } = commitConfig({ path: configPath, originalText, nextText: configText(result.lines) });
+const { isUnchanged, hasChangedMeanwhile, backupPath } = commitOrFail({ path: configPath, originalText, nextText: configText(result.lines) });
 if (hasChangedMeanwhile) fail(`${configPath} was saved by another program while the installer ran. Run the installer again`);
 writeManifestFile(configDir, withManifestSection(manifest, MANIFEST_SECTION, isRemoving ? null : officeNotifyEntries(options)));
 if (backupPath) console.log(`Backup: ${backupPath}`);

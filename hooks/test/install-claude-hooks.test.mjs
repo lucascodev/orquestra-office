@@ -4,6 +4,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { test } from "node:test";
 import { fakeHome } from "./support/fake-home.mjs";
+import { makeUnwritable, READ_ONLY_SKIP } from "./support/read-only.mjs";
 import { HOOKS_DIR, runHookScript, runScript } from "./support/run-hook-script.mjs";
 
 const INSTALLER = "install-claude-hooks.mjs";
@@ -102,6 +103,25 @@ test("backs up an existing settings file with its original content before rewrit
   assert.equal(readFileSync(join(dir, backup), "utf8"), original);
   assert.match(result.stdout, new RegExp(`^Backup: .*${backup}$`, "m"));
   assert.equal(readSettings(dir).model, "opus");
+});
+
+test("a settings.json that cannot be replaced exits 1 with a short message, no stack trace and no backup", { skip: READ_ONLY_SKIP }, async (t) => {
+  const dir = configDir(t);
+  const original = JSON.stringify({ model: "opus" });
+  writeFileSync(join(dir, "settings.json"), original);
+  const restore = makeUnwritable(dir, "settings.json");
+
+  let result;
+  try {
+    result = await install(dir);
+  } finally {
+    restore();
+  }
+
+  assert.equal(result.code, 1);
+  assert.match(result.stderr, /^Could not save .*settings\.json \(\w+\).*\. Nothing was changed\.\n$/);
+  assert.equal(readFileSync(join(dir, "settings.json"), "utf8"), original);
+  assert.deepEqual(backupsIn(dir), []);
 });
 
 test("running again with nothing to change writes nothing and makes no backup", async (t) => {

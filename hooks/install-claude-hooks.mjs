@@ -36,6 +36,14 @@ function loadManifest() {
   }
 }
 
+function commitOrFail(change) {
+  try {
+    return commitConfig(change);
+  } catch (error) {
+    return fail(`Could not save ${change.path} (${error.code ?? error.message}); check that it is not read-only or open in another program`);
+  }
+}
+
 function parseSettings(text) {
   if (text === null) return {};
   let settings;
@@ -63,7 +71,7 @@ if (isForeignStatusline(settings.statusLine, options)) {
 }
 
 const nextText = `${JSON.stringify(withOfficeSettings(settings, options), null, 2)}\n`;
-const { isUnchanged, hasChangedMeanwhile, backupPath } = commitConfig({ path: settingsPath, originalText, nextText });
+const { isUnchanged, hasChangedMeanwhile, backupPath } = commitOrFail({ path: settingsPath, originalText, nextText });
 if (hasChangedMeanwhile) fail(`${settingsPath} was saved by another program while the installer ran. Run the installer again`);
 writeManifestFile(configDir, withManifestSection(manifest, MANIFEST_SECTION, isRemoving ? null : officeEntries(options)));
 if (backupPath) console.log(`Backup: ${backupPath}`);
