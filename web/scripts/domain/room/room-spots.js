@@ -66,9 +66,10 @@ function plantStops({ zones }) {
 function freeTimeSpots(layout) {
   const { zones } = layout;
   const wall = zones.wallItems.flatMap((item) => WALL_SPOTS[item.name]?.(item, zones.lanes.topLaneZ) ?? []);
-  const spots = {};
-  for (const [activity, stop] of [...wall, ...meetingStops(layout), ...loungeStops(layout), ...plantStops(layout)]) {
-    spots[activity] = [...(spots[activity] ?? []), stop];
+  const spots = new Map();
+  for (const [activityId, stop] of [...wall, ...meetingStops(layout), ...loungeStops(layout), ...plantStops(layout)]) {
+    const listed = spots.get(activityId) ?? [];
+    spots.set(activityId, [...listed, { id: `${activityId}:${listed.length}`, activityId, ...stop }]);
   }
   return spots;
 }
