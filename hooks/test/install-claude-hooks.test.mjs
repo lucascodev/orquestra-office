@@ -228,6 +228,17 @@ test("refuses a manifest that is not a JSON object, exits 1 and changes nothing"
   assert.deepEqual(readdirSync(dir), [MANIFEST]);
 });
 
+test("--remove without settings.json creates nothing and says there was nothing to remove", async (t) => {
+  const parent = configDir(t);
+  const dir = join(parent, "nested");
+
+  const result = await install(dir, {}, ["--remove"]);
+
+  assert.equal(result.code, 0);
+  assert.match(result.stdout, /Nothing to remove: .*settings\.json does not exist\./);
+  assert.deepEqual(readdirSync(parent), []);
+});
+
 test("creates the config folder when it does not exist yet", async (t) => {
   const dir = join(configDir(t), "nested", "claude");
 

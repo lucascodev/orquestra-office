@@ -174,12 +174,13 @@ test("--remove takes out only the office notify", async (t) => {
   assert.equal(readConfig(dir), 'model = "o3"\n');
 });
 
-test("--remove without a config still writes an empty one", async (t) => {
-  const dir = join(codexHome(t), "nested");
+test("--remove without a config creates nothing and says there was nothing to remove", async (t) => {
+  const parent = codexHome(t);
+  const dir = join(parent, "nested");
 
   const result = await install(dir, {}, ["--remove"]);
 
   assert.equal(result.code, 0);
-  assert.ok(existsSync(join(dir, "config.toml")));
-  assert.equal(readConfig(dir), "\n");
+  assert.match(result.stdout, /Nothing to remove: .*config\.toml does not exist\./);
+  assert.deepEqual(readdirSync(parent), []);
 });

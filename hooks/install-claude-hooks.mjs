@@ -47,6 +47,11 @@ function loadSettings() {
 }
 
 const manifest = loadManifest();
+if (isRemoving && !existsSync(settingsPath)) {
+  writeManifestFile(configDir, withManifestSection(manifest, MANIFEST_SECTION, null));
+  console.log(`Nothing to remove: ${settingsPath} does not exist.`);
+  process.exit(0);
+}
 const settings = loadSettings();
 const options = { isRemoving, officeUrl, hooksDir, recorded: manifestSection(manifest, MANIFEST_SECTION) };
 const updated = withOfficeSettings(settings, options);

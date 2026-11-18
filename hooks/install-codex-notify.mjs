@@ -31,6 +31,11 @@ function loadManifest() {
 }
 
 const manifest = loadManifest();
+if (isRemoving && !existsSync(configPath)) {
+  writeManifestFile(configDir, withManifestSection(manifest, MANIFEST_SECTION, null));
+  console.log(`Nothing to remove: ${configPath} does not exist.`);
+  process.exit(0);
+}
 const options = { isRemoving, officeUrl, recorded: manifestSection(manifest, MANIFEST_SECTION) };
 const lines = existsSync(configPath) ? configLines(readFileSync(configPath, "utf8")) : [];
 const result = applyNotify(lines, options);
