@@ -165,3 +165,28 @@ test("statusline readings feed the usage windows and today's tokens and cost", (
   assert.equal(state.usage.rateLimits.sevenDay.usedPercentage, 41.2);
   assert.equal(state.meters, undefined);
 }));
+
+const CROSS_SITE = { "Sec-Fetch-Site": "cross-site" };
+
+test("a page from another site cannot watch the office, so it cannot hold permissions away from the terminal", () => withOffice(async (base) => {
+  const viewer = new AbortController();
+  const stream = await fetch(`${base}/api/stream`, { headers: CROSS_SITE, signal: viewer.signal });
+  try {
+    assert.equal(stream.status, 403);
+    assert.deepEqual(await (await permissionHook(base)).json(), {});
+    assert.deepEqual((await stateOf(base)).pending, []);
+  } finally {
+    viewer.abort();
+  }
+}));
+
+test("a page from another site cannot read the office state or a session history", () => withOffice(async (base) => {
+  assert.equal((await fetch(`${base}/api/state`, { headers: CROSS_SITE })).status, 403);
+  assert.equal((await fetch(`${base}/api/agents/history?key=claude:s1`, { headers: CROSS_SITE })).status, 403);
+}));
+
+test("the office page itself and requests without fetch metadata still read the office", () => withOffice(async (base) => {
+  assert.equal((await fetch(`${base}/api/state`, { headers: { "Sec-Fetch-Site": "same-origin" } })).status, 200);
+  assert.equal((await fetch(`${base}/api/state`, { headers: { "Sec-Fetch-Site": "none" } })).status, 200);
+  assert.equal((await fetch(`${base}/api/state`)).status, 200);
+}));

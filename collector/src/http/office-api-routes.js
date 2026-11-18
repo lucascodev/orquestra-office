@@ -1,6 +1,6 @@
 import { OUTCOME } from "../control/application/outcome.js";
 import { readJsonBody, sendJson } from "./json-io.js";
-import { isJson, isSameOrigin } from "./request-policy.js";
+import { isCrossSite, isJson, isSameOrigin } from "./request-policy.js";
 import { decodePathSegment } from "./url-path.js";
 
 const API_BODY_LIMIT = 64 * 1024;
@@ -38,9 +38,10 @@ export function createOfficeApiRoutes({ store, history, stream, officeView, deci
     "/api/agents/history": (req, res, url) => sendJson(res, 200, { entries: history.of(url.searchParams.get("key") ?? "") }),
   };
 
-  return {
-    post,
-    handlesGet: (pathname) => Object.hasOwn(getRoutes, pathname),
-    get: (req, res, url) => getRoutes[url.pathname](req, res, url),
-  };
+  function get(req, res, url) {
+    if (isCrossSite(req)) return sendJson(res, 403, { error: "forbidden site" });
+    return getRoutes[url.pathname](req, res, url);
+  }
+
+  return { post, get, handlesGet: (pathname) => Object.hasOwn(getRoutes, pathname) };
 }
