@@ -153,7 +153,7 @@ No celular, na mesma rede, abra `http://<OFFICE_LAN_IP>:8420`. Para voltar ao mo
 
 ## Instalar
 
-No PowerShell, nesta pasta:
+Com o Node 22 ou mais novo, no PowerShell, nesta pasta:
 
 ```powershell
 docker compose up -d --build
