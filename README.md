@@ -180,7 +180,7 @@ node hooks/install-codex-notify.mjs --remove
 docker compose down
 ```
 
-O `--remove` tira só o que o escritório gravou e a anotação correspondente em `orquestra-office.json`. Se o arquivo de configuração não existir, ele não cria nada.
+O `--remove` tira só o que o escritório gravou. Em `orquestra-office.json`, a anotação do Codex é apagada e a do Claude fica vazia, para que uma instalação seguinte não confunda um script seu com o mesmo nome de arquivo do escritório com uma instalação antiga. Se o arquivo de configuração não existir, ele não cria nada.
 
 Se o container estiver parado, os hooks falham rápido e o Claude Code continua normalmente (`onFailure: "continue"`).
 
