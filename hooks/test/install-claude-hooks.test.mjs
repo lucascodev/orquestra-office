@@ -4,6 +4,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { test } from "node:test";
 import { fakeHome } from "./support/fake-home.mjs";
+import { startFakeOffice } from "./support/fake-office.mjs";
 import { makeUnwritable, READ_ONLY_SKIP } from "./support/read-only.mjs";
 import { BASE_ENV, HOOKS_DIR, runHookScript, runScript } from "./support/run-hook-script.mjs";
 
@@ -435,4 +436,15 @@ test("refuses to install when the home folder has characters a shell would run",
   assert.equal(result.code, 1);
   assert.match(result.stderr, /office secret file .+not safe in a shell command/);
   assert.deepEqual(readdirSync(dir), []);
+});
+
+test("run from a script, it opens no browser and asks the collector nothing, and points at the opener instead", async (t) => {
+  const office = await startFakeOffice(t);
+  const dir = configDir(t);
+
+  const result = await install(dir, { OFFICE_URL: office.url });
+
+  assert.equal(result.code, 0);
+  assert.match(result.stdout, /Open the office already paired with: node hooks\/open-office\.mjs/);
+  assert.deepEqual(office.requests, []);
 });

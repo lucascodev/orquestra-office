@@ -10,11 +10,15 @@ import { envValue } from "./lib/env-value.mjs";
 import { hooksDirProblem, shellPathProblem } from "./lib/hooks-dir.mjs";
 import { manifestSection, withManifestSection } from "./lib/install-manifest.mjs";
 import { manifestPath, readManifestFile, writeManifestFile } from "./lib/manifest-file.mjs";
+import { openBrowser } from "./lib/open-browser.mjs";
 import { officeFilesOf } from "./lib/office-home.mjs";
 import { prepareOfficeSecret, ROTATE_SECRET_FLAG } from "./lib/office-secret-setup.mjs";
 import { ALLOW_REMOTE_FLAG, installerOfficeUrl } from "./lib/office-url.mjs";
+import { pairingLinkOf } from "./lib/pairing-link.mjs";
 
 const MANIFEST_SECTION = "claude";
+const NO_OPEN_FLAG = "--no-open";
+const OPEN_COMMAND = "node hooks/open-office.mjs";
 
 function fail(message) {
   console.error(`${message}. Nothing was changed.`);
@@ -83,7 +87,7 @@ const options = {
   secretFile: officeFiles.secretFile,
   activityHeaderFile: officeFiles.activityHeaderFile,
 };
-if (!isRemoving) prepareOfficeSecret({ officeFiles, rotate: process.argv.includes(ROTATE_SECRET_FLAG), fail });
+const secret = isRemoving ? null : prepareOfficeSecret({ officeFiles, rotate: process.argv.includes(ROTATE_SECRET_FLAG), fail });
 const isMigratingFromHttp = !isRemoving && hasHttpOfficeHooks(settings, options);
 if (isForeignStatusline(settings.statusLine, options)) {
   console.log("You already have a statusLine, so it was left alone. Usage limits, tokens and cost need the office statusline.");
@@ -98,3 +102,17 @@ if (isUnchanged) console.log(`${settingsPath} is already up to date. Nothing was
 else if (isRemoving) console.log(`Office hooks removed from ${settingsPath}.`);
 else console.log(`Office hooks installed in ${settingsPath}. New Claude Code sessions will show up at ${officeUrl}.`);
 if (isMigratingFromHttp) console.log("The office hooks were migrated from http to command hooks.");
+
+// Only someone at a terminal gets a browser opened; scripts and tests piping the output never do, and never reach the collector.
+async function openPairedOffice() {
+  try {
+    openBrowser(await pairingLinkOf({ officeUrl, key: secret.key }));
+    console.log("The office was opened in your browser, already paired.");
+  } catch {
+    console.log(`The collector did not answer the pairing request. Once it is running, open the office with: ${OPEN_COMMAND}`);
+  }
+}
+
+if (isRemoving) process.exit(0);
+if (process.stdout.isTTY && !process.argv.includes(NO_OPEN_FLAG)) await openPairedOffice();
+else console.log(`Open the office already paired with: ${OPEN_COMMAND}`);
