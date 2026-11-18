@@ -21,16 +21,6 @@ const NAMED_LIST = /\{([^}]*)\}/;
 const NAMESPACE_BINDING = /\*\s*as\s+[\w$]+/;
 const ALIAS = /\s+as\s+/;
 
-// Never imported by app/main.js and importing `rect` and `svg`, which art/pixels.js no longer exports. Step 3.2 deletes them and this list.
-const DEAD_CODE_AWAITING_REMOVAL = new Set([
-  "scripts/view/room-scene.js",
-  "scripts/art/characters.js",
-  "scripts/art/iso.js",
-  "scripts/art/props.js",
-  "scripts/art/sprites.js",
-  "scripts/art/templates.js",
-]);
-
 const listedNames = (list) => list.split(",").map((item) => item.trim()).filter(Boolean).map((item) => item.split(ALIAS));
 
 function requestedNames(keyword, clause) {
@@ -76,7 +66,6 @@ function scriptsUnder(dir) {
 const isRelative = (specifier) => specifier.startsWith("./") || specifier.startsWith("../");
 const isInside = (dir, path) => !relative(dir, path).startsWith("..");
 const shown = (path) => relative(WEB_DIR, path).split(sep).join("/");
-const isDeadCode = (file) => DEAD_CODE_AWAITING_REMOVAL.has(shown(file));
 
 function relativeImportsOf(file) {
   return importsOf(readFileSync(file, "utf8"))
@@ -122,7 +111,6 @@ describe("web module graph", () => {
 
   it("imports only names that the target module exports, leaving the minified vendor builds unread", () => {
     const missing = webModules()
-      .filter((file) => !isDeadCode(file))
       .flatMap(relativeImportsOf)
       .filter(({ target }) => isExistingFile(target) && !isInside(VENDOR_DIR, target))
       .flatMap(({ file, specifier, names, target }) => {
@@ -130,19 +118,5 @@ describe("web module graph", () => {
         return names.filter((name) => !exported.has(name)).map((name) => `${shown(file)} -> ${specifier} { ${name} }`);
       });
     assert.deepEqual(missing, []);
-  });
-
-  it("keeps the dead code awaiting removal out of reach of every live module", () => {
-    const reaching = webModules()
-      .filter((file) => !isDeadCode(file))
-      .flatMap(relativeImportsOf)
-      .filter(({ target }) => isDeadCode(target))
-      .map(({ file, specifier }) => `${shown(file)} -> ${specifier}`);
-    assert.deepEqual(reaching, []);
-  });
-
-  it("lists as dead code only files that still exist", () => {
-    const gone = [...DEAD_CODE_AWAITING_REMOVAL].filter((path) => !isExistingFile(join(WEB_DIR, path)));
-    assert.deepEqual(gone, []);
   });
 });
