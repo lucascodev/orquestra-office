@@ -22,9 +22,11 @@ export function isSameOrigin(req) {
 
 // A GET needs no preflight, so fetch metadata is what keeps another page from reading the office or counting as a viewer.
 // "same-site" is refused too: another port of localhost, like a dev server, is the same site but not the office.
+// Browsers send no fetch metadata over plain HTTP on the LAN, so there the Origin, when present, decides.
 export function isFromAnotherPage(req) {
   const site = req.headers["sec-fetch-site"];
-  return site !== undefined && !OWN_FETCH_SITES.has(site);
+  if (site === undefined) return !isSameOrigin(req);
+  return !OWN_FETCH_SITES.has(site);
 }
 
 export function isJson(req) {

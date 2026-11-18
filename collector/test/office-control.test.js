@@ -186,6 +186,21 @@ test("a page from another site cannot read the office state or a session history
   assert.equal((await fetch(`${base}/api/agents/history?key=claude:s1`, { headers: CROSS_SITE })).status, 403);
 }));
 
+const FOREIGN_ORIGIN = { Origin: "http://evil.example" };
+
+test("over plain HTTP on the LAN, where browsers send no fetch metadata, a page from another origin cannot watch or read the office", { timeout: NO_VIEWER_TEST_TIMEOUT_MS }, () => withOffice(async (base) => {
+  const viewer = new AbortController();
+  const stream = await fetch(`${base}/api/stream`, { headers: FOREIGN_ORIGIN, signal: viewer.signal });
+  try {
+    assert.equal(stream.status, 403);
+    assert.equal((await fetch(`${base}/api/state`, { headers: FOREIGN_ORIGIN })).status, 403);
+    assert.deepEqual(await (await permissionHook(base)).json(), {});
+    assert.deepEqual((await stateOf(base)).pending, []);
+  } finally {
+    viewer.abort();
+  }
+}));
+
 test("another port of the same host cannot read the office either", () => withOffice(async (base) => {
   assert.equal((await fetch(`${base}/api/state`, { headers: { "Sec-Fetch-Site": "same-site" } })).status, 403);
 }));
@@ -194,4 +209,5 @@ test("the office page itself and requests without fetch metadata still read the 
   assert.equal((await fetch(`${base}/api/state`, { headers: { "Sec-Fetch-Site": "same-origin" } })).status, 200);
   assert.equal((await fetch(`${base}/api/state`, { headers: { "Sec-Fetch-Site": "none" } })).status, 200);
   assert.equal((await fetch(`${base}/api/state`)).status, 200);
+  assert.equal((await fetch(`${base}/api/state`, { headers: { Origin: base } })).status, 200);
 }));
