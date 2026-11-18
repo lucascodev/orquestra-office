@@ -29,7 +29,8 @@ test("with nothing saved yet the state loads as null", () => withDataDir(async (
   assert.equal(createPersistence(dir).load(), null);
 }));
 
-test("a corrupted state file loads as null instead of throwing", () => withDataDir(async (dir) => {
+test("a corrupted state file loads as null instead of throwing", (t) => withDataDir(async (dir) => {
+  t.mock.method(console, "error", () => {});
   await writeFile(join(dir, STATE_FILE), "{\"projects\": {");
   assert.equal(createPersistence(dir).load(), null);
 }));

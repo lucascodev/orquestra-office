@@ -51,10 +51,11 @@ test("static files cannot escape the web folder", () => withServer(async (base) 
 }));
 
 const MALFORMED_ESCAPE = "%E0%A4%A";
+const RAW_REQUEST_TIMEOUT_MS = 2_000;
 
 const rawRequest = (base, method, path) => new Promise((resolve, reject) => {
   const { hostname, port } = new URL(base);
-  const req = request({ hostname, port, method, path, headers: { "Content-Type": "application/json" } }, (res) => {
+  const req = request({ hostname, port, method, path, headers: { "Content-Type": "application/json" }, signal: AbortSignal.timeout(RAW_REQUEST_TIMEOUT_MS) }, (res) => {
     res.resume();
     res.on("end", () => resolve(res.statusCode));
   });
@@ -126,7 +127,7 @@ const OVERSIZED_TEST_TIMEOUT_MS = 5_000;
 
 const postPadded = (base, path, bytes) => new Promise((resolve, reject) => {
   const { hostname, port } = new URL(base);
-  const req = request({ hostname, port, method: "POST", path, headers: { "Content-Type": "application/json", "Content-Length": bytes } }, (res) => {
+  const req = request({ hostname, port, method: "POST", path, headers: { "Content-Type": "application/json", "Content-Length": bytes }, signal: AbortSignal.timeout(RAW_REQUEST_TIMEOUT_MS) }, (res) => {
     res.resume();
     resolve(res.statusCode);
   });
