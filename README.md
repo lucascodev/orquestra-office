@@ -147,6 +147,7 @@ docker compose -f compose.yaml -f compose.lan.yaml up -d --build
 No celular, na mesma rede, abra `http://<OFFICE_LAN_IP>:8420`. Para voltar ao modo só local, rode `docker compose up -d` sem o segundo arquivo.
 
 - O escritório não tem senha. Qualquer aparelho na mesma rede consegue ver as sessões, aprovar permissões e mandar mensagens aos agentes. Só ligue em rede em que você confia.
+- Em HTTP pela rede, o navegador não diz de qual página veio cada pedido, então o coletor recusa a leitura que chega com o `Origin` de outro endereço. Uma `<img>` apontada para o escritório não manda `Origin`: outra página aberta num aparelho da rede ainda consegue contar como espectador, e enquanto ela estiver aberta os pedidos de permissão esperam no escritório em vez de ir direto para o terminal. Ela não consegue ler nada.
 - Se o IP da máquina mudar, atualize `OFFICE_LAN_IP` no `.env` e suba de novo.
 - O executor continua só em `127.0.0.1`. "Abrir sessão…", terminal ao vivo, interromper e encerrar não funcionam pelo celular.
 
