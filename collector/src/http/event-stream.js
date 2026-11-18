@@ -17,9 +17,11 @@ export function createEventStream({ snapshot, sources }) {
   }
 
   // A page that stops reading would otherwise keep every unsent frame in memory.
+  // Only a page still behind on an earlier frame is dropped, so one large frame does not cut off a page that keeps up.
   function send(res, data) {
+    const wasBehind = res.writableNeedDrain;
     res.write(data);
-    if (res.writableLength > MAX_BUFFERED_BYTES) drop(res);
+    if (wasBehind && res.writableLength > MAX_BUFFERED_BYTES) drop(res);
   }
 
   const broadcast = (data) => clients.forEach((res) => send(res, data));
