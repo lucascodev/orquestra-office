@@ -1,4 +1,4 @@
-import { THEMES, themeById } from "../art/themes.js";
+import { THEMES, themeById } from "../data/themes.js";
 import { renderPendingStrip } from "./control-view.js";
 import { ago, esc, formatCost, formatTokens } from "./format.js";
 import { ACTIVE_STATUSES, STATUS, statusOf } from "./status.js";

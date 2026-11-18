@@ -1,4 +1,4 @@
-import { hashOf, rng } from "../art/pixels.js";
+import { hashOf, rng } from "../domain/shared/seeded-random.js";
 import { temperamentOf } from "./agent-temperament.js";
 
 const WORKING_REACTIONS = { terminal: "running", delegating: "delegating", planning: "planning", thinking: "thinking", failed: "failed", web: "browsing", reading: "reading" };

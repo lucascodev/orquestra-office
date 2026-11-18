@@ -1,3 +1,4 @@
+import { pickWith } from "../domain/shared/seeded-random.js";
 import { box, cyl, group, shade } from "./kit.js";
 import { DARK, HANDLE } from "./parts.js";
 
@@ -6,8 +7,6 @@ const PARTITION_HEIGHT = 0.42;
 const CLUTTER_X = 0.44;
 const NOTE_COLORS = ["#ffe066", "#ff9ec4", "#8fd0ff", "#b6f09c"];
 const PAPER = "#ffffff";
-
-const pickOf = (list, random) => list[Math.floor(random() * list.length)];
 
 function pedestal(g, w, d, theme) {
   const x = w - 0.5;
@@ -22,7 +21,7 @@ function partition(g, w, d, theme, random) {
   box(g, [w - 0.08, PARTITION_HEIGHT, 0.04], [0.04, DESK_TOP, z], theme.partition);
   box(g, [w - 0.08, 0.03, 0.06], [0.04, DESK_TOP + PARTITION_HEIGHT, z - 0.01], shade(theme.partition, -0.25));
   for (let x = 0.16 + random() * 0.3; x < w - 0.3; x += 0.4 + random() * 0.5) {
-    box(g, [0.1, 0.1, 0.008], [x, DESK_TOP + 0.12 + random() * 0.16, z + 0.04], pickOf(NOTE_COLORS, random), { shadow: false });
+    box(g, [0.1, 0.1, 0.008], [x, DESK_TOP + 0.12 + random() * 0.16, z + 0.04], pickWith(random, NOTE_COLORS), { shadow: false });
   }
 }
 
@@ -107,8 +106,8 @@ const CLUTTER = [mug, papers, pottedPlant, deskLamp, phone, paperTray];
 
 function clutter(g, theme, random) {
   const side = random() > 0.5 ? 1 : -1;
-  const pickColor = () => pickOf(theme.items, random);
-  pickOf(CLUTTER, random)(g, side * CLUTTER_X, pickColor);
+  const pickColor = () => pickWith(random, theme.items);
+  pickWith(random, CLUTTER)(g, side * CLUTTER_X, pickColor);
   if (random() > 0.55) box(g, [0.12, 0.2, 0.03], [-side * CLUTTER_X - 0.06, DESK_TOP, 0.34], pickColor());
 }
 

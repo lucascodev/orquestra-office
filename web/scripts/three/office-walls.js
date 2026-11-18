@@ -1,3 +1,4 @@
+import { pickWith } from "../domain/shared/seeded-random.js";
 import { box, cyl, group, shade } from "./kit.js";
 import { cabinet, DARK, HANDLE, plant } from "./parts.js";
 
@@ -7,8 +8,6 @@ const EXIT_GREEN = "#2fbf71";
 const APPLIANCE = "#e3e7ee";
 const RECYCLING = ["#3a6ab0", "#e3c13b", "#47b85e"];
 const FULL_HEIGHT_WALL = 2.4;
-
-const pickOf = (list, random) => list[Math.floor(random() * list.length)];
 
 function gate(g, w, color) {
   const post = shade(color, -0.25);
@@ -71,7 +70,7 @@ function corkboard(g, theme, w, random) {
   let x = 0.12;
   while (x < w - 0.36) {
     const size = 0.14 + random() * 0.1;
-    const color = random() > 0.4 ? pickOf(theme.items, random) : "#ffffff";
+    const color = random() > 0.4 ? pickWith(random, theme.items) : "#ffffff";
     box(g, [size, size * (random() > 0.5 ? 1.3 : 1), 0.005], [x, 1.32 + random() * 0.45, 0.06], color, { shadow: false });
     x += size + 0.05 + random() * 0.08;
   }

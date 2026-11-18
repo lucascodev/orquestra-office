@@ -1,4 +1,4 @@
-import { hashOf, rng } from "../art/pixels.js";
+import { hashOf, rng } from "../domain/shared/seeded-random.js";
 import { layoutRoom } from "../view/room-layout.js";
 import { seatStop } from "../view/room-places.js";
 import { wallWidthOf } from "../view/wall-plan.js";

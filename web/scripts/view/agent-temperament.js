@@ -1,4 +1,4 @@
-import { hashOf, rng } from "../art/pixels.js";
+import { hashOf, rng } from "../domain/shared/seeded-random.js";
 
 const LINGER_MS = [6_000, 16_000];
 const FREE_TIME_SLOT_MS = [30_000, 55_000];

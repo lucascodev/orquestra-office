@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { THEMES } from "../scripts/art/themes.js";
+import { THEMES } from "../scripts/data/themes.js";
 import { temperamentOf } from "../scripts/view/agent-temperament.js";
 import { freshestThoughts, thoughtAt } from "../scripts/view/agent-thoughts.js";
 import { createFreeTimeClock } from "../scripts/view/free-time-clock.js";

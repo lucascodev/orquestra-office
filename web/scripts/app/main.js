@@ -3,7 +3,7 @@ import { createDataSource } from "./data-source.js";
 import { submitDecision } from "./decision-actions.js";
 import { createNewSessionDialog } from "./new-session-dialog.js";
 import { createPanelResizer } from "./panel-resizer.js";
-import { themeById } from "../art/themes.js";
+import { themeById } from "../data/themes.js";
 import { createRoomRenderer } from "../three/renderer.js";
 import { withAgentNames } from "../view/agent-names.js";
 import { canReceiveMessages } from "../view/agent-rules.js";

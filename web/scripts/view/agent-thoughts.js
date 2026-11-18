@@ -1,4 +1,4 @@
-import { hashOf, rng } from "../art/pixels.js";
+import { hashOf, rng } from "../domain/shared/seeded-random.js";
 import { THOUGHTS } from "../data/thoughts.js";
 
 const FIRST_THOUGHT_DELAY_SECONDS = 0.8;

@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { THEMES } from "../scripts/art/themes.js";
+import { THEMES } from "../scripts/data/themes.js";
 import { createConversationTracker } from "../scripts/view/conversation-tracker.js";
 import { conversationMoment, socialCircles, workConversations } from "../scripts/view/conversations.js";
 import { layoutRoom } from "../scripts/view/room-layout.js";

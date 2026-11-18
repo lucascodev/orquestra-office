@@ -1,4 +1,4 @@
-import { hashOf, pick } from "../art/pixels.js";
+import { hashOf, pick } from "../domain/shared/seeded-random.js";
 import { temperamentOf } from "../view/agent-temperament.js";
 import { fidgetAt } from "../view/seated-fidgets.js";
 import { createEmote } from "./emotes.js";

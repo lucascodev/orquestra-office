@@ -9,6 +9,8 @@ export function hashOf(text) {
 
 export const pick = (list, seed) => list[seed % list.length];
 
+export const pickWith = (random, list) => list[Math.floor(random() * list.length)];
+
 export function rng(seed) {
   let a = seed >>> 0;
   return () => {

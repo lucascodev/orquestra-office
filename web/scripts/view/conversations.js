@@ -1,4 +1,4 @@
-import { hashOf } from "../art/pixels.js";
+import { hashOf } from "../domain/shared/seeded-random.js";
 import { CONVERSATIONS } from "../data/conversations.js";
 import { HANDING_OVER } from "./agent-reactions.js";
 

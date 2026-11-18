@@ -4,7 +4,7 @@ import { claudeHistoryEntry } from "../../collector/src/claude/claude-history-en
 import { describeActivity } from "../../collector/src/claude/describe-activity.js";
 import { canReceiveMessages as collectorCanReceiveMessages } from "../../collector/src/office/domain/can-receive-messages.js";
 import { TEMPLATE_IDS } from "../../collector/src/office/domain/templates.js";
-import { THEMES } from "../scripts/art/themes.js";
+import { THEMES } from "../scripts/data/themes.js";
 import { busyReactionOf } from "../scripts/view/agent-reactions.js";
 import { canReceiveMessages as webCanReceiveMessages } from "../scripts/view/agent-rules.js";
 import { thoughtAt } from "../scripts/view/agent-thoughts.js";

@@ -3,7 +3,7 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, it } from "node:test";
 import { fileURLToPath } from "node:url";
-import { THEMES } from "../scripts/art/themes.js";
+import { THEMES } from "../scripts/data/themes.js";
 import { FREE_TIME } from "../scripts/view/agent-reactions.js";
 import { layoutRoom } from "../scripts/view/room-layout.js";
 import { assignPlaces, exitStop, seatStop } from "../scripts/view/room-places.js";

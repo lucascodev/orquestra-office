@@ -1,4 +1,4 @@
-import { hashOf } from "../art/pixels.js";
+import { hashOf } from "../domain/shared/seeded-random.js";
 import { FIRST_NAMES } from "../data/first-names.js";
 
 function firstFreeIndex(preferred, taken) {
