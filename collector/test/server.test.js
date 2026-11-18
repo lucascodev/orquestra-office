@@ -95,3 +95,27 @@ test("a template change for a project named like a prototype key does not reach 
     delete Object.prototype.template;
   }
 }));
+
+const SECURITY_HEADERS = {
+  "x-frame-options": "DENY",
+  "content-security-policy": "frame-ancestors 'none'",
+  "x-content-type-options": "nosniff",
+  "cross-origin-resource-policy": "same-origin",
+  "referrer-policy": "no-referrer",
+};
+const securityHeadersOf = (res) => Object.fromEntries(Object.keys(SECURITY_HEADERS).map((name) => [name, res.headers.get(name)]));
+
+test("every response carries the headers that keep other sites from framing or reading the office", () => withServer(async (base) => {
+  const responses = {
+    page: await fetch(`${base}/`),
+    state: await fetch(`${base}/api/state`),
+    missing: await fetch(`${base}/missing.html`),
+    hook: await post(`${base}/events/claude`, { session_id: "s1", cwd: "/tmp/demo", hook_event_name: "SessionStart" }),
+  };
+  assert.equal(responses.page.status, 200);
+  assert.equal(responses.missing.status, 404);
+  for (const [name, res] of Object.entries(responses)) {
+    await res.arrayBuffer();
+    assert.deepEqual(securityHeadersOf(res), SECURITY_HEADERS, name);
+  }
+}));

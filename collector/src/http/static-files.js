@@ -20,7 +20,7 @@ export async function serveFile(res, rootDir, urlPath) {
   if (!target.startsWith(root) || !type) return false;
   try {
     const body = await readFile(target);
-    res.writeHead(200, { "Content-Type": type, "Cache-Control": "no-store", "X-Content-Type-Options": "nosniff" });
+    res.writeHead(200, { "Content-Type": type, "Cache-Control": "no-store" });
     res.end(body);
     return true;
   } catch {

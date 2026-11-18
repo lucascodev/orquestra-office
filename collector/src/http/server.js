@@ -1,6 +1,7 @@
 import { createServer as createHttpServer } from "node:http";
 import { sendJson } from "./json-io.js";
 import { createHostPolicy } from "./request-policy.js";
+import { applySecurityHeaders } from "./security-headers.js";
 import { serveFile } from "./static-files.js";
 
 export function createServer({ allowedHosts, webDir, hookRoutes, officeApi }) {
@@ -30,6 +31,7 @@ export function createServer({ allowedHosts, webDir, hookRoutes, officeApi }) {
   }
 
   return createHttpServer((req, res) => {
+    applySecurityHeaders(res);
     route(req, res).catch((error) => failSafely(res, error));
   });
 }
