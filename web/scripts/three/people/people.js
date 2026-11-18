@@ -1,5 +1,6 @@
 import { temperamentOf } from "../../domain/behavior/agent-temperament.js";
 import { fidgetAt } from "../../domain/behavior/seated-fidgets.js";
+import { walkStep } from "../../domain/behavior/walk-step.js";
 import { STANDING_HIP } from "../../domain/room/room-dimensions.js";
 import { box, cyl, group } from "../kit.js";
 import { createEmote } from "./emotes.js";
@@ -124,24 +125,11 @@ export const isWalking = (person) => person.path.length > 0;
 
 function advance(person, dt, t) {
   const { position } = person.root;
-  let budget = WALK_SPEED * person.pace * dt;
-  while (budget > 0 && person.path.length > 0) {
-    const [next] = person.path;
-    const dx = next.x - position.x;
-    const dz = next.z - position.z;
-    const distance = Math.hypot(dx, dz);
-    if (distance <= budget) {
-      position.x = next.x;
-      position.z = next.z;
-      person.path.shift();
-      budget -= distance;
-    } else {
-      position.x += (dx / distance) * budget;
-      position.z += (dz / distance) * budget;
-      person.root.rotation.y = Math.atan2(dx, dz);
-      budget = 0;
-    }
-  }
+  const step = walkStep({ position: { x: position.x, z: position.z }, path: person.path, distance: WALK_SPEED * person.pace * dt });
+  position.x = step.position.x;
+  position.z = step.position.z;
+  person.path = step.path;
+  if (step.heading !== null) person.root.rotation.y = step.heading;
   if (person.path.length === 0) placeAt(person, person.stop);
   else position.y = STANDING_HIP + walkPose(person, t, person.pace);
 }
