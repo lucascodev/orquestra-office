@@ -1,25 +1,27 @@
-import { createServer } from "./http/server.js";
-import { createClaudeLauncher } from "./claude/claude-process.js";
-import { createSessionRegistry } from "./sessions/session-registry.js";
+import { createRunner } from "./composition.js";
 
+const HOST = "127.0.0.1";
 const DEFAULT_PORT = 8421;
 const DEFAULT_ORIGINS = "http://localhost:8420,http://127.0.0.1:8420";
+const DEFAULT_CLAUDE_COMMAND = "claude";
+const SHUTDOWN_GRACE_MS = 6_000;
 
 const port = Number(process.env.OFFICE_RUNNER_PORT) || DEFAULT_PORT;
 const allowedOrigins = (process.env.OFFICE_ORIGINS ?? DEFAULT_ORIGINS).split(",").map((origin) => origin.trim()).filter(Boolean);
-const startProcess = createClaudeLauncher({ command: process.env.CLAUDE_BIN || "claude", model: process.env.OFFICE_RUNNER_MODEL ?? "" });
 
-const registry = createSessionRegistry({ startProcess });
-const server = createServer({ registry, allowedOrigins });
+const runner = createRunner({
+  allowedOrigins,
+  claude: { command: process.env.CLAUDE_BIN || DEFAULT_CLAUDE_COMMAND, model: process.env.OFFICE_RUNNER_MODEL ?? "" },
+});
 
-server.listen(port, "127.0.0.1", () => {
-  console.log(`office runner listening on http://127.0.0.1:${port}, serving ${allowedOrigins.join(" and ")}`);
+runner.server.listen(port, HOST, () => {
+  console.log(`office runner listening on http://${HOST}:${port}, serving ${allowedOrigins.join(" and ")}`);
 });
 
 function shutdown() {
-  registry.stopAll();
-  server.close(() => process.exit(0));
-  setTimeout(() => process.exit(0), 6_000).unref();
+  runner.stop();
+  runner.server.close(() => process.exit(0));
+  setTimeout(() => process.exit(0), SHUTDOWN_GRACE_MS).unref();
 }
 process.on("SIGTERM", shutdown);
 process.on("SIGINT", shutdown);

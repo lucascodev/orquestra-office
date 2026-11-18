@@ -1,9 +1,8 @@
 import { test } from "node:test";
 import { tmpdir } from "node:os";
 import assert from "node:assert/strict";
-import { createServer } from "../src/http/server.js";
-import { createSessionRegistry } from "../src/sessions/session-registry.js";
 import { changesOf } from "../src/claude/stream-changes.js";
+import { createRunner } from "../src/composition.js";
 
 const OFFICE = "http://localhost:8420";
 const JSON_HEADERS = { "Content-Type": "application/json", Origin: OFFICE };
@@ -29,7 +28,7 @@ function fakeClaude() {
 
 async function withRunner(run) {
   const claude = fakeClaude();
-  const server = createServer({ registry: createSessionRegistry({ startProcess: claude.startProcess }), allowedOrigins: [OFFICE] });
+  const { server } = createRunner({ allowedOrigins: [OFFICE], startProcess: claude.startProcess });
   await new Promise((resolve) => server.listen(0, "127.0.0.1", resolve));
   const base = `http://127.0.0.1:${server.address().port}`;
   try { await run(base, claude); } finally { server.closeAllConnections(); server.close(); }

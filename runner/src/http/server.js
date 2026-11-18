@@ -1,9 +1,9 @@
 import { createServer as createHttpServer } from "node:http";
+import { toMessageText } from "../sessions/message-text.js";
 import { createOriginPolicy, isJson, isLocalHost, readJsonBody } from "./request-guard.js";
 
 const SESSION_ID_WAIT_MS = 20_000;
 const HEARTBEAT_MS = 25_000;
-const MESSAGE_LIMIT = 8_000;
 
 export function createServer({ registry, allowedOrigins }) {
   const origins = createOriginPolicy(allowedOrigins);
@@ -37,7 +37,7 @@ export function createServer({ registry, allowedOrigins }) {
     if (action === "interrupt") return sendJson(req, res, session.interrupt() ? 200 : 409, {});
     if (action === "stop") return sendJson(req, res, session.stop() ? 200 : 409, {});
     const body = await readJsonBody(req);
-    const text = typeof body?.text === "string" ? body.text.trim().slice(0, MESSAGE_LIMIT) : "";
+    const text = toMessageText(body?.text);
     if (!text) return sendJson(req, res, 400, { error: "Mensagem vazia." });
     return sendJson(req, res, session.send(text) ? 200 : 409, {});
   }

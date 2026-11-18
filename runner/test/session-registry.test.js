@@ -1,5 +1,4 @@
 import { test } from "node:test";
-import { tmpdir } from "node:os";
 import assert from "node:assert/strict";
 import { createSessionRegistry } from "../src/sessions/session-registry.js";
 import { fakeClaudeLauncher } from "./support/fake-claude-process.js";
@@ -8,14 +7,15 @@ const MAX_OPEN_SESSIONS = 8;
 const ENDED_SESSION_TTL_MS = 10 * 60_000;
 const PROMPT_LIMIT = 8_000;
 const START = Date.parse("2026-11-18T12:00:00Z");
+const FOLDER = "/projects/demo";
 
 function registryAt(clock = { now: START }) {
   const claude = fakeClaudeLauncher();
-  const registry = createSessionRegistry({ startProcess: claude.startProcess, now: () => clock.now });
+  const registry = createSessionRegistry({ startProcess: claude.startProcess, isDirectory: (path) => path === FOLDER, now: () => clock.now });
   return { registry, claude, clock };
 }
 
-const openIn = (registry, prompt = "run the tests") => registry.open({ cwd: tmpdir(), prompt });
+const openIn = (registry, prompt = "run the tests") => registry.open({ cwd: FOLDER, prompt });
 
 test("refuses a ninth open session and starts no process for it", () => {
   const { registry, claude } = registryAt();
