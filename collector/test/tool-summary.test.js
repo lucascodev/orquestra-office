@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { summarizeTool } from "../src/events/tool-summary.js";
+import { summarizeTool } from "../src/shared/claude/summarize-tool.js";
 
 describe("edit diffs", () => {
   it("marks every removed and added line, not only the first one", () => {

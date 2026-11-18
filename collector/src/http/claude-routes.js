@@ -2,7 +2,8 @@ import { continueWithMessages, NO_DECISION, permissionResponse, questionResponse
 import { normalizeClaudeEvent, officeActionEvent } from "../events/claude-event.js";
 import { claudeAgentKey, claudeHistoryEntry } from "../events/claude-history.js";
 import { normalizeStatusline } from "../events/statusline-reading.js";
-import { clip, summarizeTool } from "../events/tool-summary.js";
+import { summarizeTool } from "../shared/claude/summarize-tool.js";
+import { clip } from "../shared/text/clip.js";
 
 const QUESTION_LIMIT = 8;
 const OPTION_LIMIT = 12;

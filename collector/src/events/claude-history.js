@@ -1,5 +1,6 @@
 import { agentKeyOf } from "../office/agent-key.js";
-import { clip, summarizeTool } from "./tool-summary.js";
+import { clip } from "../shared/text/clip.js";
+import { summarizeTool } from "../shared/claude/summarize-tool.js";
 
 const TEXT_LIMIT = 4_000;
 const BACKGROUND_NOTICE = "<task-notification>";

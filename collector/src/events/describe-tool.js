@@ -1,10 +1,4 @@
-const READ_TOOLS = new Set(["Read", "Glob", "Grep", "LS", "NotebookRead"]);
-const EDIT_TOOLS = new Set(["Edit", "Write", "MultiEdit", "NotebookEdit"]);
-const SHELL_TOOLS = new Set(["Bash", "PowerShell"]);
-const DELEGATE_TOOLS = new Set(["Task", "Agent"]);
-const ASK_TOOLS = new Set(["AskUserQuestion", "ExitPlanMode"]);
-const TODO_TOOLS = new Set(["TodoWrite", "TaskCreate", "TaskUpdate"]);
-const WEB_TOOLS = new Set(["WebFetch", "WebSearch"]);
+import { ASK_TOOLS, DELEGATE_TOOLS, EDIT_TOOLS, READ_TOOLS, SHELL_TOOLS, TODO_TOOLS, WEB_TOOLS, WRITE_TOOLS } from "../shared/claude/tool-names.js";
 
 export function baseName(path) {
   if (typeof path !== "string" || path.length === 0) return "";
@@ -28,7 +22,7 @@ export function describeTool(toolName, toolInput) {
     const file = fileOf(toolInput);
     return { status: "reviewing", activity: "reading", action: file ? `lendo ${file}` : "procurando no código" };
   }
-  if (EDIT_TOOLS.has(name)) {
+  if (EDIT_TOOLS.has(name) || WRITE_TOOLS.has(name)) {
     const file = fileOf(toolInput);
     return { status: "working", activity: "editing", action: file ? `editando ${file}` : "editando um arquivo" };
   }
