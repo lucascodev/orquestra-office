@@ -1,5 +1,5 @@
 const LOCAL_HOSTS = ["localhost", "127.0.0.1", "[::1]", "host.docker.internal"];
-const CROSS_SITE = "cross-site";
+const OWN_FETCH_SITES = new Set(["same-origin", "none"]);
 
 const hostNameOf = (req) => String(req.headers.host ?? "").replace(/:\d+$/, "").toLowerCase();
 
@@ -20,9 +20,11 @@ export function isSameOrigin(req) {
   }
 }
 
-// A GET needs no preflight, so fetch metadata is what keeps a page from another site from reading the office or counting as a viewer.
-export function isCrossSite(req) {
-  return req.headers["sec-fetch-site"] === CROSS_SITE;
+// A GET needs no preflight, so fetch metadata is what keeps another page from reading the office or counting as a viewer.
+// "same-site" is refused too: another port of localhost, like a dev server, is the same site but not the office.
+export function isFromAnotherPage(req) {
+  const site = req.headers["sec-fetch-site"];
+  return site !== undefined && !OWN_FETCH_SITES.has(site);
 }
 
 export function isJson(req) {

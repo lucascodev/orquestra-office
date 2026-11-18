@@ -186,6 +186,10 @@ test("a page from another site cannot read the office state or a session history
   assert.equal((await fetch(`${base}/api/agents/history?key=claude:s1`, { headers: CROSS_SITE })).status, 403);
 }));
 
+test("another port of the same host cannot read the office either", () => withOffice(async (base) => {
+  assert.equal((await fetch(`${base}/api/state`, { headers: { "Sec-Fetch-Site": "same-site" } })).status, 403);
+}));
+
 test("the office page itself and requests without fetch metadata still read the office", () => withOffice(async (base) => {
   assert.equal((await fetch(`${base}/api/state`, { headers: { "Sec-Fetch-Site": "same-origin" } })).status, 200);
   assert.equal((await fetch(`${base}/api/state`, { headers: { "Sec-Fetch-Site": "none" } })).status, 200);

@@ -1,6 +1,6 @@
 import { OUTCOME } from "../control/application/outcome.js";
 import { readJsonBody, sendJson } from "./json-io.js";
-import { isCrossSite, isJson, isSameOrigin } from "./request-policy.js";
+import { isFromAnotherPage, isJson, isSameOrigin } from "./request-policy.js";
 import { decodePathSegment } from "./url-path.js";
 
 const API_BODY_LIMIT = 64 * 1024;
@@ -39,7 +39,7 @@ export function createOfficeApiRoutes({ store, history, stream, officeView, deci
   };
 
   function get(req, res, url) {
-    if (isCrossSite(req)) return sendJson(res, 403, { error: "forbidden site" });
+    if (isFromAnotherPage(req)) return sendJson(res, 403, { error: "forbidden site" });
     return getRoutes[url.pathname](req, res, url);
   }
 
