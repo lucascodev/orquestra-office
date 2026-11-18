@@ -29,16 +29,28 @@ function keptSpot(previousPlace, wish, spots, spotsById) {
   return spot && spot.activityId === firstOffered(wish, spots) ? spot : null;
 }
 
-function firstFreeSpot(wish, spots, taken, previousPlace) {
+// Own spot first, then one nobody else was on, so a newcomer with a smaller key does not take the spot of someone already on it.
+function firstFreeSpot(key, wish, spots, taken, holders) {
+  const isHeldByOther = (spot) => holders.has(spot.id) && holders.get(spot.id) !== key;
   for (const activity of wish) {
     const free = (spots.freeTime.get(activity) ?? []).filter((spot) => !taken.has(spot.id));
-    if (free.length > 0) return free.find((spot) => spot.id === previousPlace?.stop?.id) ?? free[0];
+    if (free.length > 0) return free.find((spot) => holders.get(spot.id) === key) ?? free.find((spot) => !isHeldByOther(spot)) ?? free[0];
   }
   return null;
 }
 
+function holdersOf(wishes, previous) {
+  const holders = new Map();
+  for (const key of wishes.keys()) {
+    const id = previous.get(key)?.stop?.id;
+    if (id !== undefined) holders.set(id, key);
+  }
+  return holders;
+}
+
 function placeFreeTime(wishes, spots, previous) {
   const spotsById = new Map([...spots.freeTime.values()].flat().map((spot) => [spot.id, spot]));
+  const holders = holdersOf(wishes, previous);
   const taken = new Set();
   const places = new Map();
   for (const [key, wish] of wishes) {
@@ -49,7 +61,7 @@ function placeFreeTime(wishes, spots, previous) {
   }
   for (const [key, wish] of wishes) {
     if (places.has(key)) continue;
-    const spot = firstFreeSpot(wish, spots, taken, previous.get(key));
+    const spot = firstFreeSpot(key, wish, spots, taken, holders);
     if (spot) taken.add(spot.id);
     places.set(key, spot ? freeTimePlace(spot) : atDeskWithNothingToDo(spots.desks.get(key)));
   }

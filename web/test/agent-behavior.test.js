@@ -137,6 +137,20 @@ describe("where agents go in the headquarters", () => {
     assert.equal(placesIn([...keepers, latecomer], { previous }).places.get(latecomer.key).stop.id, lastOfNext.id);
   });
 
+  it("lets someone keep a spot of a later choice when the earlier ones are full, even against a newcomer with a smaller key", () => {
+    const onSofa = ["claude:s0", "claude:s1", "claude:s2"].map((key) => hqAgent(key, "idle"));
+    const keeper = hqAgent("claude:z1", "idle");
+    const newcomer = hqAgent("claude:a0", "break");
+    const agents = [...onSofa, keeper, newcomer];
+    const { spots } = placesIn(agents);
+    const on = (stop) => ({ stop, isFreeTime: true });
+    const previous = new Map([...onSofa.map((agent, i) => [agent.key, on(spots.freeTime.get("sofa")[i])]), [keeper.key, on(spots.freeTime.get("coffee")[0])]]);
+    const { places } = placesIn(agents, { previous });
+    assert.deepEqual(onSofa.map((agent) => places.get(agent.key).stop.id), ["lounge:sofa:0", "lounge:sofa:1", "lounge:sofa:2"]);
+    assert.equal(places.get(keeper.key).stop.id, "pantry:coffee:0");
+    assert.equal(places.get(newcomer.key).stop.id, "pantry:coffee:1");
+  });
+
   it("leaves the spot once the first choice is something else", () => {
     const agent = hqAgent("claude:p0-a", "idle");
     const { spots } = placesIn([agent]);
