@@ -1,42 +1,28 @@
-import { freshestThoughts, thoughtAt } from "../domain/behavior/agent-thoughts.js";
-import { createFreeTimeClock } from "../domain/behavior/free-time-clock.js";
-import { assignPlaces } from "../domain/behavior/room-places.js";
-import { createConversationTracker } from "../domain/conversations/conversation-tracker.js";
-import { isScreenLit } from "../domain/office/agent-status.js";
-import { nearestLaneZ, routeBetween } from "../domain/room/room-routes.js";
-import { exitStop } from "../domain/room/room-spots.js";
-import { THREE } from "./kit.js";
-import { isWalking, placeAt, setReaction, standAt, stepPerson, TAG_HEIGHT_ABOVE_HIP, walkTo } from "./people.js";
-import { buildRoom } from "./room.js";
+import { freshestThoughts, thoughtAt } from "../../domain/behavior/agent-thoughts.js";
+import { createFreeTimeClock } from "../../domain/behavior/free-time-clock.js";
+import { assignPlaces } from "../../domain/behavior/room-places.js";
+import { createConversationTracker } from "../../domain/conversations/conversation-tracker.js";
+import { isScreenLit } from "../../domain/office/agent-status.js";
+import { nearestLaneZ, routeBetween } from "../../domain/room/room-routes.js";
+import { exitStop } from "../../domain/room/room-spots.js";
+import { buildRoom } from "../furniture/room.js";
+import { THREE } from "../kit.js";
+import { isWalking, placeAt, setReaction, standAt, stepPerson, walkTo } from "../people/people.js";
+import { frameRoom } from "./camera-framing.js";
+import { createNameplate, createNameTag, headPositionOf, nameTagMaxWidth } from "./name-tags.js";
 import { createThoughtBubble } from "./thought-bubble.js";
 
 const ART_PIXEL = 2;
 const FRAME_MS = 1000 / 12;
 const MAX_STEP_SECONDS = 0.25;
-const VIEW_ELEVATION = (58 * Math.PI) / 180;
-const VIEW_DIRECTION = new THREE.Vector3(0, Math.sin(VIEW_ELEVATION), Math.cos(VIEW_ELEVATION));
-const NAME_TAG_MAX_WIDTH = 1.2;
 const AMBIENT_INTENSITY = 2.3;
 const SUN_INTENSITY = 1.1;
 const SAME_STOP = 0.01;
-const NAMEPLATE_HEIGHT = 0.75;
 const ROUTINE_CHECK_MS = 2_000;
 const HURRYING_THOUGHTS = "hurrying";
+const ROOM_ORIGIN = { x: 0, z: 0 };
 
 const isSameStop = (a, b) => Boolean(a && b) && Math.abs(a.x - b.x) < SAME_STOP && Math.abs(a.z - b.z) < SAME_STOP;
-
-function createNameTag(key, onPick) {
-  const tag = document.createElement("button");
-  tag.type = "button";
-  tag.className = "name-tag";
-  const text = document.createElement("span");
-  const name = document.createElement("b");
-  const title = document.createElement("small");
-  text.append(name, title);
-  tag.append(document.createElement("i"), text);
-  tag.addEventListener("click", () => onPick(key));
-  return { element: tag, name, title };
-}
 
 export function createRoomRenderer({ onPick, describeStatus }) {
   const stage = document.createElement("div");
@@ -77,7 +63,6 @@ export function createRoomRenderer({ onPick, describeStatus }) {
   const followConversations = createConversationTracker();
   let places = new Map();
   const visitedRooms = new Set();
-  const anchor = new THREE.Vector3();
   let room = null;
   let roomAgents = [];
   let lastRoutineCheck = 0;
@@ -86,29 +71,6 @@ export function createRoomRenderer({ onPick, describeStatus }) {
   let aspect = 1.6;
   let lastFrame = 0;
   let dirty = true;
-
-  function frame(size) {
-    const center = new THREE.Vector3(size.W / 2, size.H / 2, size.D / 2);
-    camera.position.copy(center).addScaledVector(VIEW_DIRECTION, 60);
-    camera.lookAt(center);
-    camera.updateMatrixWorld();
-    const inverse = camera.matrixWorldInverse;
-    let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
-    for (const x of [-0.2, size.W + 0.2]) for (const y of [-0.1, size.H + 0.6]) for (const z of [-0.2, size.D + 0.2]) {
-      const p = new THREE.Vector3(x, y, z).applyMatrix4(inverse);
-      minX = Math.min(minX, p.x); maxX = Math.max(maxX, p.x); minY = Math.min(minY, p.y); maxY = Math.max(maxY, p.y);
-    }
-    const pad = 0.3;
-    camera.left = minX - pad; camera.right = maxX + pad; camera.bottom = minY - pad; camera.top = maxY + pad;
-    camera.updateProjectionMatrix();
-    aspect = (camera.right - camera.left) / (camera.top - camera.bottom);
-
-    sun.position.set(size.W / 2 + 2, 18, size.D / 2 + 5);
-    sun.target.position.set(size.W / 2, 0, size.D / 2);
-    const reach = (size.W + size.D) * 0.75;
-    Object.assign(sun.shadow.camera, { left: -reach, right: reach, top: reach, bottom: -reach, near: 1, far: 60 });
-    sun.shadow.camera.updateProjectionMatrix();
-  }
 
   function resize() {
     const host = stage.parentElement;
@@ -122,17 +84,6 @@ export function createRoomRenderer({ onPick, describeStatus }) {
     dirty = true;
   }
 
-  function createNameplate({ role, x, z, hipY }) {
-    const plate = document.createElement("span");
-    plate.className = "name-tag reserved";
-    plate.textContent = role;
-    plate.title = `Mesa de ${role}: ninguém neste papel agora`;
-    anchor.set(x, hipY + NAMEPLATE_HEIGHT, z).project(camera);
-    plate.style.left = `${(anchor.x + 1) * 50}%`;
-    plate.style.top = `${(1 - anchor.y) * 50}%`;
-    return plate;
-  }
-
   function createNameTags() {
     tags.clear();
     thoughts.clear();
@@ -140,16 +91,9 @@ export function createRoomRenderer({ onPick, describeStatus }) {
       tags.set(key, createNameTag(key, onPick));
       thoughts.set(key, createThoughtBubble());
     }
-    tagLayer.style.setProperty("--tag-max-width", `${(NAME_TAG_MAX_WIDTH / (camera.right - camera.left)) * 100}%`);
+    tagLayer.style.setProperty("--tag-max-width", nameTagMaxWidth(camera));
     const bubbles = [...thoughts.values()].map((bubble) => bubble.element);
-    tagLayer.replaceChildren(...room.nameplates.map(createNameplate), ...[...tags.values()].map((tag) => tag.element), ...bubbles);
-  }
-
-  function headPositionOf(person) {
-    anchor.copy(person.root.position);
-    anchor.y += TAG_HEIGHT_ABOVE_HIP;
-    anchor.project(camera);
-    return { left: `${(anchor.x + 1) * 50}%`, top: `${(1 - anchor.y) * 50}%` };
+    tagLayer.replaceChildren(...room.nameplates.map((nameplate) => createNameplate(nameplate, camera)), ...[...tags.values()].map((tag) => tag.element), ...bubbles);
   }
 
   function currentThought(person, seconds) {
@@ -177,7 +121,7 @@ export function createRoomRenderer({ onPick, describeStatus }) {
     const speeches = new Map();
     for (const [key, person] of room.people) {
       const tag = tags.get(key);
-      const { left, top } = headPositionOf(person);
+      const { left, top } = headPositionOf(person, camera);
       tag.element.hidden = !person.root.visible;
       tag.element.style.left = left;
       tag.element.style.top = top;
@@ -201,10 +145,10 @@ export function createRoomRenderer({ onPick, describeStatus }) {
 
   function rebuild(project, theme) {
     if (room) scene.remove(room.root);
-    room = buildRoom(project, theme);
+    room = buildRoom({ project, theme, origin: ROOM_ORIGIN });
     roomKey = project.key;
     scene.add(room.root);
-    frame(room.size);
+    aspect = frameRoom({ camera, sun, size: room.size });
     createNameTags();
     resize();
   }

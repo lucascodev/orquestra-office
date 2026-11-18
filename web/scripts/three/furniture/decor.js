@@ -1,4 +1,4 @@
-import { box, cyl, group, shade } from "./kit.js";
+import { box, cyl, group, shade } from "../kit.js";
 import { OFFICE_WALL } from "./office-walls.js";
 import { cabinet, DARK, GREENS, plant, POT } from "./parts.js";
 

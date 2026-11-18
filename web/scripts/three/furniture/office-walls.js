@@ -1,5 +1,5 @@
-import { pickWith } from "../domain/shared/seeded-random.js";
-import { box, cyl, group, shade } from "./kit.js";
+import { pickWith } from "../../domain/shared/seeded-random.js";
+import { box, cyl, group, shade } from "../kit.js";
 import { cabinet, DARK, HANDLE, plant } from "./parts.js";
 
 const GLASS = "#bfe6ff";

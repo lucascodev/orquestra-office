@@ -1,6 +1,6 @@
+import { box, cyl, group } from "../kit.js";
 import { prop } from "./decor.js";
 import { chair } from "./furniture.js";
-import { box, cyl, group } from "./kit.js";
 import { DARK, rug } from "./parts.js";
 
 const TABLE_TOP = 0.74;

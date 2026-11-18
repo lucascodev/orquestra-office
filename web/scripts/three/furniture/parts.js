@@ -1,4 +1,4 @@
-import { box, group, shade } from "./kit.js";
+import { box, group, shade } from "../kit.js";
 
 export const DARK = "#22252e";
 export const POT = "#c0663a";

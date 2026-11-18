@@ -1,14 +1,11 @@
-import { temperamentOf } from "../domain/behavior/agent-temperament.js";
-import { fidgetAt } from "../domain/behavior/seated-fidgets.js";
-import { hashOf, pick } from "../domain/shared/seeded-random.js";
+import { temperamentOf } from "../../domain/behavior/agent-temperament.js";
+import { fidgetAt } from "../../domain/behavior/seated-fidgets.js";
+import { box, cyl, group } from "../kit.js";
 import { createEmote } from "./emotes.js";
-import { box, cyl, group } from "./kit.js";
+import { looksOf } from "./looks.js";
 import { CONVERSATION_POSES, FIDGET_POSES, POSES, resetPose, walkPose } from "./poses.js";
 import { REACTIONS } from "./reactions.js";
 
-const SHIRTS = ["#f4f6f8", "#5b8cff", "#f2a65a", "#b28cff", "#f07a4a", "#36c9b8", "#e3c13b", "#f070b0", "#6fd27a", "#2b2f3a", "#ff6b6b", "#8fb3ff"];
-const HAIR = ["#1a1a1a", "#2a1d14", "#3a2a1a", "#6b4a2a", "#a0522d", "#e8c060", "#8a8a8a", "#c84a7a"];
-const SKIN = ["#f1c27d", "#e0ac69", "#c68642", "#8d5524", "#ffdbac"];
 const DARK = "#1b1f2b";
 const STANDING_HIP = 0.91;
 const WALK_SPEED = 1.5;
@@ -25,11 +22,6 @@ const EMOTE_OFFSET = { x: 0.42, y: 0.82 };
 const TAG_HEIGHT = 1.02;
 const EMOTE_FRAMES_PER_SECOND = 2;
 const SIDES = [-1, 1];
-
-function looksOf(key) {
-  const seed = hashOf(key);
-  return { shirt: pick(SHIRTS, seed), hair: pick(HAIR, seed >>> 4), skin: pick(SKIN, seed >>> 8), long: (seed >>> 12) % 3 === 0, pants: (seed >>> 16) % 2 ? "#2b2f3a" : "#3a4a6a" };
-}
 
 function buildArm(parent, side, look) {
   const shoulder = group(parent, side * 0.25, 0.42, 0);

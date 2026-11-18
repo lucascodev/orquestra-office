@@ -1,14 +1,14 @@
-import { isScreenLit } from "../domain/office/agent-status.js";
-import { layoutRoom } from "../domain/room/room-layout.js";
-import { seatStop } from "../domain/room/room-spots.js";
-import { wallWidthOf } from "../domain/room/wall-plan.js";
-import { hashOf, rng } from "../domain/shared/seeded-random.js";
+import { isScreenLit } from "../../domain/office/agent-status.js";
+import { layoutRoom } from "../../domain/room/room-layout.js";
+import { seatStop } from "../../domain/room/room-spots.js";
+import { wallWidthOf } from "../../domain/room/wall-plan.js";
+import { hashOf, rng } from "../../domain/shared/seeded-random.js";
+import { box, shade, THREE, tiledSlab } from "../kit.js";
+import { createPerson } from "../people/people.js";
 import { loungeSet, meetingSet } from "./commons.js";
 import { prop, shelfUnit, wallItem } from "./decor.js";
 import { bin, desk, station, vacantStation } from "./furniture.js";
-import { box, shade, THREE, tiledSlab } from "./kit.js";
 import { rug } from "./parts.js";
-import { createPerson } from "./people.js";
 
 const WALL_T = 0.15;
 const WALL_CAP = 0.04;
@@ -82,10 +82,11 @@ function workstations(root, pods, theme, roomKey) {
   return { people, nameplates };
 }
 
-export function buildRoom(project, theme) {
+export function buildRoom({ project, theme, origin }) {
   const layout = layoutRoom(project, theme);
   const { W, D, pods, zones } = layout;
   const root = new THREE.Group();
+  root.position.set(origin.x, 0, origin.z);
   const random = rng(hashOf(`${project.key}|${theme.id}`));
 
   shell(root, theme, W, D);

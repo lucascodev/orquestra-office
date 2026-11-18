@@ -1,5 +1,5 @@
-import { pickWith } from "../domain/shared/seeded-random.js";
-import { box, cyl, group, shade } from "./kit.js";
+import { pickWith } from "../../domain/shared/seeded-random.js";
+import { box, cyl, group, shade } from "../kit.js";
 import { DARK, HANDLE } from "./parts.js";
 
 const DESK_TOP = 0.76;

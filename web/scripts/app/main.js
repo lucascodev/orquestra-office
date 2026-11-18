@@ -1,7 +1,7 @@
 import { agentKeyOfSession } from "../domain/office/live-sessions.js";
 import { createDemoBackend } from "../infra/backends/demo-backend.js";
 import { createLiveBackend } from "../infra/backends/live-backend.js";
-import { createRoomRenderer } from "../three/renderer.js";
+import { createRoomRenderer } from "../three/scene/renderer.js";
 import { describeStatus } from "../view/office/status-display.js";
 import { createAgentPanel } from "./agent-panel.js";
 import { createDataSource } from "./data-source.js";

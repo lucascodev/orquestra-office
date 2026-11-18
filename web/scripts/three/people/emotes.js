@@ -1,4 +1,4 @@
-import { THREE } from "./kit.js";
+import { THREE } from "../kit.js";
 
 const SIZE = 12;
 const INK = "#1b1f2b";
