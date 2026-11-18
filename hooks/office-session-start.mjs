@@ -10,6 +10,10 @@ const GIT_TIMEOUT_MS = 1_500;
 const TEAM_LIMIT = 40;
 const AGENT_FILE = /\.md$/i;
 
+// Without this variable Windows looks for git.exe in cwd before PATH, and cwd is whatever repository the session opened.
+// libuv reads it from this process's own environment when it searches for the program, so the child's env option alone is not enough.
+process.env.NoDefaultCurrentDirectoryInExePath = "1";
+
 // A worktree shares the main repository's .git folder, so its parent is the project every worktree belongs to.
 function repositoryRoot(cwd) {
   try {

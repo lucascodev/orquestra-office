@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
-import { mkdirSync, mkdtempSync, realpathSync, rmSync, writeFileSync } from "node:fs";
+import { copyFileSync, existsSync, mkdirSync, mkdtempSync, realpathSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { test } from "node:test";
@@ -69,6 +69,26 @@ test("exits 0 silently and reports nothing for input that is not JSON", async (t
   assert.equal(result.stdout, "");
   assert.equal(result.stderr, "");
   assert.deepEqual(office.requests, []);
+});
+
+const MARK_WHEN_RUN_AS_GIT = (marker) => `if (/^git\\.exe$/i.test(require("node:path").basename(process.execPath))) require("node:fs").writeFileSync(${JSON.stringify(marker)}, "ran");\n`;
+
+test("never runs a git.exe or git.cmd planted in the opened repository", { skip: process.platform !== "win32" && "only Windows looks for programs in the current folder" }, async (t) => {
+  const repository = realpathSync.native(mkdtempSync(join(tmpdir(), "office-planted-git-")));
+  t.after(() => rmSync(repository, { recursive: true, force: true }));
+  const marker = join(repository, "planted-git-ran");
+  const preload = join(repository, "mark.cjs");
+  copyFileSync(process.execPath, join(repository, "git.exe"));
+  writeFileSync(join(repository, "git.cmd"), `@echo ran > "${marker}"\r\n`);
+  writeFileSync(preload, MARK_WHEN_RUN_AS_GIT(marker));
+
+  const result = await runHookScript(SCRIPT, {
+    env: { OFFICE_URL: UNREACHABLE_OFFICE, NODE_OPTIONS: `--require "${preload.replaceAll("\\", "/")}"` },
+    input: JSON.stringify({ session_id: "x", cwd: repository }),
+  });
+
+  assert.equal(result.code, 0);
+  assert.equal(existsSync(marker), false);
 });
 
 const IGNORED_OFFICE_URLS = ["", "http://evil.example", "https://evil.example", "http://user:pw@127.0.0.1:8420", "http://127.0.0.1:8420/x", "not a url"];
