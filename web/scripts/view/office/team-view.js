@@ -1,3 +1,4 @@
+import { agentActionText } from "../../domain/office/agent-action-text.js";
 import { statusOf } from "../../domain/office/agent-status.js";
 import { renderPendingStrip } from "../sheet/pending-request-view.js";
 import { esc } from "../shared/escape-html.js";
@@ -6,9 +7,10 @@ import { agentMark, originOf, statusBadge } from "./agent-badges.js";
 
 function agentRow(agent, request, queued) {
   const facts = [originOf(agent), ago(agent.updatedAt), queued ? `${queued} na fila` : ""].filter(Boolean).join(" · ");
+  const action = agentActionText(agent);
   return `<li><button class="agent-row" data-agent="${esc(agent.key)}" data-status="${statusOf(agent)}">
     <span class="row-head">${agentMark(agent)}<strong>${esc(agent.name)}</strong><span class="row-title">${esc(agent.label)}</span>${statusBadge(agent)}</span>
-    <span class="row-action">${agent.action ? esc(agent.action) : "Sem atividade ainda."}</span>
+    <span class="row-action">${action ? esc(action) : "Sem atividade ainda."}</span>
     <span class="row-meta">${esc(facts)}</span>
   </button>${request ? renderPendingStrip(request) : ""}</li>`;
 }
