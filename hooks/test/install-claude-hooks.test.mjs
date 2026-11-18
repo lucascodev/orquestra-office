@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { cpSync, existsSync, lstatSync, mkdtempSync, readdirSync, readFileSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
+import { cpSync, existsSync, lstatSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { test } from "node:test";
@@ -21,6 +21,8 @@ function configDir(t) {
 const install = (dir, env = {}, args = []) => runHookScript(INSTALLER, { env: { CLAUDE_CONFIG_DIR: dir, ...env }, args });
 const readSettings = (dir) => JSON.parse(readFileSync(join(dir, "settings.json"), "utf8"));
 const backupsIn = (dir) => readdirSync(dir).filter((name) => name.startsWith("settings.json.bak-"));
+const UNREMOVABLE_BACKUP = "settings.json.bak-20200101-000000-000";
+const NEWER_BACKUPS = ["settings.json.bak-20200101-000001-000", "settings.json.bak-20200101-000002-000"];
 
 test("installs hooks and status line pointing at this hooks folder and the default office", async (t) => {
   const dir = configDir(t);
@@ -122,6 +124,23 @@ test("a settings.json that cannot be replaced exits 1 with a short message, no s
   assert.match(result.stderr, /^Could not save .*settings\.json \(\w+\).*\. Nothing was changed\.\n$/);
   assert.equal(readFileSync(join(dir, "settings.json"), "utf8"), original);
   assert.deepEqual(backupsIn(dir), []);
+});
+
+test("an old backup that cannot be removed still saves settings and manifest, exits 0 and warns in one line", async (t) => {
+  const dir = configDir(t);
+  writeFileSync(join(dir, "settings.json"), JSON.stringify({ model: "opus" }));
+  mkdirSync(join(dir, UNREMOVABLE_BACKUP));
+  for (const name of NEWER_BACKUPS) writeFileSync(join(dir, name), name);
+
+  const result = await install(dir);
+
+  assert.equal(result.code, 0);
+  assert.equal(readSettings(dir).model, "opus");
+  assert.ok(readSettings(dir).hooks.SessionStart);
+  assert.ok(existsSync(join(dir, MANIFEST)));
+  assert.match(result.stdout, /^Backup: /m);
+  assert.match(result.stdout, /Office hooks installed in /);
+  assert.match(result.stderr, new RegExp(`^Saved, but could not remove old backup .*${UNREMOVABLE_BACKUP} \\(\\w+\\)\\.\\n$`));
 });
 
 test("running again with nothing to change writes nothing and makes no backup", async (t) => {
