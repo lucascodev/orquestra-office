@@ -13,10 +13,11 @@ const SESSION_ID = "11111111-2222-3333-4444-555555555555";
 
 async function withRunner(run) {
   const claude = fakeClaudeLauncher({ sessionId: SESSION_ID });
-  const { server } = createRunner({ allowedOrigins: [OFFICE], startProcess: claude.startProcess });
+  const runner = createRunner({ allowedOrigins: [OFFICE], startProcess: claude.startProcess });
+  const { server } = runner;
   await new Promise((resolve) => server.listen(0, "127.0.0.1", resolve));
   const base = `http://127.0.0.1:${server.address().port}`;
-  try { await run(base, claude); } finally { server.closeAllConnections(); server.close(); }
+  try { await run(base, claude, runner); } finally { server.closeAllConnections(); server.close(); }
 }
 
 const post = (url, body, headers = JSON_HEADERS) => fetch(url, { method: "POST", headers, body: JSON.stringify(body) });
@@ -77,6 +78,15 @@ test("an ended session refuses new messages", () => withRunner(async (base) => {
   assert.equal((await post(`${base}/sessions/${session.id}/stop`, {})).status, 200);
   assert.equal((await post(`${base}/sessions/${session.id}/messages`, { text: "still there?" })).status, 409);
   assert.equal((await readSnapshot(base, session.id)).session.status, "ended");
+}));
+
+test("stopping the runner ends every open session", () => withRunner(async (base, claude, runner) => {
+  const first = await openSession(base);
+  const second = await openSession(base, "review the diff");
+  runner.stop();
+
+  const { sessions } = await (await fetch(`${base}/sessions`)).json();
+  assert.deepEqual(sessions.map((item) => [item.id, item.status]), [[first.id, "ended"], [second.id, "ended"]]);
 }));
 
 test("only the office page may talk to the runner", () => withRunner(async (base, claude) => {
