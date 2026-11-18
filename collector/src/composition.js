@@ -1,3 +1,5 @@
+import { createLegacyHooksNotice } from "./access/domain/legacy-hooks-notice.js";
+import { createOfficeKey } from "./access/infra/office-key.js";
 import { createDecidePendingRequest } from "./control/application/decide-pending-request.js";
 import { createDeliverQueuedMessages } from "./control/application/deliver-queued-messages.js";
 import { createHoldPermission } from "./control/application/hold-permission.js";
@@ -8,6 +10,7 @@ import { createOutbox } from "./control/domain/outbox.js";
 import { createPendingDecisions } from "./control/domain/pending-decisions.js";
 import { createSessionHistory } from "./history/session-history.js";
 import { createEventStream } from "./http/event-stream.js";
+import { createHookAuth } from "./http/hook-auth.js";
 import { createHookRoutes } from "./http/hook-routes.js";
 import { createOfficeApiRoutes } from "./http/office-api-routes.js";
 import { createServer } from "./http/server.js";
@@ -18,7 +21,7 @@ import { createOfficeStateFile } from "./office/infra/office-state-file.js";
 
 const SWEEP_INTERVAL_MS = 30_000;
 
-export function createOffice({ webDir, dataDir = null, holdMs, allowedHosts = [] }) {
+export function createOffice({ webDir, dataDir = null, holdMs, allowedHosts = [], secretFile = null }) {
   const stateFile = dataDir ? createOfficeStateFile(dataDir) : null;
   const store = createOfficeStore(stateFile?.load());
   if (stateFile) store.onChange(() => stateFile.scheduleSave(store.snapshot()));
@@ -26,8 +29,11 @@ export function createOffice({ webDir, dataDir = null, holdMs, allowedHosts = []
   const decisions = createPendingDecisions({ holdMs });
   const outbox = createOutbox();
   const history = createSessionHistory();
-  const officeView = createPublicOfficeView({ store, decisions, outbox });
-  const stream = createEventStream({ snapshot: officeView, sources: [store, decisions, outbox] });
+  const officeKey = createOfficeKey({ secretFile });
+  const legacyHooks = createLegacyHooksNotice();
+  const security = () => ({ legacyHooksSeenAt: legacyHooks.seenAt(), isSecretMissing: officeKey.isMissing() });
+  const officeView = createPublicOfficeView({ store, decisions, outbox, security });
+  const stream = createEventStream({ snapshot: officeView, sources: [store, decisions, outbox, legacyHooks] });
 
   const activity = createRecordActivity({ store, history });
   const holdRequest = createHoldRequest({ decisions, hasViewers: () => stream.viewerCount() > 0 });
@@ -37,6 +43,8 @@ export function createOffice({ webDir, dataDir = null, holdMs, allowedHosts = []
     holdPermission: createHoldPermission({ holdRequest, activity }),
     holdQuestion: createHoldQuestion({ holdRequest, activity }),
     deliverQueuedMessages: createDeliverQueuedMessages({ store, outbox }),
+    hookAuth: createHookAuth({ officeKey }),
+    legacyHooks,
   });
   const officeApi = createOfficeApiRoutes({
     store,
@@ -68,5 +76,5 @@ export function createOffice({ webDir, dataDir = null, holdMs, allowedHosts = []
     stateFile?.saveNow(store.snapshot());
   }
 
-  return { server, store, decisions, startSweep, stop };
+  return { server, store, decisions, officeView, isSecretMissing: () => officeKey.isMissing(), startSweep, stop };
 }

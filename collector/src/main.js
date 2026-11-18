@@ -1,3 +1,5 @@
+import { homedir } from "node:os";
+import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { createOffice } from "./composition.js";
 
@@ -7,10 +9,12 @@ const DEFAULT_HOLD_SECONDS = 120;
 const MS_PER_SECOND = 1_000;
 const DEFAULT_WEB_DIR = fileURLToPath(new URL("../../web", import.meta.url));
 const DEFAULT_DATA_DIR = fileURLToPath(new URL("../data", import.meta.url));
+const DEFAULT_SECRET_FILE = join(homedir(), ".orquestra-office", "secret");
 
 const port = Number(process.env.PORT ?? DEFAULT_PORT);
 const host = process.env.OFFICE_HOST || DEFAULT_HOST;
 const holdSeconds = Number(process.env.OFFICE_HOLD_SECONDS) || DEFAULT_HOLD_SECONDS;
+const secretFile = process.env.OFFICE_SECRET_FILE || DEFAULT_SECRET_FILE;
 const allowedHosts = (process.env.OFFICE_ALLOWED_HOSTS ?? "").split(",").map((name) => name.trim()).filter(Boolean);
 
 const office = createOffice({
@@ -18,7 +22,12 @@ const office = createOffice({
   dataDir: process.env.DATA_DIR || DEFAULT_DATA_DIR,
   holdMs: holdSeconds * MS_PER_SECOND,
   allowedHosts,
+  secretFile,
 });
+
+if (office.isSecretMissing()) {
+  console.error(`office secret not found or invalid at ${secretFile}: run node hooks/install-claude-hooks.mjs first. Hooks and decisions stay off until then.`);
+}
 
 office.server.listen(port, host, () => {
   console.log(`office collector listening on ${host}:${port}`);

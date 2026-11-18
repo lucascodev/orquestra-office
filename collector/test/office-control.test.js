@@ -1,7 +1,9 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { createOffice } from "../src/composition.js";
+import { postActivity, postSigned } from "./support/hook-client.js";
 import { listenOnFetchablePort } from "./support/listen-on-fetchable-port.js";
+import { processWideSecretFile } from "./support/office-secret.js";
 
 const JSON_HEADERS = { "Content-Type": "application/json" };
 const SESSION = { session_id: "s1", cwd: "/tmp/demo" };
@@ -11,7 +13,7 @@ const EXPIRY_TEST_TIMEOUT_MS = 2_000;
 const NO_VIEWER_TEST_TIMEOUT_MS = 1_000;
 
 async function withOffice(run, { holdMs = HOLD_MS } = {}) {
-  const { server, store, decisions } = createOffice({ webDir: "/nonexistent", holdMs });
+  const { server, store, decisions } = createOffice({ webDir: "/nonexistent", holdMs, secretFile: processWideSecretFile() });
   const base = await listenOnFetchablePort(server);
   try { await run(base, store, decisions); } finally { server.closeAllConnections(); server.close(); }
 }
@@ -35,10 +37,10 @@ async function pendingRequest(base) {
   throw new Error("no pending request showed up");
 }
 
-const permissionHook = (base) => post(`${base}/hooks/claude/permission`, { ...SESSION, hook_event_name: "PermissionRequest", tool_name: "Bash", tool_input: { command: "rm -rf build" } });
+const permissionHook = (base) => postSigned(base, "/hooks/claude/permission", { ...SESSION, hook_event_name: "PermissionRequest", tool_name: "Bash", tool_input: { command: "rm -rf build" } });
 
 test("with no office page open the permission goes straight back to the terminal", { timeout: NO_VIEWER_TEST_TIMEOUT_MS }, () => withOffice(async (base) => {
-  assert.deepEqual(await (await permissionHook(base)).json(), {});
+  assert.deepEqual((await permissionHook(base)).body, { decision: null });
   assert.deepEqual((await stateOf(base)).pending, []);
 }));
 
@@ -50,7 +52,7 @@ test("a permission is held until the office approves it", () => withOffice(async
   assert.equal(request.detail, "rm -rf build");
 
   assert.equal((await post(`${base}/api/decisions/${request.id}`, { behavior: "allow" })).status, 200);
-  assert.deepEqual((await (await hook).json()).hookSpecificOutput, { hookEventName: "PermissionRequest", decision: { behavior: "allow" } });
+  assert.deepEqual((await hook).body, { decision: { behavior: "allow" } });
   assert.deepEqual((await stateOf(base)).pending, []);
   viewer.abort();
 }));
@@ -60,7 +62,7 @@ test("denying from the office tells the agent why", () => withOffice(async (base
   const hook = permissionHook(base);
   const request = await pendingRequest(base);
   await post(`${base}/api/decisions/${request.id}`, { behavior: "deny", message: "use trash instead" });
-  assert.deepEqual((await (await hook).json()).hookSpecificOutput.decision, { behavior: "deny", message: "use trash instead" });
+  assert.deepEqual((await hook).body, { decision: { behavior: "deny", message: "use trash instead" } });
   viewer.abort();
 }));
 
@@ -70,7 +72,7 @@ test("sending a held permission back to the terminal releases the hook with no d
   const decided = await post(`${base}/api/decisions/${(await pendingRequest(base)).id}`, { behavior: "terminal" });
   assert.equal(decided.status, 200);
   assert.deepEqual((await stateOf(base)).pending, []);
-  assert.deepEqual(await (await released).json(), {});
+  assert.deepEqual((await released).body, { decision: null });
   viewer.abort();
 }));
 
@@ -78,7 +80,7 @@ test("a held permission nobody answers expires and goes back to the terminal", {
   const viewer = await openOfficePage(base);
   const heldCounts = [];
   decisions.onChange(() => heldCounts.push(decisions.list().length));
-  assert.deepEqual(await (await permissionHook(base)).json(), {});
+  assert.deepEqual((await permissionHook(base)).body, { decision: null });
   assert.deepEqual(heldCounts, [1, 0]);
   viewer.abort();
 }, { holdMs: EXPIRING_HOLD_MS }));
@@ -98,36 +100,33 @@ test("another site cannot approve a pending permission", () => withOffice(async 
 test("a question is answered from the office with the original questions echoed back", () => withOffice(async (base) => {
   const viewer = await openOfficePage(base);
   const questions = [{ question: "Which framework?", header: "Framework", multiSelect: false, options: [{ label: "React", description: "" }, { label: "Vue", description: "" }] }];
-  const hook = post(`${base}/hooks/claude/question`, { ...SESSION, hook_event_name: "PreToolUse", tool_name: "AskUserQuestion", tool_input: { questions } });
+  const hook = postSigned(base, "/hooks/claude/question", { ...SESSION, hook_event_name: "PreToolUse", tool_name: "AskUserQuestion", tool_input: { questions } });
   const request = await pendingRequest(base);
   assert.equal(request.kind, "question");
   assert.equal((await post(`${base}/api/decisions/${request.id}`, { answers: {} })).status, 400);
 
   await post(`${base}/api/decisions/${request.id}`, { answers: { "Which framework?": "Vue" } });
-  assert.deepEqual((await (await hook).json()).hookSpecificOutput, {
-    hookEventName: "PreToolUse", permissionDecision: "allow", updatedInput: { questions, answers: { "Which framework?": "Vue" } },
-  });
+  assert.deepEqual((await hook).body, { answers: { "Which framework?": "Vue" } });
   viewer.abort();
 }));
 
 test("a message waits in the outbox and is delivered when the turn ends", () => withOffice(async (base) => {
-  await post(`${base}/events/claude`, { ...SESSION, hook_event_name: "SessionStart" });
+  await postActivity(base, "/events/claude", { ...SESSION, hook_event_name: "SessionStart" });
   assert.equal((await post(`${base}/api/agents/message`, { key: "claude:unknown", text: "hi" })).status, 404);
   assert.equal((await post(`${base}/api/agents/message`, { key: "claude:s1", text: "  " })).status, 400);
   assert.equal((await post(`${base}/api/agents/message`, { key: "claude:s1", text: "also update the README" })).status, 200);
   assert.deepEqual((await stateOf(base)).outbox, { "claude:s1": 1 });
 
-  const stop = await (await post(`${base}/hooks/claude/stop`, { ...SESSION, hook_event_name: "Stop" })).json();
-  assert.equal(stop.decision, "block");
-  assert.match(stop.reason, /also update the README/);
+  const stop = (await postSigned(base, "/hooks/claude/stop", { ...SESSION, hook_event_name: "Stop" })).body;
+  assert.deepEqual(stop, { messages: ["also update the README"] });
   assert.deepEqual((await stateOf(base)).outbox, {});
-  assert.deepEqual(await (await post(`${base}/hooks/claude/stop`, { ...SESSION, hook_event_name: "Stop" })).json(), {});
+  assert.deepEqual((await postSigned(base, "/hooks/claude/stop", { ...SESSION, hook_event_name: "Stop" })).body, { messages: [] });
 }));
 
 test("history keeps the conversation text, the office state never does", () => withOffice(async (base) => {
-  await post(`${base}/events/claude`, { ...SESSION, hook_event_name: "UserPromptSubmit", prompt: "rename the secret module" });
-  await post(`${base}/events/claude`, { ...SESSION, hook_event_name: "PreToolUse", tool_name: "Bash", tool_input: { command: "git mv secret.js vault.js" } });
-  await post(`${base}/hooks/claude/stop`, { ...SESSION, hook_event_name: "Stop", last_assistant_message: "Renamed it." });
+  await postActivity(base, "/events/claude", { ...SESSION, hook_event_name: "UserPromptSubmit", prompt: "rename the secret module" });
+  await postActivity(base, "/events/claude", { ...SESSION, hook_event_name: "PreToolUse", tool_name: "Bash", tool_input: { command: "git mv secret.js vault.js" } });
+  await postSigned(base, "/hooks/claude/stop", { ...SESSION, hook_event_name: "Stop", last_assistant_message: "Renamed it." });
 
   const { entries } = await (await fetch(`${base}/api/agents/history?key=${encodeURIComponent("claude:s1")}`)).json();
   assert.deepEqual(entries.map((entry) => entry.kind), ["prompt", "tool", "reply"]);
@@ -139,19 +138,19 @@ test("history keeps the conversation text, the office state never does", () => w
 }));
 
 test("a room can be closed from the office and comes back with new activity", () => withOffice(async (base) => {
-  await post(`${base}/events/claude`, { ...SESSION, hook_event_name: "SessionStart" });
+  await postActivity(base, "/events/claude", { ...SESSION, hook_event_name: "SessionStart" });
   const [key] = Object.keys((await stateOf(base)).projects);
   assert.equal((await post(`${base}/api/projects/${encodeURIComponent("/tmp/unknown")}/close`, {})).status, 404);
   assert.equal((await post(`${base}/api/projects/${encodeURIComponent(key)}/close`, {})).status, 200);
   assert.deepEqual((await stateOf(base)).projects, {});
 
-  await post(`${base}/events/claude`, { ...SESSION, hook_event_name: "UserPromptSubmit", prompt: "back to work" });
+  await postActivity(base, "/events/claude", { ...SESSION, hook_event_name: "UserPromptSubmit", prompt: "back to work" });
   assert.deepEqual(Object.keys((await stateOf(base)).projects), [key]);
 }));
 
 test("statusline readings feed the usage windows and today's tokens and cost", () => withOffice(async (base) => {
-  await post(`${base}/events/claude`, { ...SESSION, hook_event_name: "SessionStart" });
-  const reading = (costUsd, input, output) => post(`${base}/events/statusline`, {
+  await postActivity(base, "/events/claude", { ...SESSION, hook_event_name: "SessionStart" });
+  const reading = (costUsd, input, output) => postActivity(base, "/events/statusline", {
     ...SESSION, cost: { total_cost_usd: costUsd }, context_window: { total_input_tokens: input, total_output_tokens: output },
     rate_limits: { five_hour: { used_percentage: 23.5, resets_at: 1_738_425_600 }, seven_day: { used_percentage: 41.2, resets_at: 1_738_857_600 } },
   });
@@ -174,7 +173,7 @@ test("a page from another site cannot watch the office, so it cannot hold permis
   const stream = await fetch(`${base}/api/stream`, { headers: CROSS_SITE, signal: viewer.signal });
   try {
     assert.equal(stream.status, 403);
-    assert.deepEqual(await (await permissionHook(base)).json(), {});
+    assert.deepEqual((await permissionHook(base)).body, { decision: null });
     assert.deepEqual((await stateOf(base)).pending, []);
   } finally {
     viewer.abort();
@@ -194,7 +193,7 @@ test("over plain HTTP on the LAN, where browsers send no fetch metadata, a page 
   try {
     assert.equal(stream.status, 403);
     assert.equal((await fetch(`${base}/api/state`, { headers: FOREIGN_ORIGIN })).status, 403);
-    assert.deepEqual(await (await permissionHook(base)).json(), {});
+    assert.deepEqual((await permissionHook(base)).body, { decision: null });
     assert.deepEqual((await stateOf(base)).pending, []);
   } finally {
     viewer.abort();

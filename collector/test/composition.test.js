@@ -6,7 +6,9 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { normalizeClaudeEvent } from "../src/claude/claude-event.js";
 import { createOffice } from "../src/composition.js";
+import { postSigned } from "./support/hook-client.js";
 import { listenOnFetchablePort } from "./support/listen-on-fetchable-port.js";
+import { processWideSecretFile } from "./support/office-secret.js";
 
 const WEB_DIR = "/nonexistent";
 const STATE_FILE = "office.json";
@@ -98,15 +100,11 @@ test("once the office stops, the sweep no longer runs", (t) => {
 });
 
 test("with no office page open a permission goes back to the terminal at once, long before the hold would end", { timeout: NO_VIEWER_TEST_TIMEOUT_MS }, async () => {
-  const office = createOffice({ webDir: WEB_DIR, holdMs: HOLD_MS });
+  const office = createOffice({ webDir: WEB_DIR, holdMs: HOLD_MS, secretFile: processWideSecretFile() });
   const base = await listenOnFetchablePort(office.server);
   try {
-    const hook = await fetch(`${base}/hooks/claude/permission`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ session_id: "s1", cwd: "/home/dev/loja", hook_event_name: "PermissionRequest", tool_name: "Bash", tool_input: { command: "rm -rf build" } }),
-    });
-    assert.deepEqual(await hook.json(), {});
+    const hook = await postSigned(base, "/hooks/claude/permission", { session_id: "s1", cwd: "/home/dev/loja", hook_event_name: "PermissionRequest", tool_name: "Bash", tool_input: { command: "rm -rf build" } });
+    assert.deepEqual(hook.body, { decision: null });
     assert.deepEqual(office.decisions.list(), []);
   } finally {
     office.server.closeAllConnections();

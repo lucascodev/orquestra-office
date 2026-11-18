@@ -5,10 +5,12 @@ import { fileURLToPath } from "node:url";
 import assert from "node:assert/strict";
 import { createOffice } from "../src/composition.js";
 import { createServer } from "../src/http/server.js";
+import { postActivity } from "./support/hook-client.js";
 import { listenOnFetchablePort } from "./support/listen-on-fetchable-port.js";
+import { processWideSecretFile } from "./support/office-secret.js";
 
 async function withServer(run, options = {}) {
-  const { server, store } = createOffice({ webDir: fileURLToPath(new URL("../../web", import.meta.url)), ...options });
+  const { server, store } = createOffice({ webDir: fileURLToPath(new URL("../../web", import.meta.url)), secretFile: processWideSecretFile(), ...options });
   const base = await listenOnFetchablePort(server);
   try { await run(base, store); } finally { server.closeAllConnections(); server.close(); }
 }
@@ -17,7 +19,7 @@ const post = (url, body, headers = { "Content-Type": "application/json" }) =>
   fetch(url, { method: "POST", headers, body: typeof body === "string" ? body : JSON.stringify(body) });
 
 test("hook events answer 200 with an empty decision and update the state", () => withServer(async (base) => {
-  const res = await post(`${base}/events/claude`, { session_id: "s1", cwd: "/tmp/demo", hook_event_name: "PreToolUse", tool_name: "Bash", tool_input: { command: "ls" } });
+  const res = await postActivity(base, "/events/claude", { session_id: "s1", cwd: "/tmp/demo", hook_event_name: "PreToolUse", tool_name: "Bash", tool_input: { command: "ls" } });
   assert.equal(res.status, 200);
   assert.deepEqual(await res.json(), {});
   const state = await (await fetch(`${base}/api/state`)).json();
