@@ -5,7 +5,8 @@ import { join } from "node:path";
 import { after, before, describe, it } from "node:test";
 import { fileURLToPath } from "node:url";
 import { assembleSite } from "../assemble.mjs";
-import { bodyOf, hasInlineScript, startTags } from "./support/html.mjs";
+import { hasInlineScript, startTags } from "./support/html.mjs";
+import { skeletonOf } from "./support/skeleton.mjs";
 
 const SITE_DIR = fileURLToPath(new URL("..", import.meta.url));
 const PUBLISHED_ORIGIN = "https://pages.example";
@@ -22,7 +23,6 @@ const EVENT_HANDLER = /^on/;
 
 const readPage = (page) => readFileSync(join(SITE_DIR, page.path), "utf8");
 const attribute = (tags, name, value) => tags.filter((tag) => tag.attributes.get(name) === value);
-const skeletonOf = (html) => startTags(bodyOf(html)).map(({ name, attributes }) => `${name}.${attributes.get("class") ?? ""}`);
 
 describe("landing pages", () => {
   let assembledDir;
@@ -42,7 +42,7 @@ describe("landing pages", () => {
     }
   });
 
-  it("keeps the Portuguese and English pages with the same structure", () => {
+  it("keeps the Portuguese and English pages with the same tags, attributes and references", () => {
     const [portuguese, english] = PAGES.map((page) => skeletonOf(readPage(page)));
     assert.deepEqual(english, portuguese);
   });
