@@ -14,7 +14,7 @@ import { renderTeam } from "../view/office/team-view.js";
 import { renderUsage } from "../view/office/usage-view.js";
 import { createAgentPanel } from "./agent-panel.js";
 import { createDataSource } from "./data-source.js";
-import { submitDecision } from "./decision-actions.js";
+import { submitDecision } from "./decision-form.js";
 import { createNewSessionDialog } from "./new-session-dialog.js";
 import { createPanelResizer } from "./panel-resizer.js";
 

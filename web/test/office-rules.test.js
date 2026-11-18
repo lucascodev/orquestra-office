@@ -3,6 +3,7 @@ import { describe, it } from "node:test";
 import { FIRST_NAMES } from "../scripts/data/first-names.js";
 import { withAgentNames } from "../scripts/domain/office/agent-names.js";
 import { statusOf } from "../scripts/domain/office/agent-status.js";
+import { buildDecision } from "../scripts/domain/office/decision-body.js";
 import { needsYou, sortedProjects } from "../scripts/domain/office/project-order.js";
 
 const NOW = 1_800_000_000_000;
@@ -84,5 +85,23 @@ describe("agent status", () => {
   it("shows a status named after a built-in object property as free", () => {
     const inherited = ["toString", "constructor", "__proto__", "hasOwnProperty"];
     assert.deepEqual(inherited.map((status) => statusOf({ status })), inherited.map(() => "idle"));
+  });
+});
+
+describe("decision body", () => {
+  it("joins the picked options and the written answer of each question", () => {
+    const questions = [{ question: "Quais testes?", picked: ["unidade", "contrato"], other: " e2e " }];
+    assert.deepEqual(buildDecision("answer", { questions }), { answers: { "Quais testes?": "unidade, contrato, e2e" } });
+  });
+
+  it("gives no body while any question is left without an answer", () => {
+    const questions = [{ question: "A?", picked: ["sim"], other: "" }, { question: "B?", picked: [], other: "" }];
+    assert.equal(buildDecision("answer", { questions }), null);
+  });
+
+  it("trims the reason of a denial and passes allow and terminal through", () => {
+    assert.deepEqual(buildDecision("deny", { reason: " não agora " }), { behavior: "deny", message: "não agora" });
+    assert.deepEqual(buildDecision("allow"), { behavior: "allow" });
+    assert.deepEqual(buildDecision("terminal"), { behavior: "terminal" });
   });
 });

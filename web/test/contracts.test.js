@@ -2,12 +2,14 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import { claudeHistoryEntry } from "../../collector/src/claude/claude-history-entry.js";
 import { describeActivity } from "../../collector/src/claude/describe-activity.js";
+import { decisionAnswerOf, INVALID_ANSWER } from "../../collector/src/control/domain/decision-answer.js";
 import { canReceiveMessages as collectorCanReceiveMessages } from "../../collector/src/office/domain/can-receive-messages.js";
 import { TEMPLATE_IDS } from "../../collector/src/office/domain/templates.js";
 import { THEMES } from "../scripts/data/themes.js";
 import { busyReactionOf } from "../scripts/domain/behavior/agent-reactions.js";
 import { thoughtAt } from "../scripts/domain/behavior/agent-thoughts.js";
 import { canReceiveMessages as webCanReceiveMessages } from "../scripts/domain/office/can-receive-messages.js";
+import { buildDecision } from "../scripts/domain/office/decision-body.js";
 import { describeToolEntry, diffLines } from "../scripts/domain/terminal/terminal-format.js";
 
 const THEME_COUNT = 7;
@@ -109,4 +111,37 @@ describe("who can receive messages", () => {
       assert.equal(collectorCanReceiveMessages(agent), expected);
     });
   }
+});
+
+describe("decisions sent from the office", () => {
+  const permission = { kind: "permission", toolName: "Bash" };
+  const question = { kind: "question", questions: [{ question: "Qual motor?" }, { question: "Qual cena?" }] };
+  const bothAnswered = [
+    { question: "Qual motor?", picked: ["Rapier"], other: "" },
+    { question: "Qual cena?", picked: [], other: "  a do porto " },
+  ];
+
+  const accepted = [
+    ["allowing a permission", permission, "allow", {}, { behavior: "allow" }],
+    ["denying a permission with a reason", permission, "deny", { reason: "  agora não " }, { behavior: "deny", message: "agora não" }],
+    ["denying a permission without a reason", permission, "deny", {}, { behavior: "deny", message: "" }],
+    ["answering every question", question, "answer", { questions: bothAnswered }, { answers: { "Qual motor?": "Rapier", "Qual cena?": "a do porto" } }],
+  ];
+
+  for (const [what, request, action, fields, expected] of accepted) {
+    it(`are accepted by the collector when ${what}`, () => {
+      assert.deepEqual(decisionAnswerOf(request, buildDecision(action, fields)), expected);
+    });
+  }
+
+  it("send a request back to the terminal the way the collector expects, for permissions and questions", () => {
+    assert.equal(decisionAnswerOf(permission, buildDecision("terminal")), null);
+    assert.equal(decisionAnswerOf(question, buildDecision("terminal", { questions: bothAnswered })), null);
+  });
+
+  it("are not sent with an unanswered question, which the collector would refuse", () => {
+    const halfAnswered = [bothAnswered[0], { question: "Qual cena?", picked: [], other: "   " }];
+    assert.equal(buildDecision("answer", { questions: halfAnswered }), null);
+    assert.equal(decisionAnswerOf(question, { answers: { "Qual motor?": "Rapier", "Qual cena?": "" } }), INVALID_ANSWER);
+  });
 });

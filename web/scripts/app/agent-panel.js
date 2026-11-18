@@ -3,7 +3,7 @@ import { ago } from "../view/shared/format.js";
 import { renderAgentFacts, renderAgentIdentity, renderSheetShell } from "../view/sheet/agent-sheet-view.js";
 import { renderPendingCard } from "../view/sheet/pending-request-view.js";
 import { renderEntries, renderHistory } from "../view/terminal/terminal-entries.js";
-import { submitDecision, toggleOption } from "./decision-actions.js";
+import { submitDecision, toggleOption } from "./decision-form.js";
 import { createTerminalPane } from "./terminal-pane.js";
 
 const MESSAGE_FAILED = "Não deu para enviar a mensagem.";

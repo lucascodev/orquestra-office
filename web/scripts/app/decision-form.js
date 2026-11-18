@@ -1,25 +1,18 @@
+import { buildDecision } from "../domain/office/decision-body.js";
+
 const MISSING_ANSWER = "Escolha uma opção ou escreva uma resposta para cada pergunta.";
 const SEND_FAILED = "Não deu para enviar. O pedido pode já ter voltado para o terminal.";
 
-function answersIn(card) {
-  const answers = {};
-  for (const block of card.querySelectorAll("[data-question]")) {
-    const picked = [...block.querySelectorAll('[aria-pressed="true"]')].map((option) => option.dataset.option);
-    const other = block.querySelector("input").value.trim();
-    const answer = [...picked, other].filter(Boolean).join(", ");
-    if (!answer) return null;
-    answers[block.dataset.question] = answer;
-  }
-  return answers;
+function questionsIn(card) {
+  return [...card.querySelectorAll("[data-question]")].map((block) => ({
+    question: block.dataset.question,
+    picked: [...block.querySelectorAll('[aria-pressed="true"]')].map((option) => option.dataset.option),
+    other: block.querySelector("input").value,
+  }));
 }
 
 function decisionIn(card, action) {
-  if (action === "answer") {
-    const answers = answersIn(card);
-    return answers && { answers };
-  }
-  if (action === "deny") return { behavior: "deny", message: card.querySelector('[name="reason"]')?.value.trim() ?? "" };
-  return { behavior: action };
+  return buildDecision(action, { questions: questionsIn(card), reason: card.querySelector('[name="reason"]')?.value ?? "" });
 }
 
 function showError(card, message) {
