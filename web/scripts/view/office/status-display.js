@@ -8,4 +8,4 @@ export const STATUS = {
   idle: { label: "livre", glyph: "○", color: "var(--muted)" },
 };
 
-export const describeStatus = (status) => (STATUS[status] ?? STATUS.idle).label;
+export const describeStatus = (status) => (Object.hasOwn(STATUS, status) ? STATUS[status] : STATUS.idle).label;

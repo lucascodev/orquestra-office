@@ -5,6 +5,7 @@ import { after, before, describe, it, mock } from "node:test";
 import { fileURLToPath } from "node:url";
 import { agentMark, originOf, statusBadge } from "../scripts/view/office/agent-badges.js";
 import { renderOffice } from "../scripts/view/office/room-view.js";
+import { describeStatus } from "../scripts/view/office/status-display.js";
 import { renderTabs } from "../scripts/view/office/tabs-view.js";
 import { renderTeam } from "../scripts/view/office/team-view.js";
 import { renderUsage } from "../scripts/view/office/usage-view.js";
@@ -167,5 +168,15 @@ describe("agent sheet", () => {
 
   it("fills the facts of an agent with no activity yet", () => {
     assertMatchesRecording("facts-new", renderAgentFacts(agentOf("claude:a1", { action: "", tools: undefined, startedAt: 0, updatedAt: NOW - 2 * DAY })));
+  });
+});
+
+describe("status names", () => {
+  it("names each known status", () => {
+    assert.deepEqual(["working", "needs_you", "break"].map(describeStatus), ["digitando", "precisa de você", "pausa"]);
+  });
+
+  it("names an unknown status as free, even one inherited from the prototype", () => {
+    assert.deepEqual(["dancing", "toString", "constructor", undefined].map(describeStatus), ["livre", "livre", "livre", "livre"]);
   });
 });
