@@ -1,6 +1,9 @@
+import { SOFA_WIDTH } from "../../domain/room/room-dimensions.js";
 import { box, cyl, group, shade } from "../kit.js";
 import { OFFICE_WALL } from "./office-walls.js";
 import { cabinet, DARK, GREENS, plant, POT } from "./parts.js";
+
+const SOFA_ARM = 0.18;
 
 function shelfRow(g, y, w, d, gap, theme, random) {
   let x = 0.07;
@@ -96,10 +99,10 @@ const PROPS = {
   },
   sofa: (g, theme) => {
     const c = theme.items[1];
-    box(g, [1.6, 0.34, 0.7], [0, 0.06, 0], c);
-    box(g, [1.6, 0.5, 0.2], [0, 0.4, 0], shade(c, -0.12));
-    box(g, [0.18, 0.2, 0.7], [0, 0.4, 0], shade(c, -0.2));
-    box(g, [0.18, 0.2, 0.7], [1.42, 0.4, 0], shade(c, -0.2));
+    box(g, [SOFA_WIDTH, 0.34, 0.7], [0, 0.06, 0], c);
+    box(g, [SOFA_WIDTH, 0.5, 0.2], [0, 0.4, 0], shade(c, -0.12));
+    box(g, [SOFA_ARM, 0.2, 0.7], [0, 0.4, 0], shade(c, -0.2));
+    box(g, [SOFA_ARM, 0.2, 0.7], [SOFA_WIDTH - SOFA_ARM, 0.4, 0], shade(c, -0.2));
     box(g, [0.4, 0.14, 0.3], [0.3, 0.4, 0.22], theme.items[4]);
   },
   coffeeBar: (g, theme) => {

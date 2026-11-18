@@ -1,9 +1,8 @@
 import { LANE_OFFSET } from "./desk-islands.js";
+import {
+  CHAIR_HIP, DESK_SEAT_INSET, MEETING_SEAT_ROWS_Z, MEETING_SEAT_X, SOFA_HIP, SOFA_SEAT_Z, SOFA_SEATS_X, STANDING_HIP,
+} from "./room-dimensions.js";
 
-const SEAT_INSET = 0.4;
-const CHAIR_HIP = 0.54;
-const SOFA_HIP = 0.47;
-const STANDING_HIP = 0.91;
 const COFFEE_SPOTS = 3;
 const FACING_CAMERA = 0;
 const FACING_WALL = Math.PI;
@@ -11,8 +10,7 @@ const FACING_RIGHT = Math.PI / 2;
 const FACING_LEFT = -Math.PI / 2;
 const MEETING_DOOR_OFFSET = 0.55;
 const MEETING_AISLE_OFFSET = 1.45;
-const MEETING_SEAT_OFFSET = 0.9;
-const MEETING_SEAT_ROW = -0.45;
+const [MEETING_SEAT_ROW] = MEETING_SEAT_ROWS_Z;
 const BESIDE_SEAT_OFFSET = 0.62;
 
 const standing = (x, z, laneZ, facing, extra = {}) => ({ x, z, laneZ, facing, isSeat: false, hipY: STANDING_HIP, spine: null, ...extra });
@@ -22,7 +20,7 @@ export function seatStop(pod, seat) {
   const isNorthSide = seat.direction === 1;
   return {
     x: seat.cx,
-    z: isNorthSide ? desk.z - SEAT_INSET : desk.z + desk.d + SEAT_INSET,
+    z: isNorthSide ? desk.z - DESK_SEAT_INSET : desk.z + desk.d + DESK_SEAT_INSET,
     laneZ: isNorthSide ? desk.z - LANE_OFFSET : desk.z + desk.d + LANE_OFFSET,
     facing: isNorthSide ? FACING_CAMERA : FACING_WALL,
     isSeat: true, isDesk: true, hipY: CHAIR_HIP, spine: null,
@@ -48,7 +46,7 @@ function meetingStops({ zones }) {
     approach: [{ x: x + side * MEETING_DOOR_OFFSET, z: insideZ }, { x: x + side * MEETING_AISLE_OFFSET, z: insideZ }, { x: x + side * MEETING_AISLE_OFFSET, z: lastZ }],
   });
   const chair = (side) => ({
-    x: x + side * MEETING_SEAT_OFFSET, z: z + MEETING_SEAT_ROW, laneZ: meetingLaneZ, facing: side === -1 ? FACING_RIGHT : FACING_LEFT,
+    x: x + side * MEETING_SEAT_X, z: z + MEETING_SEAT_ROW, laneZ: meetingLaneZ, facing: side === -1 ? FACING_RIGHT : FACING_LEFT,
     isSeat: true, hipY: CHAIR_HIP, ...through(side, z + MEETING_SEAT_ROW),
   });
   return [["board", standing(x + 0.45, 0.82, meetingLaneZ, FACING_WALL, through(1, 0.95))], ["meeting", chair(-1)], ["meeting", chair(1)]];
@@ -56,8 +54,8 @@ function meetingStops({ zones }) {
 
 function loungeStops({ zones }) {
   const { x, z } = zones.lounge;
-  const sofaSeat = (seatX) => ["sofa", { x: seatX, z: z + 0.42, laneZ: z + 0.92, facing: FACING_CAMERA, isSeat: true, hipY: SOFA_HIP, spine: "right" }];
-  return [sofaSeat(x - 0.42), sofaSeat(x + 0.42)];
+  const sofaSeat = (seatX) => ["sofa", { x: seatX, z: z + SOFA_SEAT_Z, laneZ: z + 0.92, facing: FACING_CAMERA, isSeat: true, hipY: SOFA_HIP, spine: "right" }];
+  return SOFA_SEATS_X.map((offset) => sofaSeat(x + offset));
 }
 
 function plantStops({ zones }) {

@@ -1,5 +1,6 @@
 import { temperamentOf } from "../../domain/behavior/agent-temperament.js";
 import { fidgetAt } from "../../domain/behavior/seated-fidgets.js";
+import { STANDING_HIP } from "../../domain/room/room-dimensions.js";
 import { box, cyl, group } from "../kit.js";
 import { createEmote } from "./emotes.js";
 import { looksOf } from "./looks.js";
@@ -7,7 +8,6 @@ import { CONVERSATION_POSES, FIDGET_POSES, POSES, resetPose, walkPose } from "./
 import { REACTIONS } from "./reactions.js";
 
 const DARK = "#1b1f2b";
-const STANDING_HIP = 0.91;
 const WALK_SPEED = 1.5;
 const HURRY_PACE = 2.4;
 const EYE_HEIGHT = 0.07;

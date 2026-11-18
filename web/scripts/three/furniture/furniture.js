@@ -1,3 +1,4 @@
+import { DESK_SEAT_INSET, SITTING_BACK } from "../../domain/room/room-dimensions.js";
 import { pickWith } from "../../domain/shared/seeded-random.js";
 import { box, cyl, group, shade } from "../kit.js";
 import { DARK, HANDLE } from "./parts.js";
@@ -7,6 +8,7 @@ const PARTITION_HEIGHT = 0.42;
 const CLUTTER_X = 0.44;
 const NOTE_COLORS = ["#ffe066", "#ff9ec4", "#8fd0ff", "#b6f09c"];
 const PAPER = "#ffffff";
+const CHAIR_FROM_DESK_EDGE = DESK_SEAT_INSET - SITTING_BACK;
 
 function pedestal(g, w, d, theme) {
   const x = w - 0.5;
@@ -116,7 +118,7 @@ function workstation(parent, cx, deskEdgeZ, direction, theme, lit) {
   box(g, [0.44, 0.025, 0.15], [-0.22, DESK_TOP, 0.1], theme.keyboard);
   box(g, [0.07, 0.03, 0.1], [0.28, DESK_TOP, 0.12], theme.keyboard);
   monitor(g, theme, lit);
-  const seat = group(g, 0, 0, -0.32);
+  const seat = group(g, 0, 0, -CHAIR_FROM_DESK_EDGE);
   chair(seat, theme);
   return { g, seat };
 }

@@ -1,4 +1,5 @@
 import { box, cyl, group } from "../kit.js";
+import { MEETING_SEAT_ROWS_Z, MEETING_SEAT_X, SITTING_BACK, SOFA_WIDTH } from "../../domain/room/room-dimensions.js";
 import { prop } from "./decor.js";
 import { chair } from "./furniture.js";
 import { DARK, rug } from "./parts.js";
@@ -6,8 +7,7 @@ import { DARK, rug } from "./parts.js";
 const TABLE_TOP = 0.74;
 const TABLE_W = 0.95;
 const TABLE_D = 1.9;
-const CHAIR_OFFSET_X = 0.82;
-const CHAIR_ROWS_Z = [-0.45, 0.45];
+const CHAIR_OFFSET_X = MEETING_SEAT_X - SITTING_BACK;
 const LAPTOP = "#c9ced6";
 const COFFEE_TABLE_TOP = 0.38;
 
@@ -23,7 +23,7 @@ export function meetingSet(parent, cx, cz, theme) {
   box(g, [TABLE_W, 0.06, TABLE_D], [-TABLE_W / 2, TABLE_TOP - 0.06, -TABLE_D / 2], theme.desk);
   for (const z of [-0.65, 0.55]) box(g, [0.5, TABLE_TOP - 0.06, 0.1], [-0.25, 0, z], theme.leg);
   for (const side of [-1, 1]) {
-    for (const z of CHAIR_ROWS_Z) chair(group(g, side * CHAIR_OFFSET_X, 0, z, -side * Math.PI / 2), theme);
+    for (const z of MEETING_SEAT_ROWS_Z) chair(group(g, side * CHAIR_OFFSET_X, 0, z, -side * Math.PI / 2), theme);
   }
   laptop(g, -0.4, -0.58, -0.2, theme, false);
   laptop(g, 0.2, 0.32, 0.19, theme, true);
@@ -37,7 +37,7 @@ export function meetingSet(parent, cx, cz, theme) {
 export function loungeSet(parent, cx, z, theme, random) {
   const g = group(parent, cx, 0, z);
   rug(g, -1.15, -0.15, 2.3, 2.1, theme.rug);
-  prop(g, "sofa", -0.8, 0, 0, theme, random);
+  prop(g, "sofa", -SOFA_WIDTH / 2, 0, 0, theme, random);
   box(g, [0.9, 0.05, 0.5], [-0.45, COFFEE_TABLE_TOP - 0.05, 1.1], theme.desk);
   for (const [lx, lz] of [[-0.42, 1.13], [0.38, 1.13], [-0.42, 1.53], [0.38, 1.53]]) {
     box(g, [0.04, COFFEE_TABLE_TOP - 0.05, 0.04], [lx, 0, lz], theme.leg);
