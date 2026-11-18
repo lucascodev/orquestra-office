@@ -1,13 +1,13 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import { THEMES } from "../scripts/data/themes.js";
+import { temperamentOf } from "../scripts/domain/behavior/agent-temperament.js";
+import { freshestThoughts, thoughtAt } from "../scripts/domain/behavior/agent-thoughts.js";
+import { createFreeTimeClock } from "../scripts/domain/behavior/free-time-clock.js";
 import { assignPlaces } from "../scripts/domain/behavior/room-places.js";
+import { fidgetAt } from "../scripts/domain/behavior/seated-fidgets.js";
 import { layoutRoom } from "../scripts/domain/room/room-layout.js";
 import { exitStop } from "../scripts/domain/room/room-spots.js";
-import { temperamentOf } from "../scripts/view/agent-temperament.js";
-import { freshestThoughts, thoughtAt } from "../scripts/view/agent-thoughts.js";
-import { createFreeTimeClock } from "../scripts/view/free-time-clock.js";
-import { fidgetAt } from "../scripts/view/seated-fidgets.js";
 
 const NOW = 1_800_000_000_000;
 const LONG_AGO = NOW - 60 * 60_000;

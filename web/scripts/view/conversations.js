@@ -1,6 +1,6 @@
-import { hashOf } from "../domain/shared/seeded-random.js";
 import { CONVERSATIONS } from "../data/conversations.js";
-import { HANDING_OVER } from "./agent-reactions.js";
+import { HANDING_OVER } from "../domain/behavior/agent-reactions.js";
+import { hashOf } from "../domain/shared/seeded-random.js";
 
 const CHAT_DISTANCE = 2;
 const DELEGATION_WINDOW_MS = 25_000;

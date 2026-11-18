@@ -1,6 +1,6 @@
 import {
   AT_DESK_WITH_NOTHING_TO_DO, busyReactionOf, freeTimePreferences, freeTimeReaction, HANDING_OVER, isHandingOver, isWindingDown, JUST_FINISHED,
-} from "../../view/agent-reactions.js";
+} from "./agent-reactions.js";
 import { besideDeskStop, roomSpots } from "../room/room-spots.js";
 
 // Shared spots go out in key order, so the same people keep the same spot between redraws.

@@ -1,4 +1,4 @@
-import { hashOf, rng } from "../domain/shared/seeded-random.js";
+import { hashOf, rng } from "../shared/seeded-random.js";
 
 const FIDGET_SECONDS = 2.6;
 

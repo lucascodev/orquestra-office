@@ -1,6 +1,6 @@
+import { temperamentOf } from "../domain/behavior/agent-temperament.js";
+import { fidgetAt } from "../domain/behavior/seated-fidgets.js";
 import { hashOf, pick } from "../domain/shared/seeded-random.js";
-import { temperamentOf } from "../view/agent-temperament.js";
-import { fidgetAt } from "../view/seated-fidgets.js";
 import { createEmote } from "./emotes.js";
 import { box, cyl, group } from "./kit.js";
 import { CONVERSATION_POSES, FIDGET_POSES, POSES, resetPose, walkPose } from "./poses.js";

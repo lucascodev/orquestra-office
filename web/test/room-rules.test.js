@@ -4,12 +4,12 @@ import { join } from "node:path";
 import { describe, it } from "node:test";
 import { fileURLToPath } from "node:url";
 import { THEMES } from "../scripts/data/themes.js";
+import { FREE_TIME } from "../scripts/domain/behavior/agent-reactions.js";
 import { assignPlaces } from "../scripts/domain/behavior/room-places.js";
 import { layoutRoom } from "../scripts/domain/room/room-layout.js";
 import { nearestLaneZ, routeBetween } from "../scripts/domain/room/room-routes.js";
 import { exitStop, seatStop } from "../scripts/domain/room/room-spots.js";
 import { planWall } from "../scripts/domain/room/wall-plan.js";
-import { FREE_TIME } from "../scripts/view/agent-reactions.js";
 
 const ROOM_FIXTURES = fileURLToPath(new URL("./fixtures/rooms/", import.meta.url));
 const NOW = 1_800_000_000_000;

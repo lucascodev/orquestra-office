@@ -1,5 +1,5 @@
-import { hashOf, rng } from "../domain/shared/seeded-random.js";
-import { THOUGHTS } from "../data/thoughts.js";
+import { THOUGHTS } from "../../data/thoughts.js";
+import { hashOf, rng } from "../shared/seeded-random.js";
 
 const FIRST_THOUGHT_DELAY_SECONDS = 0.8;
 const THOUGHT_SECONDS = 4.5;
