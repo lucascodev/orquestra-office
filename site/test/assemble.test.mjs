@@ -5,7 +5,8 @@ import { join, resolve } from "node:path";
 import { after, before, describe, it } from "node:test";
 import { fileURLToPath } from "node:url";
 import { assembleSite, holdsSources } from "../assemble.mjs";
-import { startTags } from "./support/html.mjs";
+import { LANDING_CONTENT_SECURITY_POLICY } from "../content-security-policy.mjs";
+import { contentSecurityPoliciesIn, headOf, startTags } from "./support/html.mjs";
 
 const SITE_DIR = fileURLToPath(new URL("..", import.meta.url));
 const REPOSITORY_DIR = resolve(SITE_DIR, "..");
@@ -14,6 +15,8 @@ const OWNER_PLACEHOLDER = /\bOWNER\b/;
 const LANDING_PAGES = ["index.html", "en/index.html"];
 const SITE_NAME = "Orquestra Office";
 const WITHOUT_PLACEHOLDERS = { placeholders: [] };
+const LANDING_STYLE_SOURCES = "style-src 'self'";
+const DEMO_STYLE_SOURCES = "style-src 'self' 'unsafe-inline'";
 const FOREIGN_FILE_NAME = "notes.txt";
 const FOREIGN_CONTENT = "not part of the site";
 
@@ -45,6 +48,14 @@ describe("site assembly", () => {
     const references = startTags(officePage).flatMap(({ attributes }) => [attributes.get("src"), attributes.get("href")]).filter(Boolean);
     assert.ok(references.length > 0);
     assert.deepEqual(references.filter((reference) => ROOT_RELATIVE.test(reference)), []);
+  });
+
+  it("gives the office page the landing policy with inline styles allowed", () => {
+    const officePage = readFileSync(join(outputDir, "demo/index.html"), "utf8");
+    const demoPolicy = LANDING_CONTENT_SECURITY_POLICY.replace(LANDING_STYLE_SOURCES, DEMO_STYLE_SOURCES);
+    assert.notEqual(demoPolicy, LANDING_CONTENT_SECURITY_POLICY);
+    assert.deepEqual(contentSecurityPoliciesIn(officePage), [demoPolicy]);
+    assert.deepEqual(contentSecurityPoliciesIn(headOf(officePage)), [demoPolicy]);
   });
 
   it("treats the repository, its parents and the source folders as off limits", () => {

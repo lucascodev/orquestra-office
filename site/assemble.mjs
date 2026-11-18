@@ -1,6 +1,7 @@
 import { cpSync, existsSync, mkdirSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { extname, isAbsolute, join, relative, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
+import { DEMO_CONTENT_SECURITY_POLICY } from "./content-security-policy.mjs";
 
 const SITE_DIR = fileURLToPath(new URL(".", import.meta.url));
 const REPOSITORY_DIR = resolve(SITE_DIR, "..");
@@ -8,6 +9,8 @@ const WEB_DIR = join(REPOSITORY_DIR, "web");
 const DEFAULT_OUTPUT_DIR = join(REPOSITORY_DIR, "_site");
 const DEMO_DIR_NAME = "demo";
 const ASSEMBLY_MARKER = ".site-assembly";
+const OFFICE_PAGE = "index.html";
+const CHARSET_META = /<meta charset="utf-8">/i;
 
 const PUBLISHED_SITE_ENTRIES = ["index.html", "en", "styles", "scripts", "assets"];
 const PUBLISHED_WEB_ENTRIES = ["index.html", "scripts", "styles", "vendor"];
@@ -34,6 +37,13 @@ function isReplaceable(target) {
   return entries.length === 0 || entries.includes(ASSEMBLY_MARKER);
 }
 
+function addDemoPolicy(officePagePath) {
+  const officePage = readFileSync(officePagePath, "utf8");
+  if (!CHARSET_META.test(officePage)) throw new Error(`cannot add the content security policy to ${officePagePath}: the charset meta is missing`);
+  const policyMeta = `<meta http-equiv="Content-Security-Policy" content="${DEMO_CONTENT_SECURITY_POLICY}">`;
+  writeFileSync(officePagePath, officePage.replace(CHARSET_META, (charsetMeta) => `${charsetMeta}\n${policyMeta}`));
+}
+
 const publishedTextFiles = (dir) => readdirSync(dir, { recursive: true }).filter((path) => TEXT_EXTENSIONS.has(extname(path))).map((path) => path.split(sep).join("/"));
 
 function assertNoPlaceholderLeft(dir, placeholders) {
@@ -56,6 +66,7 @@ export function assembleSite(outputDir = DEFAULT_OUTPUT_DIR, { placeholders = UN
   writeFileSync(join(target, ASSEMBLY_MARKER), "");
   copyEntries(SITE_DIR, target, PUBLISHED_SITE_ENTRIES);
   copyEntries(WEB_DIR, join(target, DEMO_DIR_NAME), PUBLISHED_WEB_ENTRIES);
+  addDemoPolicy(join(target, DEMO_DIR_NAME, OFFICE_PAGE));
   assertNoPlaceholderLeft(target, placeholders);
   return target;
 }
