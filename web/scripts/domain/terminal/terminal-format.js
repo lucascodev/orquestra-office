@@ -1,4 +1,5 @@
 import { CODE_LANGUAGES, TOOL_GLYPHS, TOOL_KINDS } from "../../data/terminal-tools.js";
+import { ownValueOf } from "../shared/own-value.js";
 
 const TOOL_TEXT = /^([\w.-]+)(?::\s*(.*))?$/s;
 const WRITE_SUMMARY = /^Escrever\s+(.+)$/;
@@ -10,12 +11,12 @@ export function languageOfFile(path) {
   const name = String(path ?? "").split(/[\\/]/).pop().toLowerCase();
   if (name === "dockerfile") return CODE_LANGUAGES.dockerfile;
   const extension = name.includes(".") ? name.split(".").pop() : "";
-  return CODE_LANGUAGES[extension] ?? null;
+  return ownValueOf(CODE_LANGUAGES, extension) ?? null;
 }
 
 function kindOf(toolName) {
   if (toolName.startsWith(MCP_PREFIX)) return "other";
-  return TOOL_KINDS[toolName] ?? "other";
+  return ownValueOf(TOOL_KINDS, toolName) ?? "other";
 }
 
 function languageOf(kind, summary, detail) {

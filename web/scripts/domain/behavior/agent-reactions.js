@@ -1,3 +1,4 @@
+import { ownValueOf } from "../shared/own-value.js";
 import { hashOf, rng } from "../shared/seeded-random.js";
 import { temperamentOf } from "./agent-temperament.js";
 
@@ -34,7 +35,7 @@ export function busyReactionOf(agent) {
     case "needs_you": return agent.activity === "asking" ? "asking" : "permission";
     case "blocked": return "blocked";
     case "reviewing": return agent.activity === "web" ? "browsing" : "reading";
-    case "working": return WORKING_REACTIONS[agent.activity] ?? "typing";
+    case "working": return ownValueOf(WORKING_REACTIONS, agent.activity) ?? "typing";
     default: return "typing";
   }
 }

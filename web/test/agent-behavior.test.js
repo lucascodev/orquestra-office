@@ -33,6 +33,11 @@ describe("where agents go", () => {
     });
   }
 
+  it("types at the desk on work of an unknown kind, even one named like a built-in of every object", () => {
+    const reactions = ["compiling", "toString", "constructor", "__proto__"].map((activity) => placeOf(agentWith("working", { activity })).place.reaction);
+    assert.deepEqual(reactions, ["typing", "typing", "typing", "typing"]);
+  });
+
   it("leaves a waiting agent free to walk around the office", () => {
     const { place } = placeOf(agentWith("waiting"));
     assert.notEqual(place.stop.isDesk, true);

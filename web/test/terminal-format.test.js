@@ -22,6 +22,14 @@ describe("tool entries in the terminal", () => {
     assert.deepEqual([tool.toolName, tool.kind, tool.format, tool.language], ["mcp__notion__search", "other", "code", "json"]);
   });
 
+  it("treats a tool named like a built-in of every object as an unknown tool", () => {
+    const unknown = describeToolEntry({ text: "Unknown: x", detail: "y" });
+    for (const toolName of ["toString", "constructor", "__proto__"]) {
+      const tool = describeToolEntry({ text: `${toolName}: x`, detail: "y" });
+      assert.deepEqual([tool.kind, tool.glyph, tool.format, tool.language], [unknown.kind, unknown.glyph, unknown.format, unknown.language]);
+    }
+  });
+
   it("keeps plain text for a delegation prompt", () => {
     assert.equal(describeToolEntry({ text: "Agent: Delegar para Explore", detail: "procure os testes" }).format, "text");
   });
@@ -40,5 +48,6 @@ describe("file languages", () => {
     assert.equal(languageOfFile("C:\\repo\\web\\styles\\office.css"), "css");
     assert.equal(languageOfFile("deploy/Dockerfile"), "dockerfile");
     assert.equal(languageOfFile("notes.unknown"), null);
+    assert.deepEqual(["notes.constructor", "notes.__proto__", "notes.hasownproperty"].map(languageOfFile), [null, null, null]);
   });
 });
