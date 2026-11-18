@@ -58,3 +58,14 @@ test("what the user typed and what Claude replied stay as text, with no text id"
   const [reply] = entriesOf({ type: "assistant", message: { content: [{ type: "text", text: "done" }] } });
   assert.deepEqual([reply.kind, reply.text, reply.textId], ["reply", "done", undefined]);
 });
+
+test("no entry the runner makes for a tool, a turn or the end of the session carries a ready-made phrase", () => {
+  const made = [
+    ...entriesOf({ type: "assistant", message: { content: [{ type: "tool_use", name: "Bash", input: { command: "ls" } }] } }),
+    ...entriesOf({ type: "result", is_error: true, terminal_reason: "aborted_streaming" }),
+    ...entriesOf({ type: "result", is_error: true, subtype: "error_max_turns" }),
+    endedSession({ code: null, error: "boom" }),
+    endedSession({ code: 0, error: "" }),
+  ];
+  assert.deepEqual(made.map((entry) => entry.text), [undefined, undefined, undefined, undefined, undefined]);
+});

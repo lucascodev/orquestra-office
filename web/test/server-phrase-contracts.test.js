@@ -177,21 +177,3 @@ describe("phrases the page writes from the collector's and the runner's fields",
     }
   });
 });
-
-describe("the text the collector and the runner still send while the page moves to the fields", () => {
-  it("is what the page writes for every action", async () => {
-    for (const [event, expected] of await agentActions()) assert.equal(event.action, expected);
-  });
-
-  it("is what the page writes for every request summary", async () => {
-    for (const [request, expected] of await requestSummaries()) assert.equal(request.summary, expected);
-  });
-
-  it("is what the page writes for every note and error", async () => {
-    for (const [entry, expected] of await terminalNotes()) assert.equal(entry.text, expected);
-  });
-
-  it("is what the page splits into tool name and summary", () => {
-    for (const [entry, [toolName, summary]] of terminalTools()) assert.equal(entry.text, summary ? `${toolName}: ${summary}` : toolName);
-  });
-});

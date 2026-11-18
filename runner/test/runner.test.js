@@ -35,10 +35,10 @@ test("stream events become terminal changes", () => {
   assert.deepEqual(changesOf({ type: "stream_event", session_id: "s", event: { type: "content_block_delta", delta: { type: "text_delta", text: "ol" } } }),
     [{ type: "session", sessionId: "s" }, { type: "delta", text: "ol" }]);
   assert.deepEqual(changesOf({ type: "assistant", message: { content: [{ type: "tool_use", name: "Bash", input: { command: "npm test", description: "Run tests" } }] } }),
-    [{ type: "entry", entry: { kind: "tool", toolName: "Bash", summaryId: "run-command", subject: "Run tests", text: "Bash: Run tests", detail: "npm test" } }]);
+    [{ type: "entry", entry: { kind: "tool", toolName: "Bash", summaryId: "run-command", subject: "Run tests", detail: "npm test" } }]);
   assert.deepEqual(changesOf({ type: "assistant", parent_tool_use_id: "t1", message: { content: [{ type: "text", text: "subagent chatter" }] } }), []);
   assert.deepEqual(changesOf({ type: "result", is_error: true, terminal_reason: "aborted_streaming" }),
-    [{ type: "status", status: "idle" }, { type: "entry", entry: { kind: "note", textId: "turn-interrupted", text: "turno interrompido", detail: "" } }]);
+    [{ type: "status", status: "idle" }, { type: "entry", entry: { kind: "note", textId: "turn-interrupted", detail: "" } }]);
 });
 
 test("opening a session starts Claude Code with the first message and reports its id", () => withRunner(async (base, claude) => {
