@@ -6,6 +6,7 @@ import { officeStateFrom } from "./office-state.js";
 import { baseName } from "./path-name.js";
 import { projectKeyOf } from "./project-key.js";
 import { isTemplate, nextTemplate } from "./templates.js";
+import { createToolOrder } from "./tool-order.js";
 
 const LOG_LIMIT = 20;
 const SOURCE_LABEL = { claude: "Claude Code", codex: "Codex" };
@@ -13,6 +14,7 @@ const SOURCE_LABEL = { claude: "Claude Code", codex: "Codex" };
 export function createOfficeStore(initial) {
   const state = officeStateFrom(initial);
   const listeners = new Set();
+  const toolOrder = createToolOrder();
 
   const emit = () => listeners.forEach((listener) => listener());
 
@@ -83,6 +85,8 @@ export function createOfficeStore(initial) {
     if (!event?.sessionId) return;
     const project = ensureProject(event);
     const agent = ensureAgent(project, event);
+    const isLate = toolOrder.isLate(agent.key, event);
+    toolOrder.note(agent.key, event);
 
     if (event.kind === "session-end") {
       for (const other of Object.values(project.agents)) {
@@ -96,15 +100,17 @@ export function createOfficeStore(initial) {
     }
 
     if (event.actionId) {
-      agent.action = event.action;
-      agent.actionId = event.actionId;
-      agent.subject = event.subject ?? null;
-      agent.log.push({ at: event.at, text: event.action, actionId: event.actionId, subject: agent.subject });
+      if (!isLate) {
+        agent.action = event.action;
+        agent.actionId = event.actionId;
+        agent.subject = event.subject ?? null;
+      }
+      agent.log.push({ at: event.at, text: event.action, actionId: event.actionId, subject: event.subject ?? null });
       if (agent.log.length > LOG_LIMIT) agent.log.splice(0, agent.log.length - LOG_LIMIT);
     }
     const isPlainProgress = event.actionId === null;
-    if (event.status && (!isPlainProgress || agent.status === "needs_you")) agent.status = event.status;
-    if (event.activity) agent.activity = event.activity;
+    if (!isLate && event.status && (!isPlainProgress || agent.status === "needs_you")) agent.status = event.status;
+    if (!isLate && event.activity) agent.activity = event.activity;
     if (event.team) project.team = event.team;
     if (event.counts === "tools") agent.tools += 1;
     countStat(project, event.counts, event.at);

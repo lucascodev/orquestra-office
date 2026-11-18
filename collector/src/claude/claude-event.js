@@ -1,4 +1,5 @@
 import { AGENT_ACTION } from "../office/domain/agent-actions.js";
+import { TOOL_PHASE } from "../office/domain/tool-order.js";
 import { PATH_LIMIT } from "../shared/text/field-limits.js";
 import { claudeSessionIdOf } from "./claude-session-id.js";
 import { describeActivity } from "./describe-activity.js";
@@ -9,6 +10,7 @@ const TEAM_LIMIT = 40;
 const AGENT_TYPE_LIMIT = 40;
 const TOOL_NAME_LIMIT = 30;
 const UNNAMED_TOOL = "uma ferramenta";
+const TOOL_USE_ID_LIMIT = 100;
 
 function projectRootOf(payload) {
   const root = payload.office?.repoRoot;
@@ -43,6 +45,8 @@ function toolNamed(actionId, payload, phrase) {
   return named(actionId, `${phrase} ${toolName ?? UNNAMED_TOOL}`, toolName);
 }
 
+const toolCallOf = (payload, toolPhase) => ({ toolUseId: typeof payload.tool_use_id === "string" ? payload.tool_use_id.slice(0, TOOL_USE_ID_LIMIT) : null, toolPhase });
+
 function activity(payload, now, status, described, extra = {}) {
   return { ...base(payload, now), kind: "activity", status, ...described, ...extra };
 }
@@ -58,12 +62,12 @@ export function normalizeClaudeEvent(payload, now = Date.now()) {
       return activity(payload, now, "working", named(AGENT_ACTION.PROMPT_RECEIVED, "recebeu um pedido seu"), { counts: "prompts", activity: "thinking" });
     case "PreToolUse": {
       const { status, activity: doing, actionId, subject, action } = describeActivity(payload.tool_name, payload.tool_input);
-      return activity(payload, now, status, named(actionId, action, subject), { counts: "tools", activity: doing });
+      return activity(payload, now, status, named(actionId, action, subject), { counts: "tools", activity: doing, ...toolCallOf(payload, TOOL_PHASE.BEFORE) });
     }
     case "PostToolUse":
-      return activity(payload, now, "working", NO_ACTION);
+      return activity(payload, now, "working", NO_ACTION, toolCallOf(payload, TOOL_PHASE.AFTER));
     case "PostToolUseFailure":
-      return activity(payload, now, "working", toolNamed(AGENT_ACTION.TOOL_FAILED, payload, "falhou ao usar"), { activity: "failed" });
+      return activity(payload, now, "working", toolNamed(AGENT_ACTION.TOOL_FAILED, payload, "falhou ao usar"), { activity: "failed", ...toolCallOf(payload, TOOL_PHASE.AFTER) });
     case "PermissionRequest":
       return activity(payload, now, "needs_you", toolNamed(AGENT_ACTION.PERMISSION_REQUESTED, payload, "pede permissão para usar"));
     case "Notification": {
@@ -73,13 +77,13 @@ export function normalizeClaudeEvent(payload, now = Date.now()) {
       return null;
     }
     case "Stop":
-      return activity(payload, now, "break", named(AGENT_ACTION.TURN_FINISHED, "terminou o turno"), { counts: "turns" });
+      return activity(payload, now, "break", named(AGENT_ACTION.TURN_FINISHED, "terminou o turno"), { counts: "turns", endsTurn: true });
     case "StopFailure":
       return activity(payload, now, "blocked", named(AGENT_ACTION.API_ERROR, "parou por erro da API"));
     case "SubagentStart":
       return { ...base(payload, now), kind: "subagent-start", status: "working", ...named(AGENT_ACTION.TASK_STARTED, "começou a tarefa") };
     case "SubagentStop":
-      return { ...base(payload, now), kind: "subagent-stop", status: "break", ...named(AGENT_ACTION.TASK_DELIVERED, "entregou a tarefa") };
+      return { ...base(payload, now), kind: "subagent-stop", status: "break", ...named(AGENT_ACTION.TASK_DELIVERED, "entregou a tarefa"), endsTurn: true };
     case "SessionEnd":
       return { ...base(payload, now), kind: "session-end", status: "idle", ...named(AGENT_ACTION.SESSION_CLOSED, "fechou a sessão") };
     default:
