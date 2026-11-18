@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import { THEMES } from "../scripts/data/themes.js";
-import { freeTimePreferences } from "../scripts/domain/behavior/agent-reactions.js";
+import { FREE_TIME, freeTimePreferences } from "../scripts/domain/behavior/agent-reactions.js";
 import { temperamentOf } from "../scripts/domain/behavior/agent-temperament.js";
 import { freshestThoughts, thoughtAt } from "../scripts/domain/behavior/agent-thoughts.js";
 import { createFreeTimeClock } from "../scripts/domain/behavior/free-time-clock.js";
@@ -214,6 +214,11 @@ describe("thoughts", () => {
     assert.ok(texts.every((text) => !text.includes("{alvo}")));
     const withoutSubject = Array.from({ length: 40 }, (_, cycle) => thought({ action: "procurando no código", nowSeconds: 1 + cycle * 14.5 })?.text).filter(Boolean);
     assert.ok(withoutSubject.every((text) => !text.includes("{alvo}")));
+  });
+
+  it("has something to think about in every free time activity, the games room included", () => {
+    const silent = FREE_TIME.filter((activity) => !thoughtAt({ agentKey: KEY, reactionId: activity.reaction, action: "", sinceSeconds: 0, nowSeconds: 1, gapSeconds: 10 }));
+    assert.deepEqual(silent.map((activity) => activity.id), []);
   });
 
   it("shows only the freshest few at once", () => {

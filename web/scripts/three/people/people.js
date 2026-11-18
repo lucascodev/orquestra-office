@@ -1,11 +1,11 @@
 import { temperamentOf } from "../../domain/behavior/agent-temperament.js";
 import { fidgetAt } from "../../domain/behavior/seated-fidgets.js";
 import { walkStep } from "../../domain/behavior/walk-step.js";
-import { STANDING_HIP } from "../../domain/room/room-dimensions.js";
+import { PUFF_HIP, STANDING_HIP } from "../../domain/room/room-dimensions.js";
 import { box, cyl, group } from "../kit.js";
 import { createEmote } from "./emotes.js";
 import { looksOf } from "./looks.js";
-import { CONVERSATION_POSES, FIDGET_POSES, POSES, resetPose, walkPose } from "./poses.js";
+import { CONVERSATION_POSES, FIDGET_POSES, POSES, rallyAt, resetPose, walkPose } from "./poses.js";
 import { REACTIONS } from "./reactions.js";
 
 const DARK = "#1b1f2b";
@@ -23,6 +23,10 @@ const EMOTE_OFFSET = { x: 0.42, y: 0.82 };
 const TAG_HEIGHT = 1.02;
 const EMOTE_FRAMES_PER_SECOND = 2;
 const SIDES = [-1, 1];
+const PADDLE_RED = "#d64545";
+const PADDLE_HANDLE = "#9a6a44";
+const BALL_SIZE = 0.06;
+const BALL_WHITE = "#f4f6f8";
 
 function buildArm(parent, side, look) {
   const shoulder = group(parent, side * 0.25, 0.42, 0);
@@ -62,7 +66,17 @@ function buildProps(hand) {
   const can = group(hand);
   box(can, [0.14, 0.16, 0.14], [-0.07, -0.5, 0.0], "#4f9d7a");
   box(can, [0.04, 0.04, 0.18], [-0.02, -0.42, 0.14], "#4f9d7a");
-  return { mug, paper, can };
+  const paddle = group(hand);
+  box(paddle, [0.04, 0.1, 0.04], [-0.02, -0.46, 0.03], PADDLE_HANDLE);
+  box(paddle, [0.2, 0.2, 0.03], [-0.1, -0.66, 0.03], PADDLE_RED);
+  return { mug, paper, can, paddle };
+}
+
+function buildBall(parent) {
+  const ball = group(parent);
+  box(ball, [BALL_SIZE, BALL_SIZE, BALL_SIZE], [-BALL_SIZE / 2, -BALL_SIZE / 2, -BALL_SIZE / 2], BALL_WHITE, { shadow: false });
+  ball.visible = false;
+  return ball;
 }
 
 export function createPerson(parent, agent) {
@@ -77,6 +91,7 @@ export function createPerson(parent, agent) {
     key: agent.key, root, upper, arms, head, eyes,
     legs: SIDES.map((side) => buildLeg(root, side, look)),
     props: buildProps(arms[1].elbow),
+    ball: buildBall(root),
     emote: createEmote(root),
     temperament: temperamentOf(agent.key),
     reaction: REACTIONS.typing, stop: null, path: [], pace: 1, isHurrying: false, isSeated: true, hasPosition: false, conversation: null,
@@ -164,6 +179,10 @@ function faceTowards(person, focus) {
   person.head.rotation.y += turn * SEATED_HEAD_SHARE;
 }
 
+// A low seat leaves no room for the legs under it, so whoever rests there stretches them out.
+const isLowSeat = (stop) => Boolean(stop?.isSeat) && stop.hipY <= PUFF_HIP;
+const stillPoseOf = (person) => (isLowSeat(person.stop) && person.reaction.lowSeatPose) || person.reaction.pose;
+
 function poseWhileStill(person, t, talk, fidget) {
   resetPose(person, person.isSeated);
   if (talk) {
@@ -173,7 +192,7 @@ function poseWhileStill(person, t, talk, fidget) {
   }
   if (!person.isSeated && person.stop) person.root.rotation.y = person.stop.facing;
   if (fidget) FIDGET_POSES[fidget.pose](person, t, fidget.progress);
-  else POSES[person.reaction.pose](person, t);
+  else POSES[stillPoseOf(person)](person, t);
 }
 
 export function stepPerson(person, dt, seconds) {
@@ -183,6 +202,9 @@ export function stepPerson(person, dt, seconds) {
   const talk = hasArrived ? person.conversation : null;
   const fidget = hasArrived && !talk ? seatedFidget(person, t) : null;
   if (hasArrived) poseWhileStill(person, t, talk, fidget);
+  const isRallying = hasArrived && !talk && Boolean(person.reaction.hasRally);
+  if (isRallying) rallyAt(person, seconds);
+  person.ball.visible = isRallying;
   holdProp(person, fidget ? fidget.prop : person.reaction.prop);
   blink(person, t, Boolean(talk));
   person.root.visible = !(hasArrived && person.reaction.hidesOnArrival);

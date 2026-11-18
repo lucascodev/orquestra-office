@@ -29,5 +29,7 @@ export const THOUGHTS = {
   meeting: ["e se a gente…", "concordo, mas…", "vamos alinhar"],
   resting: ["só cinco minutinhos…", "zzz…", "sonhando com teste verde"],
   watering: ["cresce, plantinha", "essa aqui tá com sede"],
+  playing: ["essa foi na quina!", "saque com efeito", "quem perder paga o café", "11 a 9, vamos virar", "pegou na rede, de novo"],
+  gaming: ["só mais uma ficha", "recorde do escritório é meu", "pula, pula, pula!", "esse chefão de novo?", "combo de 12!"],
   stretching: ["ai, minhas costas", "alongar faz bem", "tudo ocupado, fico por aqui"],
 };
