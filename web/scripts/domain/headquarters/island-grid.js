@@ -4,6 +4,7 @@ export const ISLAND_SEATS = 6;
 export const ISLAND_COLUMNS = 4;
 export const FREE_ISLANDS = 2;
 export const ISLAND_POD = { seatWidth: 1.2, sideMargin: 0, depth: 1.5, minWidth: 3.6 };
+export const ISLAND_RUG = { dx: -0.5, dz: -1.1, w: 4.6, d: 3.7 };
 export const ISLAND_SPINES_X = [0.5, 5.3, 10.3, 15.3];
 export const ISLAND_LANES_EAST_X = 19.8;
 const MIN_ROWS = 2;

@@ -69,6 +69,10 @@ describe("headquarters plan with the four approved projects", () => {
     }
   });
 
+  it("lays a rug of 4.6 by 3.7 under each island, half a unit to the left and 1.1 behind the desk", () => {
+    assert.deepEqual(layout.islands.map((island) => rectOf(island.rug)), layout.islands.map((island) => [island.x - 0.5, island.z - 1.1, 4.6, 3.7].map(round)));
+  });
+
   it("closes the building with the walls, low walls and doors of the approved plan", () => {
     assert.deepEqual(rectOf(byId(layout.walls, "back-wall")), [0, 0, 26, 0.2]);
     assert.deepEqual(rectOf(byId(layout.walls, "left-wall")), [0, 0, 0.2, 18]);

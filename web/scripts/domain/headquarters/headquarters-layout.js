@@ -4,7 +4,7 @@ import { MAP_MARGIN, YARD, YARD_DEPTH } from "../../data/headquarters-yard.js";
 import { themeById } from "../../data/themes.js";
 import { podAt } from "../room/desk-islands.js";
 import { atDepth } from "./facade-offsets.js";
-import { convivenceSlots, depthFor, FREE_ISLANDS, ISLAND_POD, ISLAND_SEATS, islandSlot, rowCountFor } from "./island-grid.js";
+import { convivenceSlots, depthFor, FREE_ISLANDS, ISLAND_POD, ISLAND_RUG, ISLAND_SEATS, islandSlot, rowCountFor } from "./island-grid.js";
 import { projectIslands } from "./project-islands.js";
 
 const CORNER_AREA = "work";
@@ -19,6 +19,7 @@ function islandAt(index, owner) {
     theme: owner ? themeById(owner.project.template) : NEUTRAL_ISLAND_THEME,
     desk,
     seats,
+    rug: { x: slot.x + ISLAND_RUG.dx, z: slot.z + ISLAND_RUG.dz, w: ISLAND_RUG.w, d: ISLAND_RUG.d },
   };
 }
 
