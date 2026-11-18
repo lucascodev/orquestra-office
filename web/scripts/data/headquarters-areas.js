@@ -153,3 +153,23 @@ export const CONVIVENCE_SPOTS = [
 ];
 
 export const RECEPTION_WATER_SPOT = { areaId: "reception", activityId: "water", x: 24.5, fromFront: 2.4, faces: "east", access: { x: 24, fromFront: 2.4 } };
+
+// Straight walkways that do not depend on the number of rows; a path that ends on another one joins it there.
+export const CORRIDOR_WALK_Z = 7;
+export const RECEPTION_WALK_X = 20.8;
+
+export const WALK_PATHS = [
+  [{ x: 0.6, z: 7 }, { x: 25.4, z: 7 }],
+  [{ x: 3.6, z: 7 }, { x: 3.6, z: 5.2 }],
+  [{ x: 0.6, z: 5.2 }, { x: 6.4, z: 5.2 }],
+  [{ x: 10.6, z: 7 }, { x: 10.6, z: 5.2 }],
+  [{ x: 7.6, z: 5.2 }, { x: 13.4, z: 5.2 }],
+  [{ x: 17.1, z: 7 }, { x: 17.1, z: 5.2 }],
+  [{ x: 15.8, z: 5.2 }, { x: 19.4, z: 5.2 }],
+  [{ x: 23.1, z: 7 }, { x: 23.1, z: 5.2 }],
+  [{ x: 20.6, z: 5.2 }, { x: 25.4, z: 5.2 }],
+  [{ x: 23, z: 7 }, { x: 23, z: 9.5 }, { x: 20.8, z: 9.5 }, { x: 20.8, z: 14 }, { x: 25.4, z: 14 }],
+];
+
+// Around the waiting bench to the main door; the yard exit and the arrival follow it.
+export const MAIN_DOOR_PATH = [{ x: 24, z: 14 }, { x: 24, fromFront: 0.6 }, { x: 22.75, fromFront: 0.6 }];

@@ -1,7 +1,11 @@
+import { LANE_OFFSET } from "../room/desk-islands.js";
+
 export const ISLAND_SEATS = 6;
 export const ISLAND_COLUMNS = 4;
 export const FREE_ISLANDS = 2;
 export const ISLAND_POD = { seatWidth: 1.2, sideMargin: 0, depth: 1.5, minWidth: 3.6 };
+export const ISLAND_SPINES_X = [0.5, 5.3, 10.3, 15.3];
+export const ISLAND_LANES_EAST_X = 19.8;
 const MIN_ROWS = 2;
 const FIRST_X = 1;
 const STEP_X = 5;
@@ -27,4 +31,10 @@ export function convivenceSlots(rows, occupiedIslands, cornerCount) {
     .filter((index) => index >= firstUnused)
     .slice(0, cornerCount)
     .map(islandSlot);
+}
+
+// Each row has a walkway in front of each side of its islands, where people leave the walkways for their chairs.
+export function islandLaneZs(rows) {
+  return Array.from({ length: rows }, (_, row) => islandSlot(row * ISLAND_COLUMNS).z)
+    .flatMap((z) => [z - LANE_OFFSET, z + ISLAND_POD.depth + LANE_OFFSET]);
 }
