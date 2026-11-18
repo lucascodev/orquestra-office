@@ -62,12 +62,15 @@ export function createHeadquartersPeople({ scene, tagLayer, onPick, describeStat
     const entry = { person: createPerson(root, agent), tag: createNameTag(agent.key, onPick), bubble: createThoughtBubble() };
     tagLayer.append(entry.tag.element, entry.bubble.element);
     people.set(agent.key, entry);
+    label(agent);
   }
 
+  // Only agents with somewhere to be get a figure: one that would have no place would just stand at the origin of the map.
   function gather() {
-    const present = new Set(agents.map((agent) => agent.key));
+    const placed = agents.filter((agent) => places.get(agent.key)?.stop);
+    const present = new Set(placed.map((agent) => agent.key));
     for (const key of [...people.keys()]) if (!present.has(key)) forget(key);
-    for (const agent of agents) {
+    for (const agent of placed) {
       if (people.has(agent.key)) continue;
       meet(agent);
       lastSeen.delete(agent.key);
@@ -103,9 +106,9 @@ export function createHeadquartersPeople({ scene, tagLayer, onPick, describeStat
   function arrange(seconds) {
     const freeSince = freeTimeClock(agents);
     places = placeAgents({ agents, now: isMotionReduced ? null : Date.now(), spots, freeSince, previous: places });
+    gather();
     for (const [key, { person }] of people) {
       const place = places.get(key);
-      if (!place?.stop) continue;
       setReaction(person, place.reaction);
       noteReaction(person, place.reaction, seconds);
       direct(person, place);
@@ -123,10 +126,9 @@ export function createHeadquartersPeople({ scene, tagLayer, onPick, describeStat
   function show(next, seconds) {
     ({ layout, spots, routeFor } = next);
     agents = next.agents;
-    gather();
     placeAt(receptionist, spots.receptionist);
     arrange(seconds);
-    agents.forEach(label);
+    agents.filter((agent) => people.has(agent.key)).forEach(label);
     hasShownPeople = true;
   }
 
