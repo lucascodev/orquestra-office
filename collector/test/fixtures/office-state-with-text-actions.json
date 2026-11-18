@@ -1,0 +1,36 @@
+{
+  "projects": {
+    "c:/projetos/antigo": {
+      "key": "c:/projetos/antigo",
+      "name": "antigo",
+      "template": "biblioteca",
+      "createdAt": 1763470000000,
+      "updatedAt": 1763470240000,
+      "stats": { "day": "2025-11-18", "prompts": 1, "tools": 2, "turns": 0, "tokens": 1000, "costUsd": 0.5 },
+      "team": ["code-reviewer"],
+      "agents": {
+        "claude:legacy1": {
+          "key": "claude:legacy1", "source": "claude", "kind": "main", "parentKey": null, "label": "Claude Code",
+          "status": "working", "activity": "editing", "action": "editando legado.js",
+          "startedAt": 1763470000000, "updatedAt": 1763470240000, "endedAt": null, "tools": 2,
+          "log": [
+            { "at": 1763470000000, "text": "abriu a sessão" },
+            { "at": 1763470060000, "text": "recebeu um pedido seu" },
+            { "at": 1763470120000, "text": "rodando npm" },
+            { "at": 1763470180000, "text": "você aprovou Bash pelo escritório" },
+            { "at": 1763470240000, "text": "editando legado.js" }
+          ]
+        },
+        "claude:legacy1:sub1": {
+          "key": "claude:legacy1:sub1", "source": "claude", "kind": "subagent", "parentKey": "claude:legacy1", "label": "Explore",
+          "status": "reviewing", "activity": "reading", "action": "lendo antigo.md",
+          "startedAt": 1763470100000, "updatedAt": 1763470200000, "endedAt": null, "tools": 1,
+          "log": [{ "at": 1763470100000, "text": "começou a tarefa" }, { "at": 1763470200000, "text": "lendo antigo.md" }]
+        }
+      }
+    }
+  },
+  "sessions": { "legacy1": "c:/projetos/antigo" },
+  "meters": { "legacy1": { "tokens": 1000, "costUsd": 0.5 } },
+  "usage": { "rateLimits": { "fiveHour": { "usedPercentage": 37, "resetsAt": 1763480000 } }, "updatedAt": 1763470240000 }
+}

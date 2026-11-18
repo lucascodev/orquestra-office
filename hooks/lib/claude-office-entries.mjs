@@ -14,6 +14,10 @@ const scriptCommandPattern = (file) => new RegExp(`^node "[^"]*[\\\\/]${escapeRe
 const SESSION_START_COMMAND = scriptCommandPattern(SESSION_START_FILE);
 const STATUSLINE_COMMAND = scriptCommandPattern(STATUSLINE_FILE);
 
+// Recorded on --remove instead of dropping the section: with no commands array the next install would be taken for a
+// pre-manifest one, and the file-name pattern would claim third-party scripts again.
+export const REMOVED_OFFICE_ENTRIES = Object.freeze({ urls: Object.freeze([]), commands: Object.freeze([]) });
+
 const stringsIn = (list) => (Array.isArray(list) ? list.filter((item) => typeof item === "string") : []);
 
 // Installs made before the manifest existed are recognized by the exact URL at this office or the default one.
@@ -22,7 +26,9 @@ const legacyUrls = (officeUrl) => [officeUrl, DEFAULT_OFFICE_URL].flatMap((origi
 export function officeMatcher({ officeUrl, recorded = {} }) {
   const urls = new Set([...stringsIn(recorded.urls), ...legacyUrls(officeUrl)]);
   const commands = new Set(stringsIn(recorded.commands));
-  const isRecordedOr = (pattern, command) => typeof command === "string" && (commands.has(command) || pattern.test(command));
+  // The file-name pattern only finds installs older than the manifest; once it records commands, a matching name is someone else's script.
+  const isLegacy = !Array.isArray(recorded.commands);
+  const isRecordedOr = (pattern, command) => typeof command === "string" && (commands.has(command) || (isLegacy && pattern.test(command)));
   return {
     isOfficeHook: (hook) => (hook?.type === "http" && urls.has(hook.url)) || (hook?.type === "command" && isRecordedOr(SESSION_START_COMMAND, hook.command)),
     isOfficeStatusline: (statusLine) => isRecordedOr(STATUSLINE_COMMAND, statusLine?.command),

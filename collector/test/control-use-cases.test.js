@@ -11,6 +11,9 @@ import { createOutbox } from "../src/control/domain/outbox.js";
 import { createPendingDecisions } from "../src/control/domain/pending-decisions.js";
 import { createSessionHistory } from "../src/history/session-history.js";
 import { createRecordActivity } from "../src/office/application/record-activity.js";
+import { AGENT_ACTION } from "../src/office/domain/agent-actions.js";
+import { TOOL_SUMMARY } from "../src/shared/claude/tool-summary-ids.js";
+import { ENTRY_TEXT } from "../src/shared/terminal/entry-text-ids.js";
 import { createOfficeStore } from "../src/office/domain/office-store.js";
 
 const HOLD_MS = 5_000;
@@ -45,7 +48,11 @@ function createControl({ holdMs = HOLD_MS, isWatched = true } = {}) {
 }
 
 const agentOf = (store, key) => store.findAgent(key);
-const startSession = (store, actor = ACTOR) => store.apply({ ...actor, at: 1, kind: "activity", status: "idle", action: "abriu a sessão" });
+const actionOf = (store, key) => {
+  const { actionId, subject } = agentOf(store, key);
+  return { actionId, subject };
+};
+const startSession = (store, actor = ACTOR) => store.apply({ ...actor, at: 1, kind: "activity", status: "idle", actionId: AGENT_ACTION.SESSION_OPENED, subject: null });
 
 test("with nobody watching the office a permission goes straight back with no answer", async () => {
   const control = createControl({ isWatched: false });
@@ -65,19 +72,23 @@ test("an approved permission comes back as the answer and is noted in the room a
   const control = createControl();
   const held = control.holdPermission({ actor: ACTOR, ...BASH, onAbort: NEVER_ABORTED });
   const [request] = control.decisions.list();
-  assert.deepEqual({ agentKey: request.agentKey, kind: request.kind, summary: request.summary, detail: request.detail },
-    { agentKey: MAIN_KEY, kind: "permission", summary: "Rodar um comando", detail: "rm -rf build" });
+  assert.deepEqual({ agentKey: request.agentKey, kind: request.kind, detail: request.detail }, { agentKey: MAIN_KEY, kind: "permission", detail: "rm -rf build" });
+  assert.equal(request.summary, undefined);
+  assert.deepEqual([request.toolName, request.summaryId, request.subject], ["Bash", TOOL_SUMMARY.RUN_COMMAND, null]);
 
   control.decisions.settle(request.id, { behavior: "allow" });
   assert.deepEqual(await held, { behavior: "allow" });
-  assert.equal(agentOf(control.store, MAIN_KEY).action, "você aprovou Bash pelo escritório");
-  assert.deepEqual(control.history.of(MAIN_KEY).map(({ kind, text }) => ({ kind, text })), [{ kind: "note", text: "você aprovou: Rodar um comando" }]);
+  assert.deepEqual(actionOf(control.store, MAIN_KEY), { actionId: AGENT_ACTION.PERMISSION_APPROVED, subject: "Bash" });
+  const [note, ...others] = control.history.of(MAIN_KEY);
+  assert.deepEqual(others, []);
+  assert.deepEqual([note.kind, note.textId, note.toolName, note.summaryId, note.subject, note.text], ["note", ENTRY_TEXT.PERMISSION_APPROVED, "Bash", TOOL_SUMMARY.RUN_COMMAND, null, undefined]);
 });
 
 test("a permission for a tool with no summary is shown as using that tool", async () => {
   const control = createControl();
   control.holdPermission({ actor: ACTOR, toolName: "mcp__github__create_issue", toolInput: {}, onAbort: NEVER_ABORTED });
-  assert.equal(control.decisions.list()[0].summary, "Usar mcp__github__create_issue");
+  const [request] = control.decisions.list();
+  assert.deepEqual([request.summaryId, request.subject], [TOOL_SUMMARY.USE_TOOL, "mcp__github__create_issue"]);
 });
 
 test("a denied permission is noted as refused", async () => {
@@ -85,7 +96,8 @@ test("a denied permission is noted as refused", async () => {
   const held = control.holdPermission({ actor: ACTOR, ...BASH, onAbort: NEVER_ABORTED });
   control.decisions.settle(control.decisions.list()[0].id, { behavior: "deny", message: "no" });
   assert.deepEqual(await held, { behavior: "deny", message: "no" });
-  assert.equal(agentOf(control.store, MAIN_KEY).action, "você recusou Bash pelo escritório");
+  assert.deepEqual(actionOf(control.store, MAIN_KEY), { actionId: AGENT_ACTION.PERMISSION_DENIED, subject: "Bash" });
+  assert.equal(control.history.of(MAIN_KEY).at(-1).textId, ENTRY_TEXT.PERMISSION_DENIED);
 });
 
 test("closing the hook connection releases the held permission with no answer and no note", async () => {
@@ -116,17 +128,20 @@ test("an answered question comes back with the answers and notes them", async ()
   const held = control.holdQuestion({ actor: ACTOR, questions: QUESTIONS, onAbort: NEVER_ABORTED });
   const [request] = control.decisions.list();
   assert.deepEqual({ kind: request.kind, toolName: request.toolName, questions: request.questions }, { kind: "question", toolName: "AskUserQuestion", questions: QUESTIONS });
+  assert.deepEqual([request.summaryId, request.subject], [TOOL_SUMMARY.ASK_QUESTION, null]);
 
   control.decisions.settle(request.id, { answers: { "Which framework?": "Vue" } });
   assert.deepEqual(await held, { answers: { "Which framework?": "Vue" } });
-  assert.equal(control.history.of(MAIN_KEY).at(-1).text, "você respondeu: Vue");
+  assert.deepEqual(actionOf(control.store, MAIN_KEY), { actionId: AGENT_ACTION.QUESTION_ANSWERED, subject: null });
+  const note = control.history.of(MAIN_KEY).at(-1);
+  assert.deepEqual([note.textId, note.answers, note.text], [ENTRY_TEXT.QUESTION_ANSWERED, ["Vue"], undefined]);
 });
 
 test("queued messages are handed over once, at the end of the main session's turn", () => {
   const control = createControl();
   control.outbox.queue(MAIN_KEY, "also update the README");
   assert.deepEqual(control.deliverQueuedMessages(ACTOR), ["also update the README"]);
-  assert.equal(agentOf(control.store, MAIN_KEY).action, "recebeu sua mensagem pelo escritório");
+  assert.deepEqual(actionOf(control.store, MAIN_KEY), { actionId: AGENT_ACTION.MESSAGE_DELIVERED, subject: null });
   assert.deepEqual(control.deliverQueuedMessages(ACTOR), []);
 });
 
@@ -177,6 +192,6 @@ test("a message goes only to a running Claude Code main session", () => {
 test("a session that already closed takes no messages", () => {
   const control = createControl();
   startSession(control.store);
-  control.store.apply({ ...ACTOR, at: 2, kind: "session-end", status: "idle", action: "fechou a sessão" });
+  control.store.apply({ ...ACTOR, at: 2, kind: "session-end", status: "idle", actionId: AGENT_ACTION.SESSION_CLOSED, subject: null });
   assert.equal(control.sendMessageToAgent({ agentKey: MAIN_KEY, text: "hi" }), OUTCOME.NOT_FOUND);
 });

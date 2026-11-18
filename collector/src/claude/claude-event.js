@@ -1,3 +1,4 @@
+import { AGENT_ACTION } from "../office/domain/agent-actions.js";
 import { PATH_LIMIT } from "../shared/text/field-limits.js";
 import { claudeSessionIdOf } from "./claude-session-id.js";
 import { describeActivity } from "./describe-activity.js";
@@ -7,7 +8,6 @@ const ROLE_NAME = /^[\w.-]{1,40}$/;
 const TEAM_LIMIT = 40;
 const AGENT_TYPE_LIMIT = 40;
 const TOOL_NAME_LIMIT = 30;
-const UNNAMED_TOOL = "uma ferramenta";
 
 function projectRootOf(payload) {
   const root = payload.office?.repoRoot;
@@ -34,8 +34,15 @@ function base(payload, now) {
   return { ...claudeActorOf(payload), at: now };
 }
 
-function activity(payload, now, status, action, extra = {}) {
-  return { ...base(payload, now), kind: "activity", status, action, ...extra };
+const named = (actionId, subject = null) => ({ actionId, subject });
+const NO_ACTION = Object.freeze(named(null));
+
+function toolNamed(actionId, payload) {
+  return named(actionId, payload.tool_name == null ? null : String(payload.tool_name).slice(0, TOOL_NAME_LIMIT));
+}
+
+function activity(payload, now, status, described, extra = {}) {
+  return { ...base(payload, now), kind: "activity", status, ...described, ...extra };
 }
 
 export function normalizeClaudeEvent(payload, now = Date.now()) {
@@ -44,35 +51,35 @@ export function normalizeClaudeEvent(payload, now = Date.now()) {
 
   switch (event) {
     case "SessionStart":
-      return activity(payload, now, "idle", payload.source === "resume" ? "retomou a sessão" : "abriu a sessão", { team: teamOf(payload) });
+      return activity(payload, now, "idle", named(payload.source === "resume" ? AGENT_ACTION.SESSION_RESUMED : AGENT_ACTION.SESSION_OPENED), { team: teamOf(payload) });
     case "UserPromptSubmit":
-      return activity(payload, now, "working", "recebeu um pedido seu", { counts: "prompts", activity: "thinking" });
+      return activity(payload, now, "working", named(AGENT_ACTION.PROMPT_RECEIVED), { counts: "prompts", activity: "thinking" });
     case "PreToolUse": {
-      const { status, action, activity: doing } = describeActivity(payload.tool_name, payload.tool_input);
-      return activity(payload, now, status, action, { counts: "tools", activity: doing });
+      const { status, activity: doing, actionId, subject } = describeActivity(payload.tool_name, payload.tool_input);
+      return activity(payload, now, status, named(actionId, subject), { counts: "tools", activity: doing });
     }
     case "PostToolUse":
-      return activity(payload, now, "working", null);
+      return activity(payload, now, "working", NO_ACTION);
     case "PostToolUseFailure":
-      return activity(payload, now, "working", `falhou ao usar ${String(payload.tool_name ?? UNNAMED_TOOL).slice(0, TOOL_NAME_LIMIT)}`, { activity: "failed" });
+      return activity(payload, now, "working", toolNamed(AGENT_ACTION.TOOL_FAILED, payload), { activity: "failed" });
     case "PermissionRequest":
-      return activity(payload, now, "needs_you", `pede permissão para usar ${String(payload.tool_name ?? UNNAMED_TOOL).slice(0, TOOL_NAME_LIMIT)}`);
+      return activity(payload, now, "needs_you", toolNamed(AGENT_ACTION.PERMISSION_REQUESTED, payload));
     case "Notification": {
       const type = payload.notification_type;
-      if (NEEDS_YOU_NOTIFICATIONS.has(type)) return activity(payload, now, "needs_you", "precisa de você no terminal");
-      if (type === "idle_prompt") return activity(payload, now, "waiting", "esperando sua resposta");
+      if (NEEDS_YOU_NOTIFICATIONS.has(type)) return activity(payload, now, "needs_you", named(AGENT_ACTION.NEEDS_YOU_IN_TERMINAL));
+      if (type === "idle_prompt") return activity(payload, now, "waiting", named(AGENT_ACTION.WAITING_FOR_REPLY));
       return null;
     }
     case "Stop":
-      return activity(payload, now, "break", "terminou o turno", { counts: "turns" });
+      return activity(payload, now, "break", named(AGENT_ACTION.TURN_FINISHED), { counts: "turns" });
     case "StopFailure":
-      return activity(payload, now, "blocked", "parou por erro da API");
+      return activity(payload, now, "blocked", named(AGENT_ACTION.API_ERROR));
     case "SubagentStart":
-      return { ...base(payload, now), kind: "subagent-start", status: "working", action: "começou a tarefa" };
+      return { ...base(payload, now), kind: "subagent-start", status: "working", ...named(AGENT_ACTION.TASK_STARTED) };
     case "SubagentStop":
-      return { ...base(payload, now), kind: "subagent-stop", status: "break", action: "entregou a tarefa" };
+      return { ...base(payload, now), kind: "subagent-stop", status: "break", ...named(AGENT_ACTION.TASK_DELIVERED) };
     case "SessionEnd":
-      return { ...base(payload, now), kind: "session-end", status: "idle", action: "fechou a sessão" };
+      return { ...base(payload, now), kind: "session-end", status: "idle", ...named(AGENT_ACTION.SESSION_CLOSED) };
     default:
       return null;
   }

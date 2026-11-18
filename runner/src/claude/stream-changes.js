@@ -1,24 +1,26 @@
 import { summarizeTool } from "../../../collector/src/shared/claude/summarize-tool.js";
+import { ENTRY_TEXT } from "../../../collector/src/shared/terminal/entry-text-ids.js";
 import { clip } from "../../../collector/src/shared/text/clip.js";
 
 const TEXT_LIMIT = 8_000;
 const INTERRUPTED = "aborted_streaming";
 
-const entry = (kind, text, detail = "") => ({ kind, text, detail });
+const namedEntry = (kind, textId, detail = "") => ({ kind, textId, detail });
 const isFromMainAgent = (event) => !event.parent_tool_use_id;
 
 function blockChanges(block) {
-  if (block.type === "text" && block.text) return [{ type: "entry", entry: entry("reply", clip(block.text, TEXT_LIMIT)) }];
+  if (block.type === "text" && block.text) return [{ type: "entry", entry: { kind: "reply", text: clip(block.text, TEXT_LIMIT), detail: "" } }];
   if (block.type !== "tool_use") return [];
-  const { toolName, summary, detail } = summarizeTool(block.name, block.input);
-  return [{ type: "entry", entry: entry("tool", summary ? `${toolName}: ${summary}` : toolName, detail) }];
+  const { toolName, summaryId, subject, detail } = summarizeTool(block.name, block.input);
+  return [{ type: "entry", entry: { kind: "tool", toolName, summaryId, subject, detail } }];
 }
 
 function resultChanges(event) {
   const idle = { type: "status", status: "idle" };
   if (!event.is_error) return [idle];
-  if (event.terminal_reason === INTERRUPTED) return [idle, { type: "entry", entry: entry("note", "turno interrompido") }];
-  return [idle, { type: "entry", entry: entry("error", "o turno terminou com erro", clip(String(event.result ?? event.subtype ?? ""), TEXT_LIMIT)) }];
+  if (event.terminal_reason === INTERRUPTED) return [idle, { type: "entry", entry: namedEntry("note", ENTRY_TEXT.TURN_INTERRUPTED) }];
+  const failure = clip(String(event.result ?? event.subtype ?? ""), TEXT_LIMIT);
+  return [idle, { type: "entry", entry: namedEntry("error", ENTRY_TEXT.TURN_FAILED, failure) }];
 }
 
 export function changesOf(event) {

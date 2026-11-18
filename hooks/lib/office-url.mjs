@@ -33,5 +33,6 @@ export function installerOfficeUrl(env, options) {
   return raw === undefined ? { origin: DEFAULT_OFFICE_URL } : parseOfficeUrl(raw, options);
 }
 
-// Hooks read OFFICE_URL at run time, where a project's .claude/settings.json can set it: only a loopback origin is honored.
-export const officeUrlFrom = (env) => installerOfficeUrl(env).origin ?? DEFAULT_OFFICE_URL;
+// Hooks read OFFICE_URL at run time, where a project's .claude/settings.json can set it. A refused value turns the hook off
+// instead of falling back, so a session aimed elsewhere never ends up reported to this machine's office.
+export const officeUrlFrom = (env) => installerOfficeUrl(env).origin ?? null;

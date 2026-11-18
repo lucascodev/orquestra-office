@@ -1,3 +1,4 @@
+import { toolSummaryText } from "../../domain/terminal/tool-summary-text.js";
 import { esc } from "../shared/escape-html.js";
 import { clockTime } from "../shared/format.js";
 
@@ -10,7 +11,7 @@ const answerInSheet = (request) => `<div class="pending-actions"><button class="
 
 export function renderPendingStrip(request) {
   return `<div class="pending-strip" data-pending="${esc(request.id)}">
-    <p class="pending-what">${esc(request.summary)}</p>
+    <p class="pending-what">${esc(toolSummaryText(request))}</p>
     ${request.detail ? `<code class="mono">${esc(request.detail)}</code>` : ""}
     ${request.kind === "permission" ? quickDecision() : answerInSheet(request)}
   </div>`;
@@ -18,7 +19,7 @@ export function renderPendingStrip(request) {
 
 function permissionCard(request, agentName) {
   return `<h3 class="card-title">${esc(agentName)} quer usar ${esc(request.toolName)}</h3>
-    <p class="pending-what">${esc(request.summary)}</p>
+    <p class="pending-what">${esc(toolSummaryText(request))}</p>
     ${request.detail ? `<pre class="mono">${esc(request.detail)}</pre>` : ""}
     <div class="field"><label for="deny-reason">Motivo, se for negar (opcional)</label><input class="input" id="deny-reason" type="text" name="reason" maxlength="500" autocomplete="off"></div>
     <div class="pending-actions">

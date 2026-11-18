@@ -1,3 +1,4 @@
+import { logEntryText } from "../domain/office/agent-action-text.js";
 import { ownValueOf } from "../domain/shared/own-value.js";
 import { agentMark, originOf, statusBadge } from "../view/office/agent-badges.js";
 import { ago } from "../view/shared/format.js";
@@ -10,7 +11,7 @@ import { createTerminalPane } from "./terminal-pane.js";
 const MESSAGE_FAILED = "Não deu para enviar a mensagem.";
 const LIVE_STATUS = { starting: "abrindo a sessão…", working: "trabalhando…", idle: "aguardando sua mensagem", ended: "sessão encerrada" };
 
-const logAsHistory = (agent) => (agent.log ?? []).map((item) => ({ at: item.at, kind: "note", text: item.text, detail: "" }));
+const logAsHistory = (agent) => (agent.log ?? []).map((item) => ({ at: item.at, kind: "note", text: logEntryText(item), detail: "" }));
 
 function queueStatus(queued) {
   if (!queued) return "";

@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { startFakeOffice } from "./support/fake-office.mjs";
-import { requestedUrls, runHookScript } from "./support/run-hook-script.mjs";
+import { requestedUrls, runHookScript, runRecordingFetch } from "./support/run-hook-script.mjs";
 
 const SCRIPT = "office-statusline.mjs";
 const UNREACHABLE_OFFICE = "http://127.0.0.1:1";
@@ -10,6 +10,7 @@ const FULL_STATUS = JSON.stringify({
   rate_limits: { five_hour: { used_percentage: 12.6 }, seven_day: { used_percentage: 40 } },
   cost: { total_cost_usd: 1.234 },
 });
+const FULL_STATUS_LINE = "Opus · 5 h 13% · semana 40% · US$ 1.23\n";
 
 test("forwards the raw status JSON to the office and prints the line", async (t) => {
   const office = await startFakeOffice(t);
@@ -35,13 +36,31 @@ test("prints an empty line for input that is not JSON", async () => {
   assert.equal(result.stdout, "\n");
 });
 
-const IGNORED_OFFICE_URLS = ["", "http://evil.example", "https://evil.example", "http://user:pw@127.0.0.1:8420", "http://127.0.0.1:8420/x", "not a url"];
+const BLANK_OFFICE_URLS = ["", "   "];
+const REFUSED_OFFICE_URLS = ["http://evil.example", "https://evil.example", "http://user:pw@127.0.0.1:8420", "http://127.0.0.1:8420/x", "not a url"];
 
-for (const officeUrl of IGNORED_OFFICE_URLS) {
-  test(`ignores OFFICE_URL "${officeUrl}" and reports only to the default office`, async (t) => {
+test("without OFFICE_URL reports to the default office", async (t) => {
+  const urls = await requestedUrls(t, SCRIPT, { input: FULL_STATUS });
+
+  assert.deepEqual(urls, ["http://127.0.0.1:8420/events/statusline"]);
+});
+
+for (const officeUrl of BLANK_OFFICE_URLS) {
+  test(`an OFFICE_URL of "${officeUrl}" counts as unset and reports to the default office`, async (t) => {
     const urls = await requestedUrls(t, SCRIPT, { env: { OFFICE_URL: officeUrl }, input: FULL_STATUS });
 
     assert.deepEqual(urls, ["http://127.0.0.1:8420/events/statusline"]);
+  });
+}
+
+for (const officeUrl of REFUSED_OFFICE_URLS) {
+  test(`a refused OFFICE_URL "${officeUrl}" skips the report but still prints the line, exit 0`, async (t) => {
+    const result = await runRecordingFetch(t, SCRIPT, { env: { OFFICE_URL: officeUrl }, input: FULL_STATUS });
+
+    assert.deepEqual(result.urls, []);
+    assert.equal(result.stdout, FULL_STATUS_LINE);
+    assert.equal(result.stderr, "");
+    assert.equal(result.code, 0);
   });
 }
 

@@ -45,6 +45,9 @@ function copyWithoutOverwriting(path, stamp) {
 export function backupConfig(path, now = new Date()) {
   const backupPath = copyWithoutOverwriting(path, backupStamp(now));
   if (process.platform !== "win32") chmodSync(backupPath, OWNER_ONLY_MODE);
-  for (const name of backupsToPrune(basename(path), readdirSync(dirname(path)))) rmSync(join(dirname(path), name));
   return backupPath;
+}
+
+export function pruneBackups(path) {
+  for (const name of backupsToPrune(basename(path), readdirSync(dirname(path)))) rmSync(join(dirname(path), name));
 }

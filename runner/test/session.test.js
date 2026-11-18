@@ -20,7 +20,7 @@ test("a crash with an error ends the session with a 'a sessão caiu' entry carry
   const { session, process } = startSession();
   process.exit({ code: null, error: "spawn claude ENOENT" });
 
-  assert.deepEqual(session.transcript().entries, [{ at: STARTED_AT, kind: "error", text: "a sessão caiu", detail: "spawn claude ENOENT" }]);
+  assert.deepEqual(session.transcript().entries, [{ at: STARTED_AT, kind: "error", textId: "session-crashed", detail: "spawn claude ENOENT" }]);
   assert.equal(session.summary().status, "ended");
   assert.equal(session.summary().endedAt, STARTED_AT);
 });

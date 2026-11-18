@@ -9,13 +9,13 @@ const base = { session_id: "s1", cwd: "C:\\projetos\\orquestra" };
 test("pre tool use on edit becomes working with the file name only", () => {
   const e = normalizeClaudeEvent({ ...base, hook_event_name: "PreToolUse", tool_name: "Edit", tool_input: { file_path: "C:\\x\\src\\secret.rs", old_string: "API_KEY=abc" } }, 1);
   assert.equal(e.status, "working");
-  assert.equal(e.action, "editando secret.rs");
+  assert.deepEqual([e.actionId, e.subject], ["editing", "secret.rs"]);
   assert.ok(!JSON.stringify(e).includes("API_KEY"));
 });
 
 test("bash keeps only the program name, never the arguments", () => {
   const e = normalizeClaudeEvent({ ...base, hook_event_name: "PreToolUse", tool_name: "Bash", tool_input: { command: "curl -H 'Authorization: Bearer xyz' https://x" } }, 1);
-  assert.equal(e.action, "rodando curl");
+  assert.deepEqual([e.actionId, e.subject], ["running", "curl"]);
 });
 
 test("prompt text never reaches the event", () => {

@@ -153,7 +153,7 @@ No celular, na mesma rede, abra `http://<OFFICE_LAN_IP>:8420`. Para voltar ao mo
 
 ## Instalar
 
-No PowerShell, nesta pasta:
+Com o Node 22 ou mais novo, no PowerShell, nesta pasta:
 
 ```powershell
 docker compose up -d --build
@@ -169,7 +169,7 @@ Os dois scripts só mexem no que o escritório gravou. As URLs e os comandos exa
 
 - **Backup.** Antes de gravar, cada script copia o arquivo para `settings.json.bak-<data>` ou `config.toml.bak-<data>` e guarda só os três backups mais recentes. A cópia é inteira: se o `env` do seu `settings.json` tiver tokens ou senhas, o backup também terá. No macOS e no Linux o backup fica legível só pelo seu usuário; no Windows ele herda as permissões da pasta.
 - **Gravação.** O arquivo é trocado de uma vez, e um `settings.json` que seja symlink continua symlink. Se o Claude Code salvar o arquivo enquanto o script roda, nada é gravado e o script pede para rodar de novo.
-- **Endereço.** Os hooks falam com `http://127.0.0.1:8420`. Para usar outra porta, defina `OFFICE_URL` antes de instalar, com um endereço desta máquina (`127.0.0.1`, `localhost` ou `[::1]`) e sem caminho. Endereço de outra máquina só com `--allow-remote-office` e `https://`, porque os hooks mandam para lá os comandos e as respostas das ferramentas e recebem de lá as decisões de permissão. Os dois scripts gravados (`office-session-start.mjs` e `office-statusline.mjs`) leem `OFFICE_URL` durante a sessão e só aceitam um endereço desta máquina; com outro valor, usam o padrão.
+- **Endereço.** Os hooks falam com `http://127.0.0.1:8420`. Para usar outra porta, defina `OFFICE_URL` antes de instalar, com um endereço desta máquina (`127.0.0.1`, `localhost` ou `[::1]`) e sem caminho. Endereço de outra máquina só com `--allow-remote-office` e `https://`, porque os hooks mandam para lá os comandos e as respostas das ferramentas e recebem de lá as decisões de permissão. Os dois scripts gravados (`office-session-start.mjs` e `office-statusline.mjs`) leem `OFFICE_URL` durante a sessão e só aceitam um endereço desta máquina; sem a variável, usam o padrão, e com outro valor não mandam nada.
 - **Pasta.** O caminho desta pasta vai dentro do comando gravado, então o instalador recusa um caminho com caracteres que o shell interpreta, como `$`, crase, aspas ou `;`.
 
 ## Desinstalar
@@ -180,7 +180,7 @@ node hooks/install-codex-notify.mjs --remove
 docker compose down
 ```
 
-O `--remove` tira só o que o escritório gravou e a anotação correspondente em `orquestra-office.json`. Se o arquivo de configuração não existir, ele não cria nada.
+O `--remove` tira só o que o escritório gravou. Em `orquestra-office.json`, a anotação do Codex é apagada e a do Claude fica vazia, para que uma instalação seguinte não confunda um script seu com o mesmo nome de arquivo do escritório com uma instalação antiga. Se o arquivo de configuração não existir, ele não cria nada.
 
 Se o container estiver parado, os hooks falham rápido e o Claude Code continua normalmente (`onFailure: "continue"`).
 

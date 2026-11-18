@@ -1,8 +1,9 @@
 import { clip } from "../text/clip.js";
+import { TOOL_SUMMARY } from "./tool-summary-ids.js";
 import { DELEGATE_TOOLS, EDIT_TOOLS, SHELL_TOOLS, WRITE_TOOLS } from "./tool-names.js";
 
 const DETAIL_LIMIT = 2_000;
-const SUMMARY_LIMIT = 160;
+const SUBJECT_LIMIT = 160;
 const TOOL_NAME_LIMIT = 60;
 
 const fileOf = (input) => String(input?.file_path ?? input?.notebook_path ?? input?.path ?? "");
@@ -15,19 +16,26 @@ function editDiff(input) {
   return edits.filter((edit) => edit?.old_string !== undefined).map(diffOf).join("\n");
 }
 
+const described = (summaryId, subject, detail) => ({ summaryId, subject, detail });
+
 function describe(name, input) {
-  if (SHELL_TOOLS.has(name)) return { summary: input?.description || "Rodar um comando", detail: input?.command };
-  if (WRITE_TOOLS.has(name)) return { summary: `Escrever ${fileOf(input)}`, detail: input?.content ?? input?.new_source };
-  if (EDIT_TOOLS.has(name)) return { summary: `Editar ${fileOf(input)}`, detail: editDiff(input) };
-  if (name === "Read") return { summary: `Ler ${fileOf(input)}`, detail: "" };
-  if (name === "WebFetch") return { summary: "Abrir uma página", detail: input?.url };
-  if (name === "WebSearch") return { summary: "Pesquisar na web", detail: input?.query };
-  if (DELEGATE_TOOLS.has(name)) return { summary: `Delegar para ${input?.subagent_type ?? "um subagente"}`, detail: input?.prompt ?? input?.description };
-  return { summary: "", detail: JSON.stringify(input ?? {}, null, 2) };
+  if (SHELL_TOOLS.has(name)) return described(TOOL_SUMMARY.RUN_COMMAND, input?.description ? String(input.description) : null, input?.command);
+  if (WRITE_TOOLS.has(name)) return described(TOOL_SUMMARY.WRITE_FILE, fileOf(input), input?.content ?? input?.new_source);
+  if (EDIT_TOOLS.has(name)) return described(TOOL_SUMMARY.EDIT_FILE, fileOf(input), editDiff(input));
+  if (name === "Read") return described(TOOL_SUMMARY.READ_FILE, fileOf(input), "");
+  if (name === "WebFetch") return described(TOOL_SUMMARY.OPEN_PAGE, null, input?.url);
+  if (name === "WebSearch") return described(TOOL_SUMMARY.SEARCH_WEB, null, input?.query);
+  if (DELEGATE_TOOLS.has(name)) return described(TOOL_SUMMARY.DELEGATE, input?.subagent_type == null ? null : String(input.subagent_type), input?.prompt ?? input?.description);
+  return described(null, null, JSON.stringify(input ?? {}, null, 2));
 }
 
 export function summarizeTool(toolName, toolInput) {
   const name = String(toolName ?? "");
-  const { summary, detail } = describe(name, toolInput);
-  return { toolName: clip(name, TOOL_NAME_LIMIT), summary: clip(String(summary), SUMMARY_LIMIT), detail: clip(detail, DETAIL_LIMIT) };
+  const { summaryId, subject, detail } = describe(name, toolInput);
+  return {
+    toolName: clip(name, TOOL_NAME_LIMIT),
+    summaryId,
+    subject: subject === null ? null : clip(subject, SUBJECT_LIMIT),
+    detail: clip(detail, DETAIL_LIMIT),
+  };
 }

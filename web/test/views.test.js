@@ -191,3 +191,38 @@ describe("status names", () => {
     assert.deepEqual(["dancing", "toString", "constructor", undefined].map(describeStatus), ["livre", "livre", "livre", "livre"]);
   });
 });
+
+const withFields = (record, fields) => {
+  const { action, summary, text, ...rest } = record;
+  return { ...rest, ...fields };
+};
+
+describe("views fed with fields instead of ready-made text", () => {
+  it("show the same team when the actions and the request summary come as fields", () => {
+    const [caio, bia, nara, eva] = busyTeam();
+    const team = [
+      withFields(caio, { actionId: "permission-requested", subject: "Bash" }),
+      withFields(bia, { actionId: "reading", subject: "server.js" }),
+      withFields(nara, { actionId: null, subject: null }),
+      eva,
+    ];
+    const pendingByAgent = new Map([["claude:c1", withFields(permission, { summaryId: "run-command", subject: "Aplicar as migrações do banco" })]]);
+    assertMatchesRecording("team-busy", renderTeam(projectOf("c:/loja", "loja", team), { pendingByAgent, outbox: { "claude:c1": 2 } }));
+  });
+
+  it("show the same facts when the action comes as fields", () => {
+    assertMatchesRecording("facts-busy", renderAgentFacts(withFields(agentOf("claude:a1"), { actionId: "editing", subject: "office-store.js" })));
+    const fresh = withFields(agentOf("claude:a1", { tools: undefined, startedAt: 0, updatedAt: NOW - 2 * DAY }), { actionId: null, subject: null });
+    assertMatchesRecording("facts-new", renderAgentFacts(fresh));
+  });
+
+  it("show the same request strip and card when the summary comes as fields", () => {
+    const permissionFields = withFields(permission, { summaryId: "run-command", subject: "Aplicar as migrações do banco" });
+    const questionFields = withFields(question, { summaryId: "ask-question", subject: null });
+    assertMatchesRecording("pending-strip-permission", renderPendingStrip(permissionFields));
+    assertMatchesRecording("pending-card-permission", renderPendingCard(permissionFields, "Caio"));
+    assertMatchesRecording("pending-strip-question", renderPendingStrip(questionFields));
+    assertMatchesRecording("pending-card-question", renderPendingCard(questionFields, "Duda <dev>"));
+  });
+});
+

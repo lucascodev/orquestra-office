@@ -2,10 +2,11 @@ import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
 import { copyFileSync, existsSync, mkdirSync, mkdtempSync, realpathSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { join, resolve } from "node:path";
+import { delimiter, join, resolve } from "node:path";
 import { test } from "node:test";
+import { fileURLToPath, pathToFileURL } from "node:url";
 import { startFakeOffice } from "./support/fake-office.mjs";
-import { requestedUrls, runHookScript } from "./support/run-hook-script.mjs";
+import { requestedUrls, runHookScript, runRecordingFetch } from "./support/run-hook-script.mjs";
 
 const SCRIPT = "office-session-start.mjs";
 const UNREACHABLE_OFFICE = "http://127.0.0.1:1";
@@ -91,13 +92,57 @@ test("never runs a git.exe or git.cmd planted in the opened repository", { skip:
   assert.equal(existsSync(marker), false);
 });
 
-const IGNORED_OFFICE_URLS = ["", "http://evil.example", "https://evil.example", "http://user:pw@127.0.0.1:8420", "http://127.0.0.1:8420/x", "not a url"];
+const OLD_LIBUV = pathToFileURL(fileURLToPath(new URL("./support/old-libuv.mjs", import.meta.url))).href;
 
-for (const officeUrl of IGNORED_OFFICE_URLS) {
-  test(`ignores OFFICE_URL "${officeUrl}" and reports only to the default office`, async (t) => {
+function gitOnPath(t) {
+  const dir = realpathSync.native(mkdtempSync(join(tmpdir(), "office-fake-git-")));
+  t.after(() => rmSync(dir, { recursive: true, force: true }));
+  const marker = join(dir, "fake-git-ran");
+  const preload = join(dir, "mark.cjs");
+  copyFileSync(process.execPath, join(dir, "git.exe"));
+  writeFileSync(preload, MARK_WHEN_RUN_AS_GIT(marker));
+  const env = { OFFICE_URL: UNREACHABLE_OFFICE, PATH: `${dir}${delimiter}${process.env.PATH}`, NODE_OPTIONS: `--require "${preload.replaceAll("\\", "/")}"` };
+  return { marker, env };
+}
+
+test("with libuv 1.47 on Windows the hook never looks git up", { skip: process.platform !== "win32" && "the libuv version only matters on Windows" }, async (t) => {
+  const input = JSON.stringify({ session_id: "x", cwd: tmpdir() });
+  const current = gitOnPath(t);
+  const old = gitOnPath(t);
+
+  await runHookScript(SCRIPT, { env: current.env, input });
+  const result = await runHookScript(SCRIPT, { env: old.env, input, nodeArgs: ["--import", OLD_LIBUV] });
+
+  assert.equal(existsSync(current.marker), true, "the git on PATH should run with the current libuv, or this test proves nothing");
+  assert.equal(result.code, 0);
+  assert.equal(existsSync(old.marker), false);
+});
+
+const BLANK_OFFICE_URLS = ["", "   "];
+const REFUSED_OFFICE_URLS = ["http://evil.example", "https://evil.example", "http://user:pw@127.0.0.1:8420", "http://127.0.0.1:8420/x", "not a url"];
+
+test("without OFFICE_URL reports to the default office", async (t) => {
+  const urls = await requestedUrls(t, SCRIPT, { input: JSON.stringify({ session_id: "x", cwd: tmpdir() }) });
+
+  assert.deepEqual(urls, ["http://127.0.0.1:8420/events/claude"]);
+});
+
+for (const officeUrl of BLANK_OFFICE_URLS) {
+  test(`an OFFICE_URL of "${officeUrl}" counts as unset and reports to the default office`, async (t) => {
     const urls = await requestedUrls(t, SCRIPT, { env: { OFFICE_URL: officeUrl }, input: JSON.stringify({ session_id: "x", cwd: tmpdir() }) });
 
     assert.deepEqual(urls, ["http://127.0.0.1:8420/events/claude"]);
+  });
+}
+
+for (const officeUrl of REFUSED_OFFICE_URLS) {
+  test(`a refused OFFICE_URL "${officeUrl}" turns the hook off: no report, no output, exit 0`, async (t) => {
+    const result = await runRecordingFetch(t, SCRIPT, { env: { OFFICE_URL: officeUrl }, input: JSON.stringify({ session_id: "x", cwd: tmpdir() }) });
+
+    assert.deepEqual(result.urls, []);
+    assert.equal(result.stdout, "");
+    assert.equal(result.stderr, "");
+    assert.equal(result.code, 0);
   });
 }
 

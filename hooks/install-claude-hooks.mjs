@@ -2,6 +2,7 @@ import { existsSync, readFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
+import { REMOVED_OFFICE_ENTRIES } from "./lib/claude-office-entries.mjs";
 import { isForeignStatusline, officeEntries, withOfficeSettings } from "./lib/claude-settings.mjs";
 import { settingsShapeProblem } from "./lib/claude-settings-shape.mjs";
 import { commitConfig } from "./lib/config-commit.mjs";
@@ -36,6 +37,14 @@ function loadManifest() {
   }
 }
 
+function commitOrFail(change) {
+  try {
+    return commitConfig(change);
+  } catch (error) {
+    return fail(`Could not save ${change.path} (${error.code ?? error.message}); check that it is not read-only or open in another program`);
+  }
+}
+
 function parseSettings(text) {
   if (text === null) return {};
   let settings;
@@ -63,10 +72,11 @@ if (isForeignStatusline(settings.statusLine, options)) {
 }
 
 const nextText = `${JSON.stringify(withOfficeSettings(settings, options), null, 2)}\n`;
-const { isUnchanged, hasChangedMeanwhile, backupPath } = commitConfig({ path: settingsPath, originalText, nextText });
+const { isUnchanged, hasChangedMeanwhile, backupPath, pruneError } = commitOrFail({ path: settingsPath, originalText, nextText });
 if (hasChangedMeanwhile) fail(`${settingsPath} was saved by another program while the installer ran. Run the installer again`);
-writeManifestFile(configDir, withManifestSection(manifest, MANIFEST_SECTION, isRemoving ? null : officeEntries(options)));
+writeManifestFile(configDir, withManifestSection(manifest, MANIFEST_SECTION, isRemoving ? REMOVED_OFFICE_ENTRIES : officeEntries(options)));
 if (backupPath) console.log(`Backup: ${backupPath}`);
+if (pruneError) console.warn(`Saved, but could not remove old backup ${pruneError.path ?? ""} (${pruneError.code ?? pruneError.message}).`);
 if (isUnchanged) console.log(`${settingsPath} is already up to date. Nothing was changed.`);
 else if (isRemoving) console.log(`Office hooks removed from ${settingsPath}.`);
 else console.log(`Office hooks installed in ${settingsPath}. New Claude Code sessions will show up at ${officeUrl}.`);

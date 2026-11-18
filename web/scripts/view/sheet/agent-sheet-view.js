@@ -1,3 +1,4 @@
+import { agentActionText } from "../../domain/office/agent-action-text.js";
 import { esc } from "../shared/escape-html.js";
 import { ago } from "../shared/format.js";
 import { icon } from "../shared/icons.js";
@@ -8,7 +9,7 @@ export function renderAgentIdentity(agent, { mark, badge, origin }) {
 }
 
 export function renderAgentFacts(agent) {
-  return `<div><dt>Agora</dt><dd>${esc(agent.action || "sem atividade")}</dd></div>
+  return `<div><dt>Agora</dt><dd>${esc(agentActionText(agent) || "sem atividade")}</dd></div>
     <div><dt>Ferramentas</dt><dd class="mono">${agent.tools ?? 0}</dd></div>
     <div><dt>Começou</dt><dd>${ago(agent.startedAt)}</dd></div>
     <div><dt>Atualizado</dt><dd>${ago(agent.updatedAt)}</dd></div>`;

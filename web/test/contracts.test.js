@@ -7,7 +7,7 @@ import { canReceiveMessages as collectorCanReceiveMessages } from "../../collect
 import { TEMPLATE_IDS } from "../../collector/src/office/domain/templates.js";
 import { THEMES } from "../scripts/data/themes.js";
 import { busyReactionOf } from "../scripts/domain/behavior/agent-reactions.js";
-import { thoughtAt } from "../scripts/domain/behavior/agent-thoughts.js";
+import { thoughtAt, thoughtSubjectOf } from "../scripts/domain/behavior/agent-thoughts.js";
 import { ACTIVE_STATUSES, KNOWN_STATUSES } from "../scripts/domain/office/agent-status.js";
 import { canReceiveMessages as webCanReceiveMessages } from "../scripts/domain/office/can-receive-messages.js";
 import { buildDecision } from "../scripts/domain/office/decision-body.js";
@@ -32,23 +32,23 @@ function thoughtsAbout(activity) {
   const agent = { key: AGENT_KEY, kind: "main", endedAt: null, status: activity.status, activity: activity.activity };
   const reactionId = busyReactionOf(agent);
   const samples = Array.from({ length: WATCH_SECONDS / SAMPLE_STEP_SECONDS }, (_, i) => i * SAMPLE_STEP_SECONDS);
-  const texts = samples.map((nowSeconds) => thoughtAt({ agentKey: AGENT_KEY, reactionId, action: activity.action, sinceSeconds: 0, nowSeconds, gapSeconds: THOUGHT_GAP_SECONDS })?.text);
+  const subject = thoughtSubjectOf({ actionId: activity.actionId, subject: activity.subject });
+  const texts = samples.map((nowSeconds) => thoughtAt({ agentKey: AGENT_KEY, reactionId, subject, sinceSeconds: 0, nowSeconds, gapSeconds: THOUGHT_GAP_SECONDS })?.text);
   return [...new Set(texts.filter(Boolean))];
 }
 
 describe("activity reported by the collector", () => {
   const cases = [
-    { tool: "Edit", input: { file_path: "C:\\repo\\src\\a.js" }, action: "editando a.js", subject: "a.js" },
-    { tool: "Read", input: { file_path: "/repo/README.md" }, action: "lendo README.md", subject: "README.md" },
-    { tool: "Bash", input: { command: "npm test -- --watch" }, action: "rodando npm", subject: "npm" },
-    { tool: "Agent", input: { subagent_type: "code-reviewer" }, action: "delegou para code-reviewer", subject: "code-reviewer" },
-    { tool: "mcp__notion__search", input: {}, action: "usando notion", subject: "notion" },
+    { tool: "Edit", input: { file_path: "C:\\repo\\src\\a.js" }, shown: "editando a.js", subject: "a.js" },
+    { tool: "Read", input: { file_path: "/repo/README.md" }, shown: "lendo README.md", subject: "README.md" },
+    { tool: "Bash", input: { command: "npm test -- --watch" }, shown: "rodando npm", subject: "npm" },
+    { tool: "Agent", input: { subagent_type: "code-reviewer" }, shown: "delegou para code-reviewer", subject: "code-reviewer" },
+    { tool: "mcp__notion__search", input: {}, shown: "usando notion", subject: "notion" },
   ];
 
-  for (const { tool, input, action, subject } of cases) {
-    it(`turns "${action}" into a thought that names ${subject}`, () => {
+  for (const { tool, input, shown, subject } of cases) {
+    it(`turns "${shown}" into a thought that names ${subject}`, () => {
       const activity = describeActivity(tool, input);
-      assert.equal(activity.action, action);
       const thoughts = thoughtsAbout(activity);
       assert.ok(thoughts.some((text) => text.includes(subject)), `no thought names ${subject}: ${thoughts.join(" | ")}`);
       assert.ok(thoughts.every((text) => !text.includes("{alvo}")));
