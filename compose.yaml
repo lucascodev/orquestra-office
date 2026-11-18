@@ -10,7 +10,14 @@ services:
     volumes:
       - ./web:/app/web:ro
       - office-data:/data
+    secrets:
+      - office_secret
     restart: unless-stopped
+
+# The secret is created by node hooks/install-claude-hooks.mjs; run the installer before the first docker compose up.
+secrets:
+  office_secret:
+    file: ${OFFICE_SECRET_FILE:-${USERPROFILE:-${HOME}}/.orquestra-office/secret}
 
 volumes:
   office-data: {}
