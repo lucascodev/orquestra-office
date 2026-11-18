@@ -2,13 +2,13 @@ import { createHmac, randomBytes } from "node:crypto";
 import { chmodSync, closeSync, existsSync, fchmodSync, fsyncSync, mkdirSync, openSync, readFileSync, rmSync, writeSync } from "node:fs";
 import { dirname } from "node:path";
 import { renameWithRetry } from "./atomic-write.mjs";
+import { ACTIVITY_TOKEN_LABEL } from "./signed-message.mjs";
 
 const KEY_BYTES = 32;
 const OWNER_ONLY_DIR = 0o700;
 const OWNER_ONLY_FILE = 0o600;
 const TEMP_NAME_BYTES = 6;
 const WINDOWS = "win32";
-const ACTIVITY_TOKEN_LABEL = "orquestra-office/activity-token/v1";
 
 export function parseSecret(text) {
   const encoded = String(text ?? "").trim();
