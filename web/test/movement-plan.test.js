@@ -134,6 +134,13 @@ describe("movement plan", () => {
     assert.deepEqual(routes, []);
   });
 
+  it("puts someone straight in place when there is no way to walk there, instead of leaving them stuck on the way", () => {
+    const { room } = roomOf();
+    const nowhere = { ...room, routeFor: () => [] };
+    const strolling = personOf({ stop: COFFEE, position: HALFWAY, isWalking: true });
+    assert.deepEqual(plan(strolling, { stop: DESK, isUrgent: true }, { room: nowhere }), { kind: "place", stop: DESK });
+  });
+
   it("does not move someone who is already standing where they need to be", () => {
     const { room } = roomOf();
     const atDesk = personOf({ stop: COFFEE, position: { x: DESK.x, z: DESK.z } });

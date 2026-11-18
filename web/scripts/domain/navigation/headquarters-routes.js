@@ -1,5 +1,6 @@
 import { CORRIDOR_WALK_Z, MAIN_DOOR_PATH, RECEPTION_WALK_X, WALK_PATHS } from "../../data/headquarters-areas.js";
 import { atDepth } from "../headquarters/facade-offsets.js";
+import { headquartersSpots } from "../headquarters/headquarters-spots.js";
 import { ISLAND_LANES_EAST_X, ISLAND_SPINES_X, islandLaneZs } from "../headquarters/island-grid.js";
 import { containsPoint, crossesRect } from "./segment-crossing.js";
 import { shortestWalk, walkGraphOf } from "./walk-graph.js";
@@ -22,10 +23,16 @@ function workAreaPaths(layout) {
   return [...lanes, ...spines, ...fromCorridor, ...toReception];
 }
 
+// Someone stopped halfway along a way in, behind a table, has no straight line to a walkway: each way in is a dead end of its own.
+function waysIn(layout) {
+  const { freeTime } = headquartersSpots(layout);
+  return [...freeTime.values()].flat().map((stop) => [accessOf(stop), ...(stop.approach ?? []), { x: stop.x, z: stop.z }]);
+}
+
 function walkPaths(layout) {
   const at = (point) => atDepth(point, layout.size.D);
   const toTheYard = [...MAIN_DOOR_PATH.map(at), layout.yard.exit, layout.yard.arrival];
-  return [...WALK_PATHS, ...workAreaPaths(layout), toTheYard];
+  return [...WALK_PATHS, ...workAreaPaths(layout), toTheYard, ...waysIn(layout)];
 }
 
 function obstaclesOf(layout) {
@@ -51,13 +58,9 @@ export function headquartersRoutes(layout) {
   const graph = walkGraphOf(walkPaths(layout));
   const obstacles = obstaclesOf(layout);
   const isClear = (from, to) => obstacles.every((rect) => containsPoint(rect, from) || !crossesRect(from, to, rect));
-  const walkBetween = (from, to) => {
-    const clear = shortestWalk(graph, from, to, isClear);
-    return clear.length > 0 ? clear : shortestWalk(graph, from, to);
-  };
 
   function routeFor(from, to) {
-    const walk = walkBetween(accessOf(from), accessOf(to));
+    const walk = shortestWalk(graph, accessOf(from), accessOf(to), isClear);
     if (walk.length === 0) return [];
     const outOfOrigin = [...(from.approach ?? [])].reverse();
     const points = [...outOfOrigin, accessOf(from), ...walk, accessOf(to), ...(to.approach ?? []), { x: to.x, z: to.z }];
