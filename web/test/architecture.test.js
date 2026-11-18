@@ -3,6 +3,7 @@ import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
 import { dirname, join, relative, resolve, sep } from "node:path";
 import { describe, it } from "node:test";
 import { fileURLToPath } from "node:url";
+import { codeOf, codeWithSpecifiers } from "./support/source-code.js";
 
 const WEB_DIR = fileURLToPath(new URL("..", import.meta.url));
 const SCRIPTS_DIR = join(WEB_DIR, "scripts");
@@ -19,12 +20,12 @@ const DECLARED_EXPORT = /^export\s+(?:async\s+)?(?:function\s*\*?|const|let|var|
 const DEFAULT_EXPORT_STATEMENT = /^export\s+default\b/m;
 const LISTED_EXPORT = /^export\s*\{([^}]*)\}/gm;
 const STAR_EXPORT = /^export\s*\*\s*(?:as\s+([\w$]+)\s*)?from\s*["']([^"']+)["']/gm;
-const IMPORT_STATEMENT = /^\s*import\s+([\w*{}\s,$]+?)\s+from\s+["'][^"']+["'];?/gm;
+const IMPORT_STATEMENT = /^\s*import\s+([\w*{}\s,$]+?)\s+from\s+["'][^"']*["'];?/gm;
 const NAMESPACE_LOCAL = /\*\s*as\s+([\w$]+)/;
-const QUOTED_TEXT = /"(?:\\.|[^"\\\n])*"|'(?:\\.|[^'\\\n])*'/g;
-const COMMENT = /\/\*[\s\S]*?\*\/|\/\/[^\n]*/g;
 const NOT_A_PROPERTY = String.raw`(?<![\w$])(?<![^.]\.)`;
-const BROWSER_ONLY = new RegExp(String.raw`${NOT_A_PROPERTY}(?:document|window|localStorage|sessionStorage|fetch|EventSource|requestAnimationFrame|performance)\b(?!\s*:)|\bDate\.now\b`, "g");
+const BROWSER_GLOBAL = String.raw`(?:document|window|globalThis|self|localStorage|sessionStorage|fetch|EventSource|requestAnimationFrame|performance)\b`;
+const NOT_AN_OBJECT_KEY = String.raw`(?:(?<![{,]\s*)${BROWSER_GLOBAL}|${BROWSER_GLOBAL}(?!\s*:))`;
+const BROWSER_ONLY = new RegExp(String.raw`${NOT_A_PROPERTY}${NOT_AN_OBJECT_KEY}|\bDate\.now\b`, "g");
 const ROOT_PATH = /["'(]\/(?:scripts|styles|vendor)\//g;
 const REGEX_SPECIAL = /[$]/g;
 const NAMED_LIST = /\{([^}]*)\}/;
@@ -41,7 +42,8 @@ function requestedNames(keyword, clause) {
   return hasDefault ? [DEFAULT_EXPORT, ...named] : named;
 }
 
-function importsOf(source) {
+function importsOf(text) {
+  const source = codeWithSpecifiers(text);
   const statics = [...source.matchAll(STATIC_IMPORT)].map(([, keyword, clause, specifier]) => ({ specifier, names: requestedNames(keyword, clause) }));
   const dynamics = [...source.matchAll(DYNAMIC_IMPORT)].map(([, specifier]) => ({ specifier, names: [] }));
   return [...statics, ...dynamics];
@@ -144,8 +146,6 @@ const VENDOR = "vendor";
 
 const scriptsLayerOf = (path) => relative(SCRIPTS_DIR, path).split(sep)[0];
 const layerOf = (path) => (isInside(VENDOR_DIR, path) ? VENDOR : scriptsLayerOf(path));
-const withoutComments = (source) => source.replace(COMMENT, "");
-const codeOf = (source) => withoutComments(source).replace(QUOTED_TEXT, '""');
 
 function localBindingsOf(clause) {
   const named = listedNames(NAMED_LIST.exec(clause)?.[1] ?? "").map((parts) => parts.at(-1));
@@ -155,9 +155,9 @@ function localBindingsOf(clause) {
 }
 
 function unusedImportsIn(source) {
-  const statements = [...source.matchAll(IMPORT_STATEMENT)];
-  // Quoted text stays: a template literal can call an import inside an attribute, as in data-x="${statusOf(agent)}".
-  const body = withoutComments(statements.reduce((rest, [statement]) => rest.replace(statement, ""), source));
+  const code = codeOf(source);
+  const statements = [...code.matchAll(IMPORT_STATEMENT)];
+  const body = statements.reduce((rest, [statement]) => rest.replace(statement, ""), code);
   const isUsed = (name) => new RegExp(`${NOT_A_PROPERTY}${name.replace(REGEX_SPECIAL, "\\$&")}(?![\\w$])`).test(body);
   return statements.flatMap(([, clause]) => localBindingsOf(clause)).filter((name) => !isUsed(name));
 }
@@ -171,6 +171,36 @@ describe("layer readers", () => {
   it("reads browser-only names in code but not in text, comments, object keys or properties", () => {
     const source = ['const view = "window";', "// fetch later", "const spots = { window: 1 };", "const got = item.fetch;", "const now = Date.now();", "document.title = view;"].join("\n");
     assert.deepEqual(codeOf(source).match(BROWSER_ONLY), ["Date.now", "document"]);
+  });
+
+  it("reads an import with a comment between its braces", () => {
+    const source = 'import {\n  officeApi, // the API\n} from "../../infra/office-api.js";';
+    assert.deepEqual(importsOf(source), [{ specifier: "../../infra/office-api.js", names: ["officeApi"] }]);
+  });
+
+  it("reads a dynamic import written with backticks, unless the path is built at run time", () => {
+    assert.deepEqual(importsOf("const infra = await import(`../../infra/x.js`);"), [{ specifier: "../../infra/x.js", names: [] }]);
+    assert.deepEqual(importsOf("const theme = await import(`./${name}.js`);"), []);
+  });
+
+  it("keeps reading code after text that looks like the start of a comment", () => {
+    assert.deepEqual(codeOf('const url = "http://x"; return Date.now();').match(BROWSER_ONLY), ["Date.now"]);
+    assert.deepEqual(codeOf('const glob = "src/*.js";\ndocument.title = glob;\nconst end = "*/";').match(BROWSER_ONLY), ["document"]);
+  });
+
+  it("reads the global object and a browser name used as a value after a colon", () => {
+    assert.deepEqual(codeOf('globalThis.fetch("x");').match(BROWSER_ONLY), ["globalThis"]);
+    assert.deepEqual(codeOf("self.postMessage(1);").match(BROWSER_ONLY), ["self"]);
+    assert.deepEqual(codeOf("const view = ok ? window : null;").match(BROWSER_ONLY), ["window"]);
+  });
+
+  it("reads code inside a template substitution but not the template text around it", () => {
+    assert.deepEqual(codeOf("const title = `window ${document.title}`;").match(BROWSER_ONLY), ["document"]);
+  });
+
+  it("counts a name as used only where it appears as code", () => {
+    assert.deepEqual(unusedImportsIn('import { hashOf } from "./a.js";\nconst seed = "seed://" + hashOf("x");'), []);
+    assert.deepEqual(unusedImportsIn('import { label } from "./a.js";\nconst text = "label";'), ["label"]);
   });
 });
 
