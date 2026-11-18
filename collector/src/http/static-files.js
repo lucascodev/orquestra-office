@@ -1,5 +1,6 @@
 import { readFile } from "node:fs/promises";
 import { extname, join, normalize, sep } from "node:path";
+import { decodePathSegment } from "./url-path.js";
 
 const TYPES = {
   ".html": "text/html; charset=utf-8",
@@ -10,7 +11,9 @@ const TYPES = {
 };
 
 export async function serveFile(res, rootDir, urlPath) {
-  const relative = normalize(decodeURIComponent(urlPath === "/" ? "/index.html" : urlPath)).replace(/^([/\\])+/, "");
+  const decoded = decodePathSegment(urlPath === "/" ? "/index.html" : urlPath);
+  if (decoded === null) return false;
+  const relative = normalize(decoded).replace(/^([/\\])+/, "");
   const root = normalize(rootDir + sep);
   const target = normalize(join(root, relative));
   const type = TYPES[extname(target)];

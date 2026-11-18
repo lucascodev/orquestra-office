@@ -3,6 +3,7 @@ import { request } from "node:http";
 import { fileURLToPath } from "node:url";
 import assert from "node:assert/strict";
 import { createOffice } from "../src/composition.js";
+import { createServer } from "../src/http/server.js";
 
 async function withServer(run, options = {}) {
   const { server, store } = createOffice({ webDir: fileURLToPath(new URL("../../web", import.meta.url)), ...options });
@@ -48,3 +49,40 @@ test("static files cannot escape the web folder", () => withServer(async (base) 
   assert.equal((await fetch(`${base}/..%2fcollector%2fpackage.json`)).status, 404);
   assert.equal((await fetch(`${base}/scripts/../../collector/src/main.js`)).status, 404);
 }));
+
+const MALFORMED_ESCAPE = "%E0%A4%A";
+
+const rawRequest = (base, method, path) => new Promise((resolve, reject) => {
+  const { hostname, port } = new URL(base);
+  const req = request({ hostname, port, method, path, headers: { "Content-Type": "application/json" } }, (res) => {
+    res.resume();
+    res.on("end", () => resolve(res.statusCode));
+  });
+  req.on("error", reject);
+  req.end(method === "POST" ? "{}" : undefined);
+});
+
+test("a malformed escape in a page path is a 404 and the office keeps running", () => withServer(async (base) => {
+  assert.equal(await rawRequest(base, "GET", `/${MALFORMED_ESCAPE}`), 404);
+  assert.equal((await fetch(`${base}/api/state`)).status, 200);
+}));
+
+test("a malformed escape in a project key is rejected and the office keeps running", () => withServer(async (base) => {
+  assert.equal(await rawRequest(base, "POST", `/api/projects/${MALFORMED_ESCAPE}/close`), 404);
+  assert.equal(await rawRequest(base, "POST", `/api/projects/${MALFORMED_ESCAPE}/template`), 400);
+  assert.equal((await fetch(`${base}/api/state`)).status, 200);
+}));
+
+test("an unexpected failure in a route answers 500 and the office keeps running", async (t) => {
+  t.mock.method(console, "error", () => {});
+  const failingRoutes = { handles: () => true, handle: async () => { throw new Error("route exploded"); } };
+  const officeApi = { handlesGet: () => true, get: (req, res) => { res.writeHead(200); res.end(); } };
+  const server = createServer({ allowedHosts: [], webDir: "/nonexistent", hookRoutes: failingRoutes, officeApi });
+  await new Promise((resolve) => server.listen(0, "127.0.0.1", resolve));
+  const base = `http://127.0.0.1:${server.address().port}`;
+  try {
+    assert.equal(await rawRequest(base, "POST", "/hooks/claude/permission"), 500);
+    assert.equal(await rawRequest(base, "GET", "/api/state"), 200);
+    assert.equal(console.error.mock.callCount(), 1);
+  } finally { server.closeAllConnections(); server.close(); }
+});

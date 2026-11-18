@@ -12,7 +12,7 @@ export function createServer({ allowedHosts, webDir, hookRoutes, officeApi }) {
     return sendJson(res, 404, {});
   }
 
-  return createHttpServer(async (req, res) => {
+  async function route(req, res) {
     if (!hosts.allows(req)) return sendJson(res, 403, { error: "forbidden host" });
     const url = new URL(req.url ?? "/", "http://localhost");
 
@@ -20,5 +20,16 @@ export function createServer({ allowedHosts, webDir, hookRoutes, officeApi }) {
     if (req.method === "POST") return officeApi.post(req, res, url);
     if (req.method !== "GET") return sendJson(res, 405, {});
     return handleGet(req, res, url);
+  }
+
+  // Any page open in the browser can send a request here, so no single request may take the office down.
+  function failSafely(res, error) {
+    console.error("office request failed:", error);
+    if (res.headersSent) res.destroy();
+    else sendJson(res, 500, {});
+  }
+
+  return createHttpServer((req, res) => {
+    route(req, res).catch((error) => failSafely(res, error));
   });
 }

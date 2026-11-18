@@ -1,6 +1,7 @@
 import { OUTCOME } from "../control/application/outcome.js";
 import { readJsonBody, sendJson } from "./json-io.js";
 import { isJson, isSameOrigin } from "./request-policy.js";
+import { decodePathSegment } from "./url-path.js";
 
 const API_BODY_LIMIT = 64 * 1024;
 const STATUS_OF_OUTCOME = { [OUTCOME.DONE]: 200, [OUTCOME.NOT_FOUND]: 404, [OUTCOME.INVALID]: 400 };
@@ -16,9 +17,15 @@ export function createOfficeApiRoutes({ store, history, stream, officeView, deci
     const body = await readJsonBody(req, API_BODY_LIMIT);
 
     const templateRoute = url.pathname.match(TEMPLATE_ROUTE);
-    if (templateRoute) return sendJson(res, store.setTemplate(decodeURIComponent(templateRoute[1]), body?.template) ? 200 : 400, {});
+    if (templateRoute) {
+      const projectKey = decodePathSegment(templateRoute[1]);
+      return sendJson(res, projectKey !== null && store.setTemplate(projectKey, body?.template) ? 200 : 400, {});
+    }
     const closeRoute = url.pathname.match(CLOSE_ROUTE);
-    if (closeRoute) return sendJson(res, store.closeProject(decodeURIComponent(closeRoute[1])) ? 200 : 404, {});
+    if (closeRoute) {
+      const projectKey = decodePathSegment(closeRoute[1]);
+      return sendJson(res, projectKey !== null && store.closeProject(projectKey) ? 200 : 404, {});
+    }
     const decisionRoute = url.pathname.match(DECISION_ROUTE);
     if (decisionRoute) return sendJson(res, STATUS_OF_OUTCOME[decidePendingRequest(decisionRoute[1], body)], {});
     if (url.pathname === MESSAGE_ROUTE) return sendJson(res, STATUS_OF_OUTCOME[sendMessageToAgent({ agentKey: body?.key, text: body?.text })], {});
