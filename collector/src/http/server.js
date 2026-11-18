@@ -25,7 +25,8 @@ export function createServer({ allowedHosts, webDir, hookRoutes, officeApi }) {
     return handleGet(req, res, url);
   }
 
-  // Destroying the request once the answer is out stops reading the rest of an oversized body.
+  // Closing the connection once the answer is out stops reading the rest of an oversized body.
+  // The client may then see the 413 or only a reset; either is fine, since the hooks fail open.
   function refuseOversizedBody(req, res) {
     res.setHeader("Connection", "close");
     res.once("finish", () => req.destroy());

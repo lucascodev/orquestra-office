@@ -1,5 +1,6 @@
 import { test } from "node:test";
 import { request } from "node:http";
+import { connect } from "node:net";
 import { fileURLToPath } from "node:url";
 import assert from "node:assert/strict";
 import { createOffice } from "../src/composition.js";
@@ -149,5 +150,47 @@ test("a hook body over the limit is refused with 413 and the office keeps runnin
 test("an office API body over the limit is refused with 413 and the office keeps running", { timeout: OVERSIZED_TEST_TIMEOUT_MS }, () => withServer(async (base) => {
   assert.equal(await postPadded(base, "/api/agents/message", API_BODY_LIMIT + 1), 413);
   assert.equal(await postPadded(base, "/api/agents/message", API_BODY_LIMIT), 404);
+  assert.equal((await fetch(`${base}/api/state`)).status, 200);
+}));
+
+const HUGE_BODY_BYTES = 256 * 1024 * 1024;
+const UPLOAD_CHUNK = Buffer.alloc(64 * 1024, " ");
+const HUGE_BODY_TEST_TIMEOUT_MS = 10_000;
+const CRLF = "\r\n";
+const BODY_TOO_LARGE_STATUS_LINE = "HTTP/1.1 413";
+
+const uploadHeadOf = (host, path, bodyBytes) =>
+  [`POST ${path} HTTP/1.1`, `Host: ${host}`, "Content-Type: application/json", `Content-Length: ${bodyBytes}`, "", ""].join(CRLF);
+
+const uploadUntilClosed = (base, path, bodyBytes) => new Promise((resolve) => {
+  const { host, hostname, port } = new URL(base);
+  const socket = connect(Number(port), hostname);
+  const upload = { sentBytes: 0, reply: "", error: null };
+  socket.setEncoding("latin1");
+  socket.on("data", (data) => { upload.reply += data; });
+  socket.on("error", (error) => { upload.error = error; });
+  socket.on("close", () => resolve(upload));
+  socket.write(uploadHeadOf(host, path, bodyBytes));
+  const pump = () => {
+    while (!socket.destroyed && upload.sentBytes < bodyBytes) {
+      upload.sentBytes += UPLOAD_CHUNK.length;
+      if (!socket.write(UPLOAD_CHUNK)) return void socket.once("drain", pump);
+    }
+    if (!socket.destroyed) socket.end();
+  };
+  pump();
+});
+
+test("a well-formed upload under the limit is read to the end, so the upload helper is not cut off by a parse error", { timeout: HUGE_BODY_TEST_TIMEOUT_MS }, () => withServer(async (base) => {
+  const upload = await uploadUntilClosed(base, "/events/claude", UPLOAD_CHUNK.length);
+  assert.equal(upload.sentBytes, UPLOAD_CHUNK.length);
+  assert.match(upload.reply, /^HTTP\/1\.1 200/);
+}));
+
+// The client may see the 413 or only a reset, and both are fine: the hooks use onFailure "continue".
+test("a body far over the limit has its connection closed before it finishes uploading, and the office keeps running", { timeout: HUGE_BODY_TEST_TIMEOUT_MS }, () => withServer(async (base) => {
+  const upload = await uploadUntilClosed(base, "/events/claude", HUGE_BODY_BYTES);
+  assert.ok(upload.sentBytes < HUGE_BODY_BYTES, `sent ${upload.sentBytes} of ${HUGE_BODY_BYTES} bytes, ended by ${upload.error?.code ?? "a clean close"}`);
+  assert.ok(upload.reply === "" || upload.reply.startsWith(BODY_TOO_LARGE_STATUS_LINE), upload.reply);
   assert.equal((await fetch(`${base}/api/state`)).status, 200);
 }));
