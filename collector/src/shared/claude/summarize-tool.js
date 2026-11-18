@@ -3,6 +3,7 @@ import { DELEGATE_TOOLS, EDIT_TOOLS, SHELL_TOOLS, WRITE_TOOLS } from "./tool-nam
 
 const DETAIL_LIMIT = 2_000;
 const SUMMARY_LIMIT = 160;
+const TOOL_NAME_LIMIT = 60;
 
 const fileOf = (input) => String(input?.file_path ?? input?.notebook_path ?? input?.path ?? "");
 
@@ -28,5 +29,5 @@ function describe(name, input) {
 export function summarizeTool(toolName, toolInput) {
   const name = String(toolName ?? "");
   const { summary, detail } = describe(name, toolInput);
-  return { toolName: clip(name, 60), summary: clip(String(summary), SUMMARY_LIMIT), detail: clip(detail, DETAIL_LIMIT) };
+  return { toolName: clip(name, TOOL_NAME_LIMIT), summary: clip(String(summary), SUMMARY_LIMIT), detail: clip(detail, DETAIL_LIMIT) };
 }

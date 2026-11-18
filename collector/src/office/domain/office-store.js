@@ -39,10 +39,10 @@ export function createOfficeStore(initial) {
   function ensureAgent(project, event) {
     const mainKey = mainAgentKey(event.source, event.sessionId);
     if (!project.agents[mainKey]) {
-      const sameSource = Object.values(project.agents).filter((a) => a.kind === "main" && a.source === event.source).length;
+      const sameSourceSessions = Object.values(project.agents).filter((agent) => agent.kind === "main" && agent.source === event.source).length;
       project.agents[mainKey] = {
         key: mainKey, source: event.source, kind: "main", parentKey: null,
-        label: `${SOURCE_LABEL[event.source] ?? event.source}${sameSource ? ` ${sameSource + 1}` : ""}`,
+        label: `${SOURCE_LABEL[event.source] ?? event.source}${sameSourceSessions ? ` ${sameSourceSessions + 1}` : ""}`,
         status: "idle", activity: null, action: "", startedAt: event.at, updatedAt: event.at, endedAt: null, tools: 0, log: [],
       };
     }

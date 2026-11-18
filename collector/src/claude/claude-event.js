@@ -4,6 +4,9 @@ const NEEDS_YOU_NOTIFICATIONS = new Set(["permission_prompt", "elicitation_dialo
 const ROLE_NAME = /^[\w.-]{1,40}$/;
 const TEAM_LIMIT = 40;
 const PATH_LIMIT = 400;
+const AGENT_TYPE_LIMIT = 40;
+const TOOL_NAME_LIMIT = 30;
+const UNNAMED_TOOL = "uma ferramenta";
 
 function projectRootOf(payload) {
   const root = payload.office?.repoRoot;
@@ -20,7 +23,7 @@ export function claudeActorOf(payload) {
     source: "claude",
     sessionId: String(payload.session_id ?? ""),
     agentId: payload.agent_id ? String(payload.agent_id) : null,
-    agentType: payload.agent_type ? String(payload.agent_type).slice(0, 40) : null,
+    agentType: payload.agent_type ? String(payload.agent_type).slice(0, AGENT_TYPE_LIMIT) : null,
     cwd: typeof payload.cwd === "string" ? payload.cwd : "",
     projectRoot: projectRootOf(payload),
   };
@@ -50,9 +53,9 @@ export function normalizeClaudeEvent(payload, now = Date.now()) {
     case "PostToolUse":
       return activity(payload, now, "working", null);
     case "PostToolUseFailure":
-      return activity(payload, now, "working", `falhou ao usar ${String(payload.tool_name ?? "uma ferramenta").slice(0, 30)}`, { activity: "failed" });
+      return activity(payload, now, "working", `falhou ao usar ${String(payload.tool_name ?? UNNAMED_TOOL).slice(0, TOOL_NAME_LIMIT)}`, { activity: "failed" });
     case "PermissionRequest":
-      return activity(payload, now, "needs_you", `pede permissão para usar ${String(payload.tool_name ?? "uma ferramenta").slice(0, 30)}`);
+      return activity(payload, now, "needs_you", `pede permissão para usar ${String(payload.tool_name ?? UNNAMED_TOOL).slice(0, TOOL_NAME_LIMIT)}`);
     case "Notification": {
       const type = payload.notification_type;
       if (NEEDS_YOU_NOTIFICATIONS.has(type)) return activity(payload, now, "needs_you", "precisa de você no terminal");

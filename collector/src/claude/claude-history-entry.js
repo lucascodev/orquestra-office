@@ -3,6 +3,8 @@ import { clip } from "../shared/text/clip.js";
 import { summarizeTool } from "../shared/claude/summarize-tool.js";
 
 const TEXT_LIMIT = 4_000;
+const TOOL_NAME_LIMIT = 60;
+const UNNAMED_TOOL = "ferramenta";
 const BACKGROUND_NOTICE = "<task-notification>";
 
 // Claude Code also reports finished background tasks through UserPromptSubmit; those are not something the user typed.
@@ -20,7 +22,7 @@ function entryOf(payload) {
       return { kind: "tool", text: summary ? `${toolName}: ${summary}` : toolName, detail };
     }
     case "PostToolUseFailure":
-      return { kind: "error", text: `${clip(String(payload.tool_name ?? "ferramenta"), 60)} falhou`, detail: clip(payload.error, TEXT_LIMIT) };
+      return { kind: "error", text: `${clip(String(payload.tool_name ?? UNNAMED_TOOL), TOOL_NAME_LIMIT)} falhou`, detail: clip(payload.error, TEXT_LIMIT) };
     case "Stop":
     case "SubagentStop":
       return payload.last_assistant_message ? { kind: "reply", text: clip(payload.last_assistant_message, TEXT_LIMIT) } : null;

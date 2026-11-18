@@ -1,10 +1,14 @@
 import { baseName } from "../office/domain/path-name.js";
 import { ASK_TOOLS, DELEGATE_TOOLS, EDIT_TOOLS, READ_TOOLS, SHELL_TOOLS, TODO_TOOLS, WEB_TOOLS, WRITE_TOOLS } from "../shared/claude/tool-names.js";
 
+const COMMAND_NAME_LIMIT = 24;
+const AGENT_TYPE_LIMIT = 40;
+const SHOWN_NAME_LIMIT = 30;
+
 function firstWord(command) {
   if (typeof command !== "string") return "";
   const word = command.trim().split(/\s+/)[0] ?? "";
-  return baseName(word).replace(/[^\w.+-]/g, "").slice(0, 24);
+  return baseName(word).replace(/[^\w.+-]/g, "").slice(0, COMMAND_NAME_LIMIT);
 }
 
 function fileOf(input) {
@@ -26,7 +30,7 @@ export function describeActivity(toolName, toolInput) {
     return { status: "working", activity: "terminal", action: word ? `rodando ${word}` : "rodando um comando" };
   }
   if (DELEGATE_TOOLS.has(name)) {
-    const type = String(toolInput?.subagent_type ?? "").slice(0, 40);
+    const type = String(toolInput?.subagent_type ?? "").slice(0, AGENT_TYPE_LIMIT);
     return { status: "working", activity: "delegating", action: type ? `delegou para ${type}` : "delegou uma tarefa" };
   }
   if (ASK_TOOLS.has(name)) {
@@ -40,7 +44,7 @@ export function describeActivity(toolName, toolInput) {
   if (WEB_TOOLS.has(name)) return { status: "reviewing", activity: "web", action: "pesquisando na web" };
   if (name.startsWith("mcp__")) {
     const server = name.split("__")[1] ?? "";
-    return { status: "working", activity: "editing", action: server ? `usando ${server.slice(0, 30)}` : "usando um conector" };
+    return { status: "working", activity: "editing", action: server ? `usando ${server.slice(0, SHOWN_NAME_LIMIT)}` : "usando um conector" };
   }
-  return { status: "working", activity: "editing", action: name ? `usando ${name.slice(0, 30)}` : "trabalhando" };
+  return { status: "working", activity: "editing", action: name ? `usando ${name.slice(0, SHOWN_NAME_LIMIT)}` : "trabalhando" };
 }

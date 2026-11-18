@@ -1,5 +1,7 @@
+const ISO_DATE_LENGTH = "YYYY-MM-DD".length;
+
 export function dayOf(ms) {
-  return new Date(ms).toISOString().slice(0, 10);
+  return new Date(ms).toISOString().slice(0, ISO_DATE_LENGTH);
 }
 
 export function freshStats(day) {

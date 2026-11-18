@@ -1,10 +1,11 @@
 const MS_PER_SECOND = 1_000;
+const FULL_PERCENTAGE = 100;
 
 const numberOr = (value, fallback) => (Number.isFinite(value) ? value : fallback);
 
 function windowOf(limit) {
   if (!limit || !Number.isFinite(limit.used_percentage)) return null;
-  return { usedPercentage: Math.max(0, Math.min(100, limit.used_percentage)), resetsAt: numberOr(limit.resets_at, 0) * MS_PER_SECOND };
+  return { usedPercentage: Math.max(0, Math.min(FULL_PERCENTAGE, limit.used_percentage)), resetsAt: numberOr(limit.resets_at, 0) * MS_PER_SECOND };
 }
 
 export function normalizeStatusline(payload, now = Date.now()) {
