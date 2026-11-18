@@ -22,7 +22,9 @@ const legacyUrls = (officeUrl) => [officeUrl, DEFAULT_OFFICE_URL].flatMap((origi
 export function officeMatcher({ officeUrl, recorded = {} }) {
   const urls = new Set([...stringsIn(recorded.urls), ...legacyUrls(officeUrl)]);
   const commands = new Set(stringsIn(recorded.commands));
-  const isRecordedOr = (pattern, command) => typeof command === "string" && (commands.has(command) || pattern.test(command));
+  // The file-name pattern only finds installs older than the manifest; once it records commands, a matching name is someone else's script.
+  const isLegacy = !Array.isArray(recorded.commands);
+  const isRecordedOr = (pattern, command) => typeof command === "string" && (commands.has(command) || (isLegacy && pattern.test(command)));
   return {
     isOfficeHook: (hook) => (hook?.type === "http" && urls.has(hook.url)) || (hook?.type === "command" && isRecordedOr(SESSION_START_COMMAND, hook.command)),
     isOfficeStatusline: (statusLine) => isRecordedOr(STATUSLINE_COMMAND, statusLine?.command),

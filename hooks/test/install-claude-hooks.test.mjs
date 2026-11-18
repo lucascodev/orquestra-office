@@ -201,6 +201,27 @@ test("third-party hooks and status line that only look like the office survive i
   assert.deepEqual(readSettings(dir), settings);
 });
 
+test("with the manifest, third-party scripts that share the office file names survive install and --remove", async (t) => {
+  const dir = configDir(t);
+  await install(dir);
+  const thirdPartyStatusline = { type: "command", command: 'node "D:/other/office-statusline.mjs"' };
+  const thirdPartySessionStart = { hooks: [{ type: "command", command: 'node "D:/mine/office-session-start.mjs"' }] };
+  const installed = readSettings(dir);
+  writeFileSync(join(dir, "settings.json"), JSON.stringify({
+    ...installed,
+    statusLine: thirdPartyStatusline,
+    hooks: { ...installed.hooks, SessionStart: [thirdPartySessionStart, ...installed.hooks.SessionStart] },
+  }));
+
+  await install(dir);
+  const reinstalled = readSettings(dir);
+  await install(dir, {}, ["--remove"]);
+
+  assert.deepEqual(reinstalled.statusLine, thirdPartyStatusline);
+  assert.deepEqual(reinstalled.hooks.SessionStart[0], thirdPartySessionStart);
+  assert.deepEqual(readSettings(dir), { statusLine: thirdPartyStatusline, hooks: { SessionStart: [thirdPartySessionStart] } });
+});
+
 test("an install from another folder, made before the manifest existed, is replaced without duplicating", async (t) => {
   const dir = configDir(t);
   const oldScript = (file) => `node "${join(OLD_HOOKS_DIR, file)}"`;
