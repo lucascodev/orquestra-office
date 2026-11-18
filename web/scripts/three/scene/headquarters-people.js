@@ -10,6 +10,7 @@ import { createNameTag, headPositionOf } from "./name-tags.js";
 import { createThoughtBubble } from "./thought-bubble.js";
 
 const HURRYING_THOUGHTS = "hurrying";
+const LEAVING = "leaving";
 const RECEPTIONIST_KEY = "headquarters:receptionist";
 const RECEPTIONIST_REACTION = "typing";
 const RECEPTIONIST_TAG = "recepção";
@@ -65,11 +66,17 @@ export function createHeadquartersPeople({ scene, tagLayer, onPick, describeStat
     label(agent);
   }
 
+  // Someone on the way out finishes the walk to the main door even if the agent is forgotten before getting there.
+  function isWalkingOut(key) {
+    const { person } = people.get(key);
+    return reactionSince.get(key)?.reactionId === LEAVING && person.root.visible;
+  }
+
   // Only agents with somewhere to be get a figure: one that would have no place would just stand at the origin of the map.
   function gather() {
     const placed = agents.filter((agent) => places.get(agent.key)?.stop);
     const present = new Set(placed.map((agent) => agent.key));
-    for (const key of [...people.keys()]) if (!present.has(key)) forget(key);
+    for (const key of [...people.keys()]) if (!present.has(key) && !isWalkingOut(key)) forget(key);
     for (const agent of placed) {
       if (people.has(agent.key)) continue;
       meet(agent);
@@ -109,6 +116,7 @@ export function createHeadquartersPeople({ scene, tagLayer, onPick, describeStat
     gather();
     for (const [key, { person }] of people) {
       const place = places.get(key);
+      if (!place) continue;
       setReaction(person, place.reaction);
       noteReaction(person, place.reaction, seconds);
       direct(person, place);
