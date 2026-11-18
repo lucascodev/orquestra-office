@@ -5,11 +5,11 @@ import { fileURLToPath } from "node:url";
 import assert from "node:assert/strict";
 import { createOffice } from "../src/composition.js";
 import { createServer } from "../src/http/server.js";
+import { listenOnFetchablePort } from "./support/listen-on-fetchable-port.js";
 
 async function withServer(run, options = {}) {
   const { server, store } = createOffice({ webDir: fileURLToPath(new URL("../../web", import.meta.url)), ...options });
-  await new Promise((resolve) => server.listen(0, "127.0.0.1", resolve));
-  const base = `http://127.0.0.1:${server.address().port}`;
+  const base = await listenOnFetchablePort(server);
   try { await run(base, store); } finally { server.closeAllConnections(); server.close(); }
 }
 
@@ -85,8 +85,7 @@ test("an unexpected failure in a route answers 500 and the office keeps running"
   const failingRoutes = { handles: () => true, handle: async () => { throw new Error("route exploded"); } };
   const officeApi = { handlesGet: () => true, get: (req, res) => { res.writeHead(200); res.end(); } };
   const server = createServer({ allowedHosts: [], webDir: "/nonexistent", hookRoutes: failingRoutes, officeApi });
-  await new Promise((resolve) => server.listen(0, "127.0.0.1", resolve));
-  const base = `http://127.0.0.1:${server.address().port}`;
+  const base = await listenOnFetchablePort(server);
   try {
     assert.equal(await rawRequest(base, "POST", "/hooks/claude/permission"), 500);
     assert.equal(await rawRequest(base, "GET", "/api/state"), 200);

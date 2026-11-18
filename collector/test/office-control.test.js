@@ -1,6 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { createOffice } from "../src/composition.js";
+import { listenOnFetchablePort } from "./support/listen-on-fetchable-port.js";
 
 const JSON_HEADERS = { "Content-Type": "application/json" };
 const SESSION = { session_id: "s1", cwd: "/tmp/demo" };
@@ -11,8 +12,7 @@ const NO_VIEWER_TEST_TIMEOUT_MS = 1_000;
 
 async function withOffice(run, { holdMs = HOLD_MS } = {}) {
   const { server, store, decisions } = createOffice({ webDir: "/nonexistent", holdMs });
-  await new Promise((resolve) => server.listen(0, "127.0.0.1", resolve));
-  const base = `http://127.0.0.1:${server.address().port}`;
+  const base = await listenOnFetchablePort(server);
   try { await run(base, store, decisions); } finally { server.closeAllConnections(); server.close(); }
 }
 

@@ -6,6 +6,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { normalizeClaudeEvent } from "../src/claude/claude-event.js";
 import { createOffice } from "../src/composition.js";
+import { listenOnFetchablePort } from "./support/listen-on-fetchable-port.js";
 
 const WEB_DIR = "/nonexistent";
 const STATE_FILE = "office.json";
@@ -87,8 +88,7 @@ test("a sweep that throws is reported and the next sweep still runs", (t) => {
 
 test("with no office page open a permission goes back to the terminal at once, long before the hold would end", { timeout: NO_VIEWER_TEST_TIMEOUT_MS }, async () => {
   const office = createOffice({ webDir: WEB_DIR, holdMs: HOLD_MS });
-  await new Promise((resolve) => office.server.listen(0, "127.0.0.1", resolve));
-  const base = `http://127.0.0.1:${office.server.address().port}`;
+  const base = await listenOnFetchablePort(office.server);
   try {
     const hook = await fetch(`${base}/hooks/claude/permission`, {
       method: "POST",
