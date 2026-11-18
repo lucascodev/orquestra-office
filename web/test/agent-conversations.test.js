@@ -98,7 +98,7 @@ describe("conversation turns", () => {
 
 describe("social circles", () => {
   it("groups people close to each other and leaves loners out", () => {
-    const circles = socialCircles([{ key: "a", x: 0, z: 0 }, { key: "b", x: 0.5, z: 0 }, { key: "c", x: 2.3, z: 0 }, { key: "d", x: 9, z: 9 }]);
+    const circles = socialCircles([[0, 0], [0.5, 0], [2.3, 0], [9, 9]].map(([x, z], i) => ({ key: "abcd"[i], x, z, areaId: "room" })));
     assert.deepEqual(circles, [["a", "b", "c"]]);
   });
 });
@@ -107,6 +107,22 @@ describe("chats in the headquarters", () => {
   it("does not chat across a partition, even standing right next to each other", () => {
     const people = [{ key: "a", x: 13.8, z: 3, areaId: "pantry" }, { key: "b", x: 14.4, z: 3, areaId: "games" }, { key: "c", x: 13.2, z: 3, areaId: "pantry" }];
     assert.deepEqual(socialCircles(people), [["a", "c"]]);
+  });
+
+  it("does not let people without an area chat, however close they stand", () => {
+    assert.deepEqual(socialCircles([{ key: "a", x: 0, z: 0 }, { key: "b", x: 0.5, z: 0 }]), []);
+  });
+
+  it("takes each person's area from their spot when the scene does not say it, so the pantry and the games room do not chat through the wall", () => {
+    const agents = [agentOf("claude:copa", "break"), agentOf("claude:jogos", "break")];
+    const project = { key: "c:/demo", name: "demo", template: "startup", createdAt: NOW, updatedAt: NOW, team: [], agents: Object.fromEntries(agents.map((agent) => [agent.key, agent])) };
+    const { freeTime } = headquartersSpots(layoutHeadquarters({ [project.key]: project }));
+    const places = new Map([
+      ["claude:copa", { stop: freeTime.get("coffee").at(-1), reaction: "coffee", isUrgent: false, isFreeTime: true }],
+      ["claude:jogos", { stop: freeTime.get("pingpong")[0], reaction: "playing", isUrgent: false, isFreeTime: true }],
+    ]);
+    const people = [{ key: "claude:copa", x: 13.8, z: 3, isStill: true }, { key: "claude:jogos", x: 14.4, z: 3, isStill: true }];
+    assert.equal(createConversationTracker()({ people, agents, places, nowMs: NOW, seconds: 100 }).size, 0);
   });
 
   it("has people from different projects chat over a coffee in the pantry", () => {
@@ -138,6 +154,16 @@ describe("conversation tracker", () => {
     assert.ok(roles.get(MAIN).speech.length > 0);
     assert.deepEqual(roles.get(MAIN).focus, { x: people[1].x, z: people[1].z });
     assert.equal(roles.get(SUB).isSpeaking, false);
+  });
+
+  it("has two idle people chat in today's room, which is one area as a whole", () => {
+    const agents = [agentOf("claude:a", "idle", { activity: null }), agentOf("claude:b", "idle", { activity: null })];
+    const places = placesFor(agents, null);
+    const { x, z } = places.get("claude:a").stop;
+    const people = [{ key: "claude:a", x, z, isStill: true }, { key: "claude:b", x: x + 0.5, z, isStill: true }];
+    assert.ok(agents.every((agent) => places.get(agent.key).isFreeTime));
+    const roles = createConversationTracker()({ people, agents, places, nowMs: NOW, seconds: 100 });
+    assert.deepEqual([...roles.keys()].sort(), ["claude:a", "claude:b"]);
   });
 
   it("does not start talking until both are in place", () => {

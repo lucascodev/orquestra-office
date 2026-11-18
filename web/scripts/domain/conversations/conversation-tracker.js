@@ -10,7 +10,9 @@ function candidatesOf({ people, agents, places, nowMs }, finished) {
   const stillKeys = new Set(still.map((person) => person.key));
   const work = workConversations(agents, places, nowMs)
     .filter((talk) => !finished.has(talk.id) && talk.keys.every((key) => stillKeys.has(key)));
-  const chatters = still.filter((person) => places.get(person.key)?.isFreeTime);
+  const chatters = still
+    .filter((person) => places.get(person.key)?.isFreeTime)
+    .map((person) => ({ ...person, areaId: person.areaId ?? places.get(person.key).stop.areaId }));
   const chats = socialCircles(chatters).map((keys) => ({ id: `chat|${keys.join("+")}`, kind: "chat", keys }));
   return [...work, ...chats];
 }

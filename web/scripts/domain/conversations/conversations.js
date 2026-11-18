@@ -5,7 +5,7 @@ import { hashOf } from "../shared/seeded-random.js";
 const CHAT_DISTANCE = 2;
 
 // Two people leaning on both sides of the partition between two rooms are close, but they cannot talk through it.
-const canChat = (a, b) => a.areaId === b.areaId && Math.hypot(a.x - b.x, a.z - b.z) <= CHAT_DISTANCE;
+const canChat = (a, b) => a.areaId !== undefined && a.areaId === b.areaId && Math.hypot(a.x - b.x, a.z - b.z) <= CHAT_DISTANCE;
 const DELEGATION_WINDOW_MS = 25_000;
 const LINE_SECONDS = 2.8;
 const PAUSE_BETWEEN_LINES_SECONDS = 0.5;
