@@ -63,13 +63,13 @@ function currentProject() {
   return selected ? state.projects[selected] : null;
 }
 
-function panelContext(project, agent) {
+function panelContext(agent) {
   const liveStatus = state.runner.liveAgents[agent.key] ?? null;
   return {
     request: state.pending.find((request) => request.agentKey === agent.key) ?? null,
     queued: state.outbox[agent.key] ?? 0,
     liveStatus,
-    canReceiveMessages: Boolean(liveStatus) || canReceiveMessages(project, agent),
+    canReceiveMessages: Boolean(liveStatus) || canReceiveMessages(agent),
   };
 }
 
@@ -99,7 +99,7 @@ function renderProject(project) {
   const openKey = agentPanel.openAgentKey();
   if (!openKey) return;
   const agent = project.agents[openKey] ?? null;
-  agentPanel.update(agent, agent ? panelContext(project, agent) : null);
+  agentPanel.update(agent, agent ? panelContext(agent) : null);
 }
 
 function render() {
@@ -136,7 +136,7 @@ function render() {
 function openAgent(agentKey) {
   const project = currentProject();
   const agent = project?.agents[agentKey];
-  if (agent) agentPanel.open(agent, panelContext(project, agent));
+  if (agent) agentPanel.open(agent, panelContext(agent));
 }
 
 function selectProject(projectKey) {
@@ -166,8 +166,7 @@ officeEl.addEventListener("click", (event) => {
 });
 
 openSessionButton.addEventListener("click", () => {
-  const project = currentProject();
-  newSessionDialog.show(project && !project.cloud ? project.key : "");
+  newSessionDialog.show(currentProject()?.key ?? "");
 });
 
 officeEl.addEventListener("change", (event) => {

@@ -8,7 +8,6 @@ const DEFAULT_HOLD_SECONDS = 120;
 const port = Number(process.env.PORT ?? 8420);
 const dataDir = process.env.DATA_DIR ?? "./data";
 const webDir = process.env.WEB_DIR ?? "../web";
-const siteDir = process.env.SITE_DIR ?? "..";
 const holdSeconds = Number(process.env.OFFICE_HOLD_SECONDS) || DEFAULT_HOLD_SECONDS;
 const allowedHosts = (process.env.OFFICE_ALLOWED_HOSTS ?? "").split(",").map((host) => host.trim()).filter(Boolean);
 
@@ -17,7 +16,7 @@ const store = createOfficeStore(persistence.load());
 store.onChange(() => persistence.scheduleSave(store.snapshot()));
 
 const decisions = createPendingDecisions({ holdMs: holdSeconds * 1000 });
-const server = createServer({ store, webDir, siteDir, decisions, allowedHosts });
+const server = createServer({ store, webDir, decisions, allowedHosts });
 server.listen(port, "0.0.0.0", () => {
   console.log(`office collector listening on ${port}`);
 });

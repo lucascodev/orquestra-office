@@ -9,7 +9,7 @@ const SESSION = { session_id: "s1", cwd: "/tmp/demo" };
 
 async function withOffice(run, { holdMs = 5_000 } = {}) {
   const store = createOfficeStore();
-  const server = createServer({ store, webDir: "/nonexistent", siteDir: "/nonexistent", decisions: createPendingDecisions({ holdMs }) });
+  const server = createServer({ store, webDir: "/nonexistent", decisions: createPendingDecisions({ holdMs }) });
   await new Promise((resolve) => server.listen(0, "127.0.0.1", resolve));
   const base = `http://127.0.0.1:${server.address().port}`;
   try { await run(base, store); } finally { server.closeAllConnections(); server.close(); }

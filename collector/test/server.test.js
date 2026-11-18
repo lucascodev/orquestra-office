@@ -7,7 +7,7 @@ import { createOfficeStore } from "../src/office/office-store.js";
 
 async function withServer(run, options = {}) {
   const store = createOfficeStore();
-  const server = createServer({ store, webDir: fileURLToPath(new URL("../../web", import.meta.url)), siteDir: "/nonexistent", ...options });
+  const server = createServer({ store, webDir: fileURLToPath(new URL("../../web", import.meta.url)), ...options });
   await new Promise((resolve) => server.listen(0, "127.0.0.1", resolve));
   const base = `http://127.0.0.1:${server.address().port}`;
   try { await run(base, store); } finally { server.closeAllConnections(); server.close(); }

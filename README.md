@@ -38,7 +38,6 @@ Para alargar o painel lateral, passe o mouse na borda esquerda dele e arraste. A
 - O escritório tem ilhas de baias de até 6 lugares (as sessões e seus subagentes sentam juntos, e os lugares livres ficam à vista), sala de reunião, lounge, copa e arquivo. Cada pessoa leva uma etiqueta com o nome, o título e a cor do status.
 - A interface segue o Orquestra Design System: os mesmos tokens de cor, tipografia, espaço e raio (`web/styles/tokens.css`), status sempre com glifo e texto, e o painel de terminal do app.
 - Uma sessão aberta num worktree entra no escritório do repositório principal, e os papéis definidos em `.claude/agents` do projeto ganham mesa com o nome mesmo quando ninguém está no papel. Só os nomes dos arquivos são lidos.
-- A aba "Orquestra · time na nuvem" mostra o time que trabalha no Orquestra pelo claude.ai, lido do `state.js` desta pasta.
 
 ### Vida no escritório
 

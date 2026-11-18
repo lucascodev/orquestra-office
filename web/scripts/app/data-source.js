@@ -1,29 +1,16 @@
-import { CLOUD_KEY, cloudProject } from "../data/cloud-team.js";
 import { demoHistory, demoState, demoTerminal, queueDemoMessage, resolveDemoRequest, tickDemo } from "../data/demo-data.js";
 import { officeApi } from "./office-api.js";
 import { runnerClient } from "./runner-client.js";
 
-const CLOUD_TEMPLATE_KEY = "office.cloudTemplate";
 const DEMO_TICK_MS = 4_000;
-const CLOUD_POLL_MS = 10_000;
 const RUNNER_POLL_MS = 4_000;
 const DEMO_ONLY = "Na prévia com dados de exemplo não dá para abrir sessões.";
-
-function readLocal(key, fallback) {
-  try { return localStorage.getItem(key) ?? fallback; } catch { return fallback; }
-}
-
-function writeLocal(key, value) {
-  try { localStorage.setItem(key, value); } catch { /* storage unavailable: keep in memory */ }
-}
 
 const agentKeyOfSession = (session) => `claude:${session.sessionId}`;
 
 export function createDataSource(onState) {
   let mode = "connecting";
   let local = { projects: {} };
-  let cloudState = null;
-  let cloudTemplate = readLocal(CLOUD_TEMPLATE_KEY, "startup");
   let runner = { isAvailable: false, sessions: [] };
   let demoTerminalChange = null;
 
@@ -31,11 +18,8 @@ export function createDataSource(onState) {
   const liveSessionOf = (agentKey) => runner.sessions.find((session) => session.sessionId && session.status !== "ended" && agentKeyOfSession(session) === agentKey) ?? null;
 
   const publish = () => {
-    const projects = { ...local.projects };
-    const cloud = cloudProject(cloudState, cloudTemplate);
-    if (cloud) projects[CLOUD_KEY] = cloud;
     const liveAgents = Object.fromEntries(runner.sessions.filter((session) => liveSessionOf(agentKeyOfSession(session))).map((session) => [agentKeyOfSession(session), session.status]));
-    onState({ mode, projects, pending: local.pending ?? [], outbox: local.outbox ?? {}, usage: local.usage ?? null, runner: { isAvailable: runner.isAvailable, liveAgents } });
+    onState({ mode, projects: { ...local.projects }, pending: local.pending ?? [], outbox: local.outbox ?? {}, usage: local.usage ?? null, runner: { isAvailable: runner.isAvailable, liveAgents } });
   };
 
   function startDemo() {
@@ -45,18 +29,6 @@ export function createDataSource(onState) {
     let step = 0;
     publish();
     setInterval(() => { tickDemo(local, step++); publish(); }, DEMO_TICK_MS);
-  }
-
-  function pollCloud() {
-    const load = () => {
-      const tag = document.createElement("script");
-      tag.src = `/cloud/state.js?t=${Date.now()}`;
-      tag.onload = () => { cloudState = window.OFFICE_STATE ?? null; tag.remove(); publish(); };
-      tag.onerror = () => tag.remove();
-      document.head.appendChild(tag);
-    };
-    load();
-    setInterval(load, CLOUD_POLL_MS);
   }
 
   async function refreshRunner() {
@@ -72,7 +44,6 @@ export function createDataSource(onState) {
     const stream = new EventSource("/api/stream");
     stream.addEventListener("state", (event) => { local = JSON.parse(event.data); mode = "live"; publish(); });
     stream.onerror = () => { mode = "offline"; publish(); };
-    pollCloud();
     refreshRunner();
     setInterval(refreshRunner, RUNNER_POLL_MS);
   }
@@ -90,15 +61,11 @@ export function createDataSource(onState) {
   }
 
   async function setTemplate(projectKey, template) {
-    if (projectKey === CLOUD_KEY) {
-      cloudTemplate = template;
-      writeLocal(CLOUD_TEMPLATE_KEY, template);
-    } else if (isDemo()) {
-      local.projects[projectKey].template = template;
-    } else {
+    if (!isDemo()) {
       await officeApi.setTemplate(projectKey, template);
       return;
     }
+    local.projects[projectKey].template = template;
     publish();
   }
 

@@ -1,6 +1,4 @@
 import { createServer as createHttpServer } from "node:http";
-import { readFile } from "node:fs/promises";
-import { join } from "node:path";
 import { createOutbox } from "../control/outbox.js";
 import { createPendingDecisions } from "../control/pending-decisions.js";
 import { normalizeCodexEvent } from "../events/codex-event.js";
@@ -19,7 +17,7 @@ function publicView(store, decisions, outbox) {
   return { ...office, pending: decisions.list(), outbox: outbox.counts() };
 }
 
-export function createServer({ store, webDir, siteDir, allowedHosts = [], decisions = createPendingDecisions(), outbox = createOutbox(), history = createSessionHistory() }) {
+export function createServer({ store, webDir, allowedHosts = [], decisions = createPendingDecisions(), outbox = createOutbox(), history = createSessionHistory() }) {
   const hosts = createHostPolicy(allowedHosts);
   const view = () => publicView(store, decisions, outbox);
   const stream = createEventStream({ snapshot: view, sources: [store, decisions, outbox] });
@@ -56,15 +54,6 @@ export function createServer({ store, webDir, siteDir, allowedHosts = [], decisi
     if (url.pathname === "/api/state") return sendJson(res, 200, view());
     if (url.pathname === "/api/stream") return stream.subscribe(req, res);
     if (url.pathname === "/api/agents/history") return sendJson(res, 200, { entries: api.historyOf(url.searchParams.get("key") ?? "") });
-    if (url.pathname === "/cloud/state.js") {
-      try {
-        const body = await readFile(join(siteDir, "state.js"));
-        res.writeHead(200, { "Content-Type": "text/javascript; charset=utf-8", "Cache-Control": "no-store" });
-        return res.end(body);
-      } catch {
-        return sendJson(res, 404, {});
-      }
-    }
     if (await serveFile(res, webDir, url.pathname)) return undefined;
     return sendJson(res, 404, {});
   }

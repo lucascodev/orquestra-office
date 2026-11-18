@@ -57,12 +57,11 @@ function dayStats(project) {
   const agents = Object.values(project.agents);
   const sessions = agents.filter((a) => a.kind !== "subagent" && !a.endedAt).length;
   const stats = project.stats ?? {};
-  const activity = [
+  return [
     [sessions, "Sessões abertas"], [stats.prompts ?? 0, "Pedidos hoje"],
-    [stats.tools ?? 0, "Ferramentas hoje"], [stats.turns ?? 0, project.cloud ? "Rodadas de revisão" : "Turnos hoje"],
+    [stats.tools ?? 0, "Ferramentas hoje"], [stats.turns ?? 0, "Turnos hoje"],
+    [formatTokens(stats.tokens), "Tokens hoje"], [formatCost(stats.costUsd), "Custo hoje", COST_NOTE],
   ];
-  if (project.cloud) return activity;
-  return [...activity, [formatTokens(stats.tokens), "Tokens hoje"], [formatCost(stats.costUsd), "Custo hoje", COST_NOTE]];
 }
 
 function statCell([value, label, note = ""], isAlert = false) {
@@ -78,11 +77,11 @@ export function renderOffice(project) {
       <div class="page-id">
         <p class="eyebrow">Sala</p>
         <h2 class="page-title">${esc(project.name)}</h2>
-        <p class="page-path mono">${esc(project.cloud ? "agentes desta conversa no claude.ai" : project.key)}</p>
+        <p class="page-path mono">${esc(project.key)}</p>
       </div>
       <div class="page-tools">
         <label class="field inline">Escritório <select class="input" id="template-select">${options}</select></label>
-        ${project.cloud ? "" : `<button class="btn btn-ghost" data-close-room title="Tira esta sala da lista. Ela volta sozinha se uma sessão desta pasta trabalhar de novo.">Fechar sala</button>`}
+        <button class="btn btn-ghost" data-close-room title="Tira esta sala da lista. Ela volta sozinha se uma sessão desta pasta trabalhar de novo.">Fechar sala</button>
       </div>
     </header>
     <div class="card stats">${dayStats(project).map((cell) => statCell(cell)).join("")}${statCell([needs, "Precisam de você"], needs > 0)}</div>
