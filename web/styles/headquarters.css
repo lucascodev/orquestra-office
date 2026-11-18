@@ -1,0 +1,8 @@
+/* The headquarters view (?vista=sede): the map takes the whole window until the floating interface of step 6.24 arrives. */
+.is-headquarters .toolbar, .is-headquarters .tabs, .is-headquarters .side { display: none; }
+.is-headquarters .workspace { display: block; height: 100dvh; padding: 0; }
+.is-headquarters .office { display: block; position: relative; height: 100%; }
+
+.hq-stage { position: absolute; inset: 0; overflow: hidden; background: var(--bg-canvas); }
+.hq-canvas { display: block; width: 100%; height: 100%; image-rendering: pixelated; }
+.hq-meter { position: absolute; top: var(--space-6); left: var(--space-6); padding: var(--space-2) var(--space-4); border: 1px solid var(--border-strong); border-radius: var(--radius-md); background: var(--bg-overlay); color: var(--text); font: 400 12px var(--font-mono); }
