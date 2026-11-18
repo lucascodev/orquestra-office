@@ -4,6 +4,10 @@ import { THEMES } from "../scripts/data/themes.js";
 import { assignPlaces } from "../scripts/domain/behavior/room-places.js";
 import { createConversationTracker } from "../scripts/domain/conversations/conversation-tracker.js";
 import { conversationMoment, socialCircles, workConversations } from "../scripts/domain/conversations/conversations.js";
+import { placeAgents } from "../scripts/domain/behavior/room-places.js";
+import { areaOfPoint } from "../scripts/domain/headquarters/area-of-point.js";
+import { layoutHeadquarters } from "../scripts/domain/headquarters/headquarters-layout.js";
+import { headquartersSpots } from "../scripts/domain/headquarters/headquarters-spots.js";
 import { layoutRoom } from "../scripts/domain/room/room-layout.js";
 
 const NOW = 1_800_000_000_000;
@@ -96,6 +100,31 @@ describe("social circles", () => {
   it("groups people close to each other and leaves loners out", () => {
     const circles = socialCircles([{ key: "a", x: 0, z: 0 }, { key: "b", x: 0.5, z: 0 }, { key: "c", x: 2.3, z: 0 }, { key: "d", x: 9, z: 9 }]);
     assert.deepEqual(circles, [["a", "b", "c"]]);
+  });
+});
+
+describe("chats in the headquarters", () => {
+  it("does not chat across a partition, even standing right next to each other", () => {
+    const people = [{ key: "a", x: 13.8, z: 3, areaId: "pantry" }, { key: "b", x: 14.4, z: 3, areaId: "games" }, { key: "c", x: 13.2, z: 3, areaId: "pantry" }];
+    assert.deepEqual(socialCircles(people), [["a", "c"]]);
+  });
+
+  it("has people from different projects chat over a coffee in the pantry", () => {
+    const onBreak = (key) => agentOf(key, "break", { activity: null, updatedAt: NOW - 17_000 });
+    const agents = [onBreak("claude:loja"), onBreak("claude:jogo")];
+    const projects = Object.fromEntries(agents.map((agent, i) => [`c:/${agent.key}`, {
+      key: `c:/${agent.key}`, name: agent.key, template: "startup", createdAt: i, updatedAt: NOW, team: [], agents: { [agent.key]: agent },
+    }]));
+    const layout = layoutHeadquarters(projects);
+    const freeSince = new Map(agents.map((agent) => [agent.key, agent.updatedAt]));
+    const places = placeAgents({ agents, now: NOW, spots: headquartersSpots(layout), freeSince });
+    const people = agents.map((agent) => {
+      const { x, z } = places.get(agent.key).stop;
+      return { key: agent.key, x, z, areaId: areaOfPoint(layout, { x, z }), isStill: true };
+    });
+    assert.deepEqual(people.map((person) => person.areaId), ["pantry", "pantry"]);
+    const roles = createConversationTracker()({ people, agents, places, nowMs: NOW, seconds: 100 });
+    assert.deepEqual([...roles.keys()].sort(), ["claude:jogo", "claude:loja"]);
   });
 });
 

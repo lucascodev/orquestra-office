@@ -3,6 +3,9 @@ import { HANDING_OVER } from "../behavior/agent-reactions.js";
 import { hashOf } from "../shared/seeded-random.js";
 
 const CHAT_DISTANCE = 2;
+
+// Two people leaning on both sides of the partition between two rooms are close, but they cannot talk through it.
+const canChat = (a, b) => a.areaId === b.areaId && Math.hypot(a.x - b.x, a.z - b.z) <= CHAT_DISTANCE;
 const DELEGATION_WINDOW_MS = 25_000;
 const LINE_SECONDS = 2.8;
 const PAUSE_BETWEEN_LINES_SECONDS = 0.5;
@@ -21,7 +24,7 @@ function rootOf(parents, key) {
 export function socialCircles(people) {
   const parents = new Map(people.map(({ key }) => [key, key]));
   people.forEach((a, i) => people.slice(i + 1).forEach((b) => {
-    if (Math.hypot(a.x - b.x, a.z - b.z) <= CHAT_DISTANCE) parents.set(rootOf(parents, a.key), rootOf(parents, b.key));
+    if (canChat(a, b)) parents.set(rootOf(parents, a.key), rootOf(parents, b.key));
   }));
   const circles = new Map();
   for (const { key } of people) {

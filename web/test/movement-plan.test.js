@@ -39,6 +39,26 @@ describe("movement plan", () => {
     }
   });
 
+  it("keeps someone sitting at a desk seated when that desk moves, as when an island shifts, instead of getting them up", () => {
+    const { room, routes } = roomOf();
+    const seated = personOf({ stop: DESK, position: { x: DESK.x, z: DESK.z }, isSeated: true });
+    assert.deepEqual(plan(seated, { stop: MOVED_DESK, isUrgent: true }, { room }), { kind: "place", stop: MOVED_DESK });
+    assert.deepEqual(routes, []);
+  });
+
+  it("gets someone sitting at a desk up to walk when the new place is not a desk", () => {
+    const { room, routes } = roomOf();
+    const seated = personOf({ stop: DESK, position: { x: DESK.x, z: DESK.z }, isSeated: true });
+    assert.equal(plan(seated, { stop: COFFEE, isUrgent: false }, { room }).kind, "walk");
+    assert.deepEqual(routes, [{ from: DESK, to: COFFEE }]);
+  });
+
+  it("walks someone sitting somewhere that is not a desk, like the sofa, to the desk when work comes", () => {
+    const { room } = roomOf();
+    const onSofa = personOf({ stop: COFFEE, position: { x: COFFEE.x, z: COFFEE.z }, isSeated: true });
+    assert.equal(plan(onSofa, { stop: DESK, isUrgent: true }, { room }).kind, "walk");
+  });
+
   it("walks someone already standing in the room to a new desk, even if they were last seen seated", () => {
     const { room, routes } = roomOf();
     const standing = personOf({ stop: DESK, position: { x: DESK.x, z: DESK.z }, lastSeen: { x: DESK.x, z: DESK.z, wasAtDesk: true } });
