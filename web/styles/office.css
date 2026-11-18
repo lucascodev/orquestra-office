@@ -257,3 +257,4 @@ button:disabled { cursor: not-allowed; }
 .pairing-code { display: grid; gap: var(--space-4); justify-items: center; text-align: center; }
 .qr { width: min(240px, 70vw); height: auto; border-radius: var(--radius-sm); }
 .pairing-link { font-size: 11px; overflow-wrap: anywhere; user-select: all; }
+.device-name { display: flex; align-items: center; gap: var(--space-3); flex-wrap: wrap; }

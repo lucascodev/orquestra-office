@@ -31,7 +31,8 @@ export function createDevicesDialog({ dialog, control }) {
     if (!button) return;
     button.disabled = true;
     await control.revokeDevice(button.dataset.revoke);
-    await refresh();
+    if (button.hasAttribute("data-is-current")) return dialog.close();
+    return refresh();
   });
 
   return { show };
