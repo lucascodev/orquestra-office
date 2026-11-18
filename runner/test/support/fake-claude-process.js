@@ -2,7 +2,7 @@ import { stdoutChanges } from "../../src/claude/stdout-changes.js";
 
 const CLEAN_EXIT = Object.freeze({ code: 0, error: "" });
 
-// Like Claude Code, it prints stream-json on stdout and, given a sessionId, announces it on the first message.
+// Like Claude Code, it prints stream-json on stdout; given a sessionId, it announces it in a system init event for every message it is sent.
 export function fakeClaudeLauncher({ sessionId = null } = {}) {
   const processes = [];
   const startProcess = ({ cwd, onChange, onExit }) => {
