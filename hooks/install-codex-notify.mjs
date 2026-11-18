@@ -3,11 +3,17 @@ import { homedir } from "node:os";
 import { dirname, join } from "node:path";
 import { applyNotify, configLines, configText } from "./lib/codex-config.mjs";
 import { backupConfig } from "./lib/config-backup.mjs";
-import { officeUrlFrom } from "./lib/office-url.mjs";
+import { envValue } from "./lib/env-value.mjs";
+import { ALLOW_REMOTE_FLAG, installerOfficeUrl } from "./lib/office-url.mjs";
 
-const officeUrl = officeUrlFrom(process.env);
 const isRemoving = process.argv.includes("--remove");
-const configPath = join(process.env.CODEX_HOME ?? join(homedir(), ".codex"), "config.toml");
+const officeUrlResult = installerOfficeUrl(process.env, { allowRemote: process.argv.includes(ALLOW_REMOTE_FLAG) });
+if (officeUrlResult.problem) {
+  console.error(`OFFICE_URL was refused: ${officeUrlResult.problem}. Nothing was changed.`);
+  process.exit(1);
+}
+const officeUrl = officeUrlResult.origin;
+const configPath = join(envValue(process.env, "CODEX_HOME") ?? join(homedir(), ".codex"), "config.toml");
 
 const lines = existsSync(configPath) ? configLines(readFileSync(configPath, "utf8")) : [];
 const result = applyNotify(lines, { isRemoving, officeUrl });

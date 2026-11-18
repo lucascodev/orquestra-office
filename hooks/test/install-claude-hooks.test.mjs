@@ -3,6 +3,7 @@ import { existsSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSy
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { test } from "node:test";
+import { fakeHome } from "./support/fake-home.mjs";
 import { HOOKS_DIR, runHookScript } from "./support/run-hook-script.mjs";
 
 const INSTALLER = "install-claude-hooks.mjs";
@@ -32,14 +33,60 @@ test("installs hooks and status line pointing at this hooks folder and the defau
   assert.deepEqual(backupsIn(dir), []);
 });
 
-test("uses OFFICE_URL from the environment in every http hook", async (t) => {
+const httpHookUrls = (settings) => Object.values(settings.hooks).flat().flatMap((group) => group.hooks).filter((hook) => hook.type === "http").map((hook) => hook.url);
+
+test("uses OFFICE_URL from the environment, normalized to its origin, in every http hook", async (t) => {
   const dir = configDir(t);
 
-  await install(dir, { OFFICE_URL: "http://office.test:1234" });
+  await install(dir, { OFFICE_URL: "http://LOCALHOST:1234/" });
 
-  const urls = Object.values(readSettings(dir).hooks).flat().flatMap((group) => group.hooks).filter((hook) => hook.type === "http").map((hook) => hook.url);
+  const urls = httpHookUrls(readSettings(dir));
   assert.ok(urls.length > 0);
-  assert.ok(urls.every((url) => url.startsWith("http://office.test:1234/")));
+  assert.ok(urls.every((url) => url.startsWith("http://localhost:1234/")));
+});
+
+for (const officeUrl of ["http://evil.example", "https://evil.example", "http://127.0.0.1:8420/x", "http://user:pw@127.0.0.1:8420"]) {
+  test(`refuses OFFICE_URL ${officeUrl}, exits 1 and writes nothing`, async (t) => {
+    const dir = configDir(t);
+
+    const result = await install(dir, { OFFICE_URL: officeUrl });
+
+    assert.equal(result.code, 1);
+    assert.match(result.stderr, /^OFFICE_URL was refused: .+\. Nothing was changed\./);
+    assert.deepEqual(readdirSync(dir), []);
+  });
+}
+
+test("--allow-remote-office accepts a remote https office and still refuses a remote http one", async (t) => {
+  const dir = configDir(t);
+
+  const refused = await install(dir, { OFFICE_URL: "http://office.example.com" }, ["--allow-remote-office"]);
+  const accepted = await install(dir, { OFFICE_URL: "https://office.example.com" }, ["--allow-remote-office"]);
+
+  assert.equal(refused.code, 1);
+  assert.match(refused.stderr, /needs https:\/\//);
+  assert.equal(accepted.code, 0);
+  assert.ok(httpHookUrls(readSettings(dir)).every((url) => url.startsWith("https://office.example.com/")));
+});
+
+test("an empty OFFICE_URL counts as unset", async (t) => {
+  const dir = configDir(t);
+
+  const result = await install(dir, { OFFICE_URL: "" });
+
+  assert.equal(result.code, 0);
+  assert.ok(httpHookUrls(readSettings(dir)).every((url) => url.startsWith(`${DEFAULT_OFFICE_URL}/`)));
+});
+
+test("an empty CLAUDE_CONFIG_DIR counts as unset: settings go to ~/.claude, not to the current folder", async (t) => {
+  const { home, env } = fakeHome(t);
+  const cwd = configDir(t);
+
+  const result = await runHookScript(INSTALLER, { env: { ...env, CLAUDE_CONFIG_DIR: "" }, cwd });
+
+  assert.equal(result.code, 0);
+  assert.ok(existsSync(join(home, ".claude", "settings.json")));
+  assert.deepEqual(readdirSync(cwd), []);
 });
 
 test("backs up an existing settings file with its original content before rewriting it", async (t) => {

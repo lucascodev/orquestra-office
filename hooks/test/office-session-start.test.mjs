@@ -5,7 +5,7 @@ import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { test } from "node:test";
 import { startFakeOffice } from "./support/fake-office.mjs";
-import { runHookScript } from "./support/run-hook-script.mjs";
+import { requestedUrls, runHookScript } from "./support/run-hook-script.mjs";
 
 const SCRIPT = "office-session-start.mjs";
 const UNREACHABLE_OFFICE = "http://127.0.0.1:1";
@@ -69,4 +69,20 @@ test("exits 0 silently and reports nothing for input that is not JSON", async (t
   assert.equal(result.stdout, "");
   assert.equal(result.stderr, "");
   assert.deepEqual(office.requests, []);
+});
+
+const IGNORED_OFFICE_URLS = ["", "http://evil.example", "https://evil.example", "http://user:pw@127.0.0.1:8420", "http://127.0.0.1:8420/x", "not a url"];
+
+for (const officeUrl of IGNORED_OFFICE_URLS) {
+  test(`ignores OFFICE_URL "${officeUrl}" and reports only to the default office`, async (t) => {
+    const urls = await requestedUrls(t, SCRIPT, { env: { OFFICE_URL: officeUrl }, input: JSON.stringify({ session_id: "x", cwd: tmpdir() }) });
+
+    assert.deepEqual(urls, ["http://127.0.0.1:8420/events/claude"]);
+  });
+}
+
+test("reports to OFFICE_URL when it is a loopback origin", async (t) => {
+  const urls = await requestedUrls(t, SCRIPT, { env: { OFFICE_URL: "http://localhost:1234/" }, input: JSON.stringify({ session_id: "x", cwd: tmpdir() }) });
+
+  assert.deepEqual(urls, ["http://localhost:1234/events/claude"]);
 });

@@ -5,12 +5,18 @@ import { fileURLToPath } from "node:url";
 import { isForeignStatusline, withOfficeSettings } from "./lib/claude-settings.mjs";
 import { settingsShapeProblem } from "./lib/claude-settings-shape.mjs";
 import { backupConfig } from "./lib/config-backup.mjs";
-import { officeUrlFrom } from "./lib/office-url.mjs";
+import { envValue } from "./lib/env-value.mjs";
+import { ALLOW_REMOTE_FLAG, installerOfficeUrl } from "./lib/office-url.mjs";
 
-const officeUrl = officeUrlFrom(process.env);
 const isRemoving = process.argv.includes("--remove");
+const officeUrlResult = installerOfficeUrl(process.env, { allowRemote: process.argv.includes(ALLOW_REMOTE_FLAG) });
+if (officeUrlResult.problem) {
+  console.error(`OFFICE_URL was refused: ${officeUrlResult.problem}. Nothing was changed.`);
+  process.exit(1);
+}
+const officeUrl = officeUrlResult.origin;
 const hooksDir = dirname(fileURLToPath(import.meta.url));
-const settingsPath = join(process.env.CLAUDE_CONFIG_DIR ?? join(homedir(), ".claude"), "settings.json");
+const settingsPath = join(envValue(process.env, "CLAUDE_CONFIG_DIR") ?? join(homedir(), ".claude"), "settings.json");
 
 function loadSettings() {
   if (!existsSync(settingsPath)) return {};

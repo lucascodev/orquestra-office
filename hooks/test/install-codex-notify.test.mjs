@@ -3,6 +3,7 @@ import { existsSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSy
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { test } from "node:test";
+import { fakeHome } from "./support/fake-home.mjs";
 import { runHookScript } from "./support/run-hook-script.mjs";
 
 const INSTALLER = "install-codex-notify.mjs";
@@ -30,12 +31,50 @@ test("creates config.toml with the office notify when there is none", async (t) 
   assert.deepEqual(backupsIn(dir), []);
 });
 
-test("uses OFFICE_URL from the environment in the notify command", async (t) => {
+test("uses OFFICE_URL from the environment, normalized to its origin, in the notify command", async (t) => {
   const dir = codexHome(t);
 
-  await install(dir, { OFFICE_URL: "http://office.test:1234" });
+  await install(dir, { OFFICE_URL: "http://LOCALHOST:1234/" });
 
-  assert.match(readConfig(dir), /"http:\/\/office\.test:1234\/events\/codex"/);
+  assert.match(readConfig(dir), /"http:\/\/localhost:1234\/events\/codex"/);
+});
+
+test("refuses a remote OFFICE_URL, exits 1 and writes nothing", async (t) => {
+  const dir = codexHome(t);
+
+  const result = await install(dir, { OFFICE_URL: "http://evil.example" });
+
+  assert.equal(result.code, 1);
+  assert.match(result.stderr, /^OFFICE_URL was refused:.+--allow-remote-office.+ Nothing was changed\./);
+  assert.deepEqual(readdirSync(dir), []);
+});
+
+test("--allow-remote-office accepts a remote https office", async (t) => {
+  const dir = codexHome(t);
+
+  const result = await install(dir, { OFFICE_URL: "https://office.example.com" }, ["--allow-remote-office"]);
+
+  assert.equal(result.code, 0);
+  assert.match(readConfig(dir), /"https:\/\/office\.example\.com\/events\/codex"/);
+});
+
+test("an empty OFFICE_URL counts as unset", async (t) => {
+  const dir = codexHome(t);
+
+  await install(dir, { OFFICE_URL: "" });
+
+  assert.match(readConfig(dir), /"http:\/\/127\.0\.0\.1:8420\/events\/codex"/);
+});
+
+test("an empty CODEX_HOME counts as unset: config goes to ~/.codex, not to the current folder", async (t) => {
+  const { home, env } = fakeHome(t);
+  const cwd = codexHome(t);
+
+  const result = await runHookScript(INSTALLER, { env: { ...env, CODEX_HOME: "" }, cwd });
+
+  assert.equal(result.code, 0);
+  assert.ok(existsSync(join(home, ".codex", "config.toml")));
+  assert.deepEqual(readdirSync(cwd), []);
 });
 
 test("backs up the existing config with its original content and normalizes line endings", async (t) => {
