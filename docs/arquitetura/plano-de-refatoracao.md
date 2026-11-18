@@ -982,3 +982,18 @@ Decidido nesta etapa, por ser barato de desfazer: manter o nome `view/` no web (
 - **Fase 6, nomes únicos no prédio:** trocar a atribuição muda o nome de agentes já conhecidos pelo usuário.
 - **Fase 6, contrato do collector:** tempo por status e uso por conta mudam o estado público; a página e o collector precisam ser atualizados juntos (no Docker, o `web/` montado e a imagem reconstruída).
 - **Fase 7, coletor da CLI e Docker na mesma porta:** a CLI precisa checar se já há um coletor em 8420 antes de subir outro (`office-health.mjs`).
+
+## 15. Pendências adiadas
+
+Achados MINOR das revisões que não bloquearam a fase. Na revisão final da branch decide-se o que entra antes do merge.
+
+| Fase | Onde | Pendência |
+|---|---|---|
+| 3 | `web/test/support/source-code.js` (`opensRegex`) | Uma barra depois de `)` de `if`/`while`/`for` é lida como divisão, e depois de `++`/`--` como início de regex. Nos dois casos o tokenizador pode esconder o resto da linha. Nenhum arquivo real é afetado. Correção: tratar `++` e `--` como fim de operando e registrar o limite num teste. |
+| 3 | `view/terminal/terminal-entries.js`, `app/agent-panel.js`, `app/office-page.js` | O uso de `ownValueOf` nestes três arquivos está certo, mas falta teste com chave herdada (`toString`). |
+| 3 | `domain/room/room-routes.js` | A mutação que remove `spine: null` em `routeWithin` sobrevive. |
+| 3 | `view/office/status-display.js` | Repete `Object.hasOwn(...) ?` inline; pode usar `ownValueOf`. |
+| 3 | `three/scene/name-tags.js`, `three/scene/camera-framing.js` | Etiquetas, placas e enquadramento usam coordenadas locais da sala. Com origem diferente de zero (Sede), passam a usar a posição no mundo. Entra na fase 6. |
+| 3 | `domain/office/decision-body.js` | `answers[question.question] = answer` perde a resposta de uma pergunta com o texto `__proto__`. Correção: `Object.fromEntries`. |
+| 3 | `web/test/architecture.test.js` (`exportsIn`) | Lê o texto bruto, então um `// export const x` conta como export. |
+| 4 | hooks e coletor | Autenticação entre hooks e coletor (quem responde em `127.0.0.1:8420` decide permissões) e pareamento no modo LAN. Pedem ADR aprovado pelo usuário antes da fase 7. |
