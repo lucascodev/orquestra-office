@@ -1,8 +1,10 @@
 import { test } from "node:test";
+import { request } from "node:http";
 import { tmpdir } from "node:os";
 import assert from "node:assert/strict";
 import { changesOf } from "../src/claude/stream-changes.js";
 import { createRunner } from "../src/composition.js";
+import { createServer } from "../src/http/server.js";
 
 const OFFICE = "http://localhost:8420";
 const JSON_HEADERS = { "Content-Type": "application/json", Origin: OFFICE };
@@ -103,3 +105,34 @@ test("only the office page may talk to the runner", () => withRunner(async (base
   const preflight = await fetch(`${base}/sessions`, { method: "OPTIONS", headers: { Origin: OFFICE, "Access-Control-Request-Method": "POST" } });
   assert.equal(preflight.headers.get("access-control-allow-origin"), OFFICE);
 }));
+
+const RAW_REQUEST_TIMEOUT_MS = 2_000;
+const CRASH_TEST_TIMEOUT_MS = 5_000;
+
+const rawGet = (base, path) => new Promise((resolve, reject) => {
+  const { hostname, port } = new URL(base);
+  const req = request({ hostname, port, path, headers: { Host: "localhost" }, signal: AbortSignal.timeout(RAW_REQUEST_TIMEOUT_MS) }, (res) => {
+    res.resume();
+    res.on("end", () => resolve(res.statusCode));
+  });
+  req.on("error", reject);
+  req.end();
+});
+
+test("a malformed request URL is a 400 and the runner keeps running", { timeout: CRASH_TEST_TIMEOUT_MS }, () => withRunner(async (base) => {
+  assert.equal(await rawGet(base, "//["), 400);
+  assert.equal(await rawGet(base, "/health"), 200);
+}));
+
+test("an unexpected failure in a route answers 500, is logged and the runner keeps running", { timeout: CRASH_TEST_TIMEOUT_MS }, async (t) => {
+  const reportError = t.mock.method(console, "error", () => {});
+  const failingRegistry = { list: () => { throw new Error("registry exploded"); } };
+  const server = createServer({ registry: failingRegistry, allowedOrigins: [OFFICE] });
+  await new Promise((resolve) => server.listen(0, "127.0.0.1", resolve));
+  const base = `http://127.0.0.1:${server.address().port}`;
+  try {
+    assert.equal(await rawGet(base, "/sessions"), 500);
+    assert.equal(await rawGet(base, "/health"), 200);
+    assert.equal(reportError.mock.callCount(), 1);
+  } finally { server.closeAllConnections(); server.close(); }
+});

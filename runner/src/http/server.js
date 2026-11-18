@@ -1,6 +1,7 @@
 import { createServer as createHttpServer } from "node:http";
 import { toMessageText } from "../sessions/message-text.js";
 import { createOriginPolicy, isJson, isLocalHost, readJsonBody } from "./request-guard.js";
+import { requestUrlOf } from "./request-url.js";
 
 const SESSION_ID_WAIT_MS = 20_000;
 const HEARTBEAT_MS = 25_000;
@@ -42,13 +43,14 @@ export function createServer({ registry, allowedOrigins }) {
     return sendJson(req, res, session.send(text) ? 200 : 409, {});
   }
 
-  return createHttpServer(async (req, res) => {
+  async function route(req, res) {
     if (!isLocalHost(req) || !origins.allows(req)) return sendJson(req, res, 403, { error: "forbidden" });
     if (req.method === "OPTIONS") {
       res.writeHead(204, origins.headersFor(req));
       return res.end();
     }
-    const url = new URL(req.url ?? "/", "http://localhost");
+    const url = requestUrlOf(req);
+    if (!url) return sendJson(req, res, 400, { error: "invalid url" });
     const sessionRoute = url.pathname.match(/^\/sessions\/([\w-]+)\/(stream|messages|interrupt|stop)$/);
 
     if (req.method === "GET") {
@@ -62,5 +64,16 @@ export function createServer({ registry, allowedOrigins }) {
     if (url.pathname === "/sessions") return openSession(req, res);
     const session = sessionRoute && sessionRoute[2] !== "stream" ? registry.get(sessionRoute[1]) : null;
     return session ? actOnSession(req, res, session, sessionRoute[2]) : sendJson(req, res, 404, {});
+  }
+
+  // Every open session lives in this process, so no single request may take the runner down.
+  function failSafely(req, res, error) {
+    console.error("runner request failed:", error);
+    if (res.headersSent) res.destroy();
+    else sendJson(req, res, 500, {});
+  }
+
+  return createHttpServer((req, res) => {
+    route(req, res).catch((error) => failSafely(req, res, error));
   });
 }
