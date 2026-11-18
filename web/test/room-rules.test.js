@@ -4,7 +4,7 @@ import { join } from "node:path";
 import { describe, it } from "node:test";
 import { fileURLToPath } from "node:url";
 import { THEMES } from "../scripts/data/themes.js";
-import { FREE_TIME, freeTimePreferences } from "../scripts/domain/behavior/agent-reactions.js";
+import { freeTimePreferences } from "../scripts/domain/behavior/agent-reactions.js";
 import { assignPlaces } from "../scripts/domain/behavior/room-places.js";
 import { layoutRoom } from "../scripts/domain/room/room-layout.js";
 import { nearestLaneZ, routeBetween, routeWithin } from "../scripts/domain/room/room-routes.js";
@@ -135,12 +135,11 @@ const FREE_TIME_SPOTS_BY_THEME = {
 };
 
 function freeTimeSpotsOffered(theme) {
-  const activityOfReaction = Object.fromEntries(FREE_TIME.map((activity) => [activity.reaction, activity.id]));
   const idle = Array.from({ length: MORE_PEOPLE_THAN_SPOTS }, (_, i) => agentOf(`claude:f${i}`, { status: "idle", activity: null }));
   const places = [...assignPlaces(idle, null, layoutRoom(emptyProject(), theme), new Map()).values()].filter((place) => place.isFreeTime);
   const counts = {};
   for (const place of places) {
-    const activity = activityOfReaction[place.reaction];
+    const activity = place.stop.activityId;
     counts[activity] = (counts[activity] ?? 0) + 1;
   }
   return Object.fromEntries(Object.entries(counts).sort(([a], [b]) => a.localeCompare(b)));
