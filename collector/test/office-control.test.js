@@ -6,13 +6,17 @@ import { createOfficeStore } from "../src/office/office-store.js";
 
 const JSON_HEADERS = { "Content-Type": "application/json" };
 const SESSION = { session_id: "s1", cwd: "/tmp/demo" };
+const HOLD_MS = 5_000;
+const EXPIRING_HOLD_MS = 20;
+const EXPIRY_TEST_TIMEOUT_MS = 2_000;
 
-async function withOffice(run, { holdMs = 5_000 } = {}) {
+async function withOffice(run, { holdMs = HOLD_MS } = {}) {
   const store = createOfficeStore();
-  const server = createServer({ store, webDir: "/nonexistent", decisions: createPendingDecisions({ holdMs }) });
+  const decisions = createPendingDecisions({ holdMs });
+  const server = createServer({ store, webDir: "/nonexistent", decisions });
   await new Promise((resolve) => server.listen(0, "127.0.0.1", resolve));
   const base = `http://127.0.0.1:${server.address().port}`;
-  try { await run(base, store); } finally { server.closeAllConnections(); server.close(); }
+  try { await run(base, store, decisions); } finally { server.closeAllConnections(); server.close(); }
 }
 
 const post = (url, body, headers = JSON_HEADERS) => fetch(url, { method: "POST", headers, body: JSON.stringify(body) });
@@ -63,14 +67,24 @@ test("denying from the office tells the agent why", () => withOffice(async (base
   viewer.abort();
 }));
 
-test("sending it back to the terminal, or letting the hold expire, leaves the decision open", () => withOffice(async (base) => {
+test("sending a held permission back to the terminal releases the hook with no decision", () => withOffice(async (base) => {
   const viewer = await openOfficePage(base);
   const released = permissionHook(base);
-  await post(`${base}/api/decisions/${(await pendingRequest(base)).id}`, { behavior: "terminal" });
+  const decided = await post(`${base}/api/decisions/${(await pendingRequest(base)).id}`, { behavior: "terminal" });
+  assert.equal(decided.status, 200);
+  assert.deepEqual((await stateOf(base)).pending, []);
   assert.deepEqual(await (await released).json(), {});
-  assert.deepEqual(await (await permissionHook(base)).json(), {});
   viewer.abort();
-}, { holdMs: 40 }));
+}));
+
+test("a held permission nobody answers expires and goes back to the terminal", { timeout: EXPIRY_TEST_TIMEOUT_MS }, () => withOffice(async (base, store, decisions) => {
+  const viewer = await openOfficePage(base);
+  const heldCounts = [];
+  decisions.onChange(() => heldCounts.push(decisions.list().length));
+  assert.deepEqual(await (await permissionHook(base)).json(), {});
+  assert.deepEqual(heldCounts, [1, 0]);
+  viewer.abort();
+}, { holdMs: EXPIRING_HOLD_MS }));
 
 test("another site cannot approve a pending permission", () => withOffice(async (base) => {
   const viewer = await openOfficePage(base);

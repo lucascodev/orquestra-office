@@ -107,3 +107,123 @@ test("what the agent is doing follows the tool it uses", () => {
   store.apply(claude("PreToolUse", { tool_name: "WebSearch", tool_input: { query: "x" } }));
   assert.equal(doing(), "web");
 });
+
+const MINUTE_MS = 60_000;
+const HOUR_MS = 60 * MINUTE_MS;
+const DAY_MS = 24 * HOUR_MS;
+const BREAK_TO_IDLE_MS = 10 * MINUTE_MS;
+const ENDED_SUBAGENT_TTL_MS = 15 * MINUTE_MS;
+const ENDED_SESSION_TTL_MS = 30 * MINUTE_MS;
+const SILENT_SESSION_TTL_MS = 6 * HOUR_MS;
+const QUIET_PROJECT_TTL_MS = 30 * DAY_MS;
+const LATE_EVENING_UTC = Date.UTC(2026, 0, 10, 23, 59);
+const NEXT_MORNING_UTC = Date.UTC(2026, 0, 11, 0, 1);
+const STARTED_AT = Date.UTC(2026, 0, 10, 12, 0);
+
+const projectOf = (store) => Object.values(store.snapshot().projects)[0];
+const agentKeysOf = (store) => Object.keys(projectOf(store).agents);
+const reading = (tokens, costUsd, at = 1000, sessionId = "s1") => ({ sessionId, at, tokens, costUsd, rateLimits: null });
+
+test("sweep removes a finished subagent only after 15 minutes", () => {
+  const store = createOfficeStore();
+  store.apply(claude("SubagentStart", { agent_id: "a1", agent_type: "code-reviewer" }, STARTED_AT));
+  store.apply(claude("SubagentStop", { agent_id: "a1" }, STARTED_AT));
+  store.sweep(STARTED_AT + ENDED_SUBAGENT_TTL_MS);
+  assert.deepEqual(agentKeysOf(store), ["claude:s1", "claude:s1:a1"]);
+  store.sweep(STARTED_AT + ENDED_SUBAGENT_TTL_MS + 1);
+  assert.deepEqual(agentKeysOf(store), ["claude:s1"]);
+});
+
+test("sweep removes a closed session only after 30 minutes", () => {
+  const store = createOfficeStore();
+  store.apply(claude("SessionStart", {}, STARTED_AT));
+  store.apply(claude("SessionEnd", { reason: "other" }, STARTED_AT));
+  store.sweep(STARTED_AT + ENDED_SESSION_TTL_MS);
+  assert.deepEqual(agentKeysOf(store), ["claude:s1"]);
+  store.sweep(STARTED_AT + ENDED_SESSION_TTL_MS + 1);
+  assert.deepEqual(agentKeysOf(store), []);
+});
+
+test("sweep removes a session that went silent for more than 6 hours without closing", () => {
+  const store = createOfficeStore();
+  store.apply(claude("SessionStart", {}, STARTED_AT));
+  store.sweep(STARTED_AT + SILENT_SESSION_TTL_MS);
+  assert.deepEqual(agentKeysOf(store), ["claude:s1"]);
+  store.sweep(STARTED_AT + SILENT_SESSION_TTL_MS + 1);
+  assert.deepEqual(agentKeysOf(store), []);
+});
+
+test("an empty room stays for 30 days of quiet before sweep removes it", () => {
+  const store = createOfficeStore();
+  store.apply(claude("SessionStart", {}, STARTED_AT));
+  store.apply(claude("SessionEnd", { reason: "other" }, STARTED_AT));
+  store.sweep(STARTED_AT + ENDED_SESSION_TTL_MS + 1);
+  store.sweep(STARTED_AT + QUIET_PROJECT_TTL_MS);
+  assert.equal(projectOf(store).name, "orquestra");
+  store.sweep(STARTED_AT + QUIET_PROJECT_TTL_MS + 1);
+  assert.deepEqual(store.snapshot().projects, {});
+});
+
+test("sweep forgets the session and usage meter of removed agents and keeps the live ones", () => {
+  const store = createOfficeStore();
+  store.apply(claude("SessionStart", {}, STARTED_AT));
+  store.recordUsage(reading(1_000, 0.5, STARTED_AT));
+  store.apply(claude("SessionEnd", { reason: "other" }, STARTED_AT));
+  store.apply(claude("SessionStart", { session_id: "s2" }, STARTED_AT + ENDED_SESSION_TTL_MS));
+  store.recordUsage(reading(1_000, 0.5, STARTED_AT + ENDED_SESSION_TTL_MS, "s2"));
+  store.sweep(STARTED_AT + ENDED_SESSION_TTL_MS + 1);
+  const { sessions, meters } = store.snapshot();
+  assert.deepEqual(Object.keys(sessions), ["s2"]);
+  assert.deepEqual(Object.keys(meters), ["s2"]);
+});
+
+test("a break turns into idle only after 10 minutes of quiet", () => {
+  const store = createOfficeStore();
+  store.apply(claude("Stop", {}, STARTED_AT));
+  store.sweep(STARTED_AT + BREAK_TO_IDLE_MS);
+  assert.equal(projectOf(store).agents["claude:s1"].status, "break");
+  store.sweep(STARTED_AT + BREAK_TO_IDLE_MS + 1);
+  assert.equal(projectOf(store).agents["claude:s1"].status, "idle");
+});
+
+test("a quiet agent that is not on a break keeps its status", () => {
+  const store = createOfficeStore();
+  store.apply(claude("UserPromptSubmit", { prompt: "go" }, STARTED_AT));
+  store.sweep(STARTED_AT + BREAK_TO_IDLE_MS + 1);
+  assert.equal(projectOf(store).agents["claude:s1"].status, "working");
+});
+
+test("the daily stats start over at midnight UTC", () => {
+  const store = createOfficeStore();
+  store.apply(claude("UserPromptSubmit", { prompt: "go" }, LATE_EVENING_UTC));
+  store.apply(claude("PreToolUse", { tool_name: "Bash", tool_input: { command: "ls" } }, LATE_EVENING_UTC));
+  store.apply(claude("UserPromptSubmit", { prompt: "again" }, NEXT_MORNING_UTC));
+  assert.deepEqual(projectOf(store).stats, { day: "2026-01-11", prompts: 1, tools: 0, turns: 0, tokens: 0, costUsd: 0 });
+});
+
+test("usage read after midnight counts toward the new day", () => {
+  const store = createOfficeStore();
+  store.apply(claude("SessionStart", {}, LATE_EVENING_UTC));
+  store.recordUsage(reading(1_000, 0.5, LATE_EVENING_UTC));
+  store.recordUsage(reading(1_600, 1.25, NEXT_MORNING_UTC));
+  const { day, tokens, costUsd } = projectOf(store).stats;
+  assert.deepEqual({ day, tokens, costUsd }, { day: "2026-01-11", tokens: 600, costUsd: 0.75 });
+});
+
+test("the first usage reading of a session is only the baseline", () => {
+  const store = createOfficeStore();
+  store.apply(claude("SessionStart"));
+  store.recordUsage(reading(1_000, 0.5));
+  const { tokens, costUsd } = projectOf(store).stats;
+  assert.deepEqual({ tokens, costUsd }, { tokens: 0, costUsd: 0 });
+});
+
+test("a usage counter that drops, as after /clear, adds only the new spend", () => {
+  const store = createOfficeStore();
+  store.apply(claude("SessionStart"));
+  store.recordUsage(reading(1_000, 0.5));
+  store.recordUsage(reading(1_600, 1.25));
+  store.recordUsage(reading(200, 0.25));
+  const { tokens, costUsd } = projectOf(store).stats;
+  assert.deepEqual({ tokens, costUsd }, { tokens: 800, costUsd: 1 });
+});
