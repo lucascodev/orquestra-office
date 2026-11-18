@@ -1,7 +1,7 @@
 import { createServer as createHttpServer } from "node:http";
 import { createOutbox } from "../control/outbox.js";
 import { createPendingDecisions } from "../control/pending-decisions.js";
-import { normalizeCodexEvent } from "../events/codex-event.js";
+import { normalizeCodexEvent } from "../codex/codex-event.js";
 import { createSessionHistory } from "../history/session-history.js";
 import { createClaudeRoutes } from "./claude-routes.js";
 import { createEventStream } from "./event-stream.js";

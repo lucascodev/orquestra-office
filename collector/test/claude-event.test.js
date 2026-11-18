@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { normalizeClaudeEvent } from "../src/events/claude-event.js";
+import { normalizeClaudeEvent } from "../src/claude/claude-event.js";
 
 const base = { session_id: "s1", cwd: "C:\\projetos\\orquestra" };
 

@@ -11,7 +11,7 @@ function fileOf(input) {
   return baseName(input?.file_path ?? input?.notebook_path ?? input?.path ?? "");
 }
 
-export function describeTool(toolName, toolInput) {
+export function describeActivity(toolName, toolInput) {
   const name = String(toolName ?? "");
   if (READ_TOOLS.has(name)) {
     const file = fileOf(toolInput);

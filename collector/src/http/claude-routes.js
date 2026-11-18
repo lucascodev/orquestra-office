@@ -1,25 +1,9 @@
-import { continueWithMessages, NO_DECISION, permissionResponse, questionResponse } from "../control/hook-responses.js";
-import { normalizeClaudeEvent, officeActionEvent } from "../events/claude-event.js";
-import { claudeAgentKey, claudeHistoryEntry } from "../events/claude-history.js";
-import { normalizeStatusline } from "../events/statusline-reading.js";
+import { normalizeClaudeEvent, officeActionEvent } from "../claude/claude-event.js";
+import { claudeAgentKey, claudeHistoryEntry } from "../claude/claude-history-entry.js";
+import { continueWithMessages, NO_DECISION, permissionResponse, questionResponse } from "../claude/hook-responses.js";
+import { questionsOf } from "../claude/hook-questions.js";
+import { normalizeStatusline } from "../claude/statusline-reading.js";
 import { summarizeTool } from "../shared/claude/summarize-tool.js";
-import { clip } from "../shared/text/clip.js";
-
-const QUESTION_LIMIT = 8;
-const OPTION_LIMIT = 12;
-
-function questionsOf(toolInput) {
-  const questions = Array.isArray(toolInput?.questions) ? toolInput.questions.slice(0, QUESTION_LIMIT) : [];
-  return questions.map((item) => ({
-    question: clip(String(item?.question ?? ""), 500),
-    header: clip(String(item?.header ?? ""), 40),
-    multiSelect: item?.multiSelect === true,
-    options: (Array.isArray(item?.options) ? item.options.slice(0, OPTION_LIMIT) : []).map((option) => ({
-      label: clip(String(option?.label ?? ""), 120),
-      description: clip(String(option?.description ?? ""), 300),
-    })),
-  }));
-}
 
 export function createClaudeRoutes({ store, decisions, outbox, history, hasViewers }) {
   function note(payload, action, entry) {

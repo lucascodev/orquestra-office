@@ -1,4 +1,4 @@
-import { describeTool } from "./describe-tool.js";
+import { describeActivity } from "./describe-activity.js";
 
 const NEEDS_YOU_NOTIFICATIONS = new Set(["permission_prompt", "elicitation_dialog", "agent_needs_input"]);
 const ROLE_NAME = /^[\w.-]{1,40}$/;
@@ -45,7 +45,7 @@ export function normalizeClaudeEvent(payload, now = Date.now()) {
     case "UserPromptSubmit":
       return activity(payload, now, "working", "recebeu um pedido seu", { counts: "prompts", activity: "thinking" });
     case "PreToolUse": {
-      const { status, action, activity: doing } = describeTool(payload.tool_name, payload.tool_input);
+      const { status, action, activity: doing } = describeActivity(payload.tool_name, payload.tool_input);
       return activity(payload, now, status, action, { counts: "tools", activity: doing });
     }
     case "PostToolUse":
