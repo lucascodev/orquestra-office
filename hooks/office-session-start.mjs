@@ -1,18 +1,14 @@
 import { execFileSync } from "node:child_process";
 import { readdirSync } from "node:fs";
 import { basename, dirname, join } from "node:path";
+import { officeUrlFrom } from "./lib/office-url.mjs";
+import { readStdin } from "./lib/read-stdin.mjs";
 
-const OFFICE_URL = process.env.OFFICE_URL ?? "http://127.0.0.1:8420";
+const OFFICE_URL = officeUrlFrom(process.env);
 const REPORT_TIMEOUT_MS = 1_500;
 const GIT_TIMEOUT_MS = 1_500;
 const TEAM_LIMIT = 40;
 const AGENT_FILE = /\.md$/i;
-
-async function readStdin() {
-  const chunks = [];
-  for await (const chunk of process.stdin) chunks.push(chunk);
-  return Buffer.concat(chunks).toString("utf8");
-}
 
 // A worktree shares the main repository's .git folder, so its parent is the project every worktree belongs to.
 function repositoryRoot(cwd) {

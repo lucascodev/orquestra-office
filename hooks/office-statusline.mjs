@@ -1,13 +1,9 @@
+import { officeUrlFrom } from "./lib/office-url.mjs";
+import { readStdin } from "./lib/read-stdin.mjs";
 import { statusLineText } from "./lib/status-line-text.mjs";
 
-const OFFICE_URL = process.env.OFFICE_URL ?? "http://127.0.0.1:8420";
+const OFFICE_URL = officeUrlFrom(process.env);
 const REPORT_TIMEOUT_MS = 800;
-
-async function readStdin() {
-  const chunks = [];
-  for await (const chunk of process.stdin) chunks.push(chunk);
-  return Buffer.concat(chunks).toString("utf8");
-}
 
 async function reportToOffice(body) {
   try {

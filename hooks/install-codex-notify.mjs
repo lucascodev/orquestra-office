@@ -1,9 +1,11 @@
-import { copyFileSync, existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { dirname, join } from "node:path";
 import { applyNotify, configLines, configText } from "./lib/codex-config.mjs";
+import { backupConfig } from "./lib/config-backup.mjs";
+import { officeUrlFrom } from "./lib/office-url.mjs";
 
-const officeUrl = process.env.OFFICE_URL ?? "http://127.0.0.1:8420";
+const officeUrl = officeUrlFrom(process.env);
 const isRemoving = process.argv.includes("--remove");
 const configPath = join(process.env.CODEX_HOME ?? join(homedir(), ".codex"), "config.toml");
 
@@ -15,11 +17,7 @@ if (result.foreignNotifyLine !== undefined) {
   process.exit(1);
 }
 
-if (existsSync(configPath)) {
-  const stamp = new Date().toISOString().replace(/[-:]/g, "").replace(/\..+/, "").replace("T", "-");
-  copyFileSync(configPath, `${configPath}.bak-${stamp}`);
-  console.log(`Backup: ${configPath}.bak-${stamp}`);
-}
+if (existsSync(configPath)) console.log(`Backup: ${backupConfig(configPath)}`);
 
 mkdirSync(dirname(configPath), { recursive: true });
 writeFileSync(configPath, configText(result.lines));

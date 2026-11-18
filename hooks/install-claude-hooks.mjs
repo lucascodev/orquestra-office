@@ -1,10 +1,12 @@
-import { copyFileSync, existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { isForeignStatusline, withOfficeSettings } from "./lib/claude-settings.mjs";
+import { backupConfig } from "./lib/config-backup.mjs";
+import { officeUrlFrom } from "./lib/office-url.mjs";
 
-const officeUrl = process.env.OFFICE_URL ?? "http://127.0.0.1:8420";
+const officeUrl = officeUrlFrom(process.env);
 const isRemoving = process.argv.includes("--remove");
 const hooksDir = dirname(fileURLToPath(import.meta.url));
 const settingsPath = join(process.env.CLAUDE_CONFIG_DIR ?? join(homedir(), ".claude"), "settings.json");
@@ -18,9 +20,7 @@ function loadSettings() {
     console.error(`Could not read ${settingsPath} as JSON. Nothing was changed.`);
     process.exit(1);
   }
-  const stamp = new Date().toISOString().replace(/[-:]/g, "").replace(/\..+/, "").replace("T", "-");
-  copyFileSync(settingsPath, `${settingsPath}.bak-${stamp}`);
-  console.log(`Backup: ${settingsPath}.bak-${stamp}`);
+  console.log(`Backup: ${backupConfig(settingsPath)}`);
   return settings;
 }
 
