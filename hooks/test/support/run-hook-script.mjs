@@ -19,6 +19,8 @@ export function runScript(scriptPath, { env = {}, args = [], input = "", cwd, no
     child.stdout.setEncoding("utf8").on("data", (chunk) => { stdout += chunk; });
     child.stderr.setEncoding("utf8").on("data", (chunk) => { stderr += chunk; });
     child.on("error", reject);
+    // A hook that exits without reading its input closes the pipe first; that is a valid outcome, not a test failure.
+    child.stdin.on("error", (error) => { if (error.code !== "EPIPE") reject(error); });
     child.on("close", (code) => resolve({ code, stdout, stderr }));
     child.stdin.end(input);
   });
@@ -26,10 +28,13 @@ export function runScript(scriptPath, { env = {}, args = [], input = "", cwd, no
 
 export const runHookScript = (scriptName, options) => runScript(join(HOOKS_DIR, scriptName), options);
 
-export async function requestedUrls(t, scriptName, { env = {}, input = "" } = {}) {
+export async function runRecordingFetch(t, scriptName, { env = {}, input = "" } = {}) {
   const dir = mkdtempSync(join(tmpdir(), "office-fetch-"));
   t.after(() => rmSync(dir, { recursive: true, force: true }));
   const log = join(dir, "fetch.log");
-  await runHookScript(scriptName, { env: { ...env, FETCH_LOG: log }, input, nodeArgs: ["--import", RECORD_FETCH] });
-  return existsSync(log) ? readFileSync(log, "utf8").split("\n").filter(Boolean) : [];
+  const result = await runHookScript(scriptName, { env: { ...env, FETCH_LOG: log }, input, nodeArgs: ["--import", RECORD_FETCH] });
+  const urls = existsSync(log) ? readFileSync(log, "utf8").split("\n").filter(Boolean) : [];
+  return { ...result, urls };
 }
+
+export const requestedUrls = async (t, scriptName, options) => (await runRecordingFetch(t, scriptName, options)).urls;

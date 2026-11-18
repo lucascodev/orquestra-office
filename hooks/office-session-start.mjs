@@ -10,6 +10,8 @@ const GIT_TIMEOUT_MS = 1_500;
 const TEAM_LIMIT = 40;
 const AGENT_FILE = /\.md$/i;
 
+if (OFFICE_URL === null) process.exit(0);
+
 // Without this variable Windows looks for git.exe in cwd before PATH, and cwd is whatever repository the session opened.
 // libuv reads it from this process's own environment when it searches for the program, so the child's env option alone is not enough.
 process.env.NoDefaultCurrentDirectoryInExePath = "1";

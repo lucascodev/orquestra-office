@@ -5,6 +5,8 @@ import { statusLineText } from "./lib/status-line-text.mjs";
 const OFFICE_URL = officeUrlFrom(process.env);
 const REPORT_TIMEOUT_MS = 800;
 
+if (OFFICE_URL === null) process.exit(0);
+
 async function reportToOffice(body) {
   try {
     await fetch(`${OFFICE_URL}/events/statusline`, {

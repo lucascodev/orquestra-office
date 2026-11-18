@@ -47,9 +47,11 @@ test("the installer treats an empty OFFICE_URL as unset and reports a bad one", 
   assert.deepEqual(installerOfficeUrl({ OFFICE_URL: REMOTE_HTTPS }, { allowRemote: true }), { origin: REMOTE_HTTPS });
 });
 
-test("a hook uses OFFICE_URL only when it is a valid loopback origin, and the default otherwise", () => {
+test("a hook uses a loopback OFFICE_URL, the default when it is blank, and nothing when it is refused", () => {
   assert.equal(officeUrlFrom({ OFFICE_URL: "http://localhost:1234/" }), "http://localhost:1234");
-  for (const raw of ["", "http://evil.example", REMOTE_HTTPS, ...Object.keys(REFUSED_ANYWHERE)]) {
-    assert.equal(officeUrlFrom({ OFFICE_URL: raw }), DEFAULT_OFFICE_URL, raw);
+  assert.equal(officeUrlFrom({ OFFICE_URL: "" }), DEFAULT_OFFICE_URL);
+  assert.equal(officeUrlFrom({ OFFICE_URL: "   " }), DEFAULT_OFFICE_URL);
+  for (const raw of ["http://evil.example", REMOTE_HTTPS, ...Object.keys(REFUSED_ANYWHERE)]) {
+    assert.equal(officeUrlFrom({ OFFICE_URL: raw }), null, raw);
   }
 });
