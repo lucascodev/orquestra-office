@@ -11,7 +11,13 @@ export async function startFakeOffice(t, { answer = EMPTY_ANSWER } = {}) {
     const chunks = [];
     request.on("data", (chunk) => chunks.push(chunk));
     request.on("end", () => {
-      const recorded = { method: request.method, url: request.url, contentType: request.headers["content-type"], body: Buffer.concat(chunks).toString("utf8") };
+      const recorded = {
+        method: request.method,
+        url: request.url,
+        contentType: request.headers["content-type"],
+        authorization: request.headers.authorization ?? null,
+        body: Buffer.concat(chunks).toString("utf8"),
+      };
       requests.push(recorded);
       const { status = 200, text = "", headers = {} } = answer({ ...recorded, headers: request.headers });
       response.writeHead(status, headers);

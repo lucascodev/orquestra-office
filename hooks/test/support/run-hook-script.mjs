@@ -1,16 +1,19 @@
 import { spawn } from "node:child_process";
-import { existsSync, mkdtempSync, readFileSync, rmSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 
 export const HOOKS_DIR = fileURLToPath(new URL("../../", import.meta.url)).replace(/[\\/]$/, "");
 
+export const THROWAWAY_SECRET = "AAECAwQFBgcICQoLDA0ODxAREhMUFRYXGBkaGxwdHh8";
 const THROWAWAY_HOME = mkdtempSync(join(tmpdir(), "office-throwaway-home-"));
 process.on("exit", () => rmSync(THROWAWAY_HOME, { recursive: true, force: true }));
+mkdirSync(join(THROWAWAY_HOME, ".orquestra-office"));
+writeFileSync(join(THROWAWAY_HOME, ".orquestra-office", "secret"), `${THROWAWAY_SECRET}\n`);
 
-// The child never inherits the real environment, and its home is a throwaway folder unless a test passes another,
-// so a test can never reach the user's ~/.claude, ~/.codex or ~/.orquestra-office.
+// The child never inherits the real environment, and its home is a throwaway folder, already holding an office secret,
+// unless a test passes another, so a test can never reach the user's ~/.claude, ~/.codex or ~/.orquestra-office.
 export const BASE_ENV = { PATH: process.env.PATH, SystemRoot: process.env.SystemRoot, HOME: THROWAWAY_HOME, USERPROFILE: THROWAWAY_HOME };
 
 const RECORD_FETCH = pathToFileURL(fileURLToPath(new URL("./record-fetch.mjs", import.meta.url))).href;

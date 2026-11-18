@@ -4,6 +4,7 @@ import { copyFileSync, existsSync, mkdirSync, mkdtempSync, realpathSync, rmSync,
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { test } from "node:test";
+import { fakeHome } from "./support/fake-home.mjs";
 import { startFakeOffice } from "./support/fake-office.mjs";
 import { requestedUrls, runHookScript, runRecordingFetch } from "./support/run-hook-script.mjs";
 
@@ -34,6 +35,7 @@ test("reports the session with the repository root and the team's role names, pr
   const [request] = office.requests;
   assert.equal(request.url, "/events/claude");
   assert.equal(request.contentType, "application/json");
+  assert.equal(request.authorization, "Bearer dI1HY_vzPeHro_qQK3S9fh-cVNpGcLIH77tBN1IPe7I");
   const sent = JSON.parse(request.body);
   assert.equal(sent.session_id, "s1");
   assert.equal(resolve(sent.office.repoRoot), root);
@@ -123,4 +125,15 @@ test("reports to OFFICE_URL when it is a loopback origin", async (t) => {
   const urls = await requestedUrls(t, SCRIPT, { env: { OFFICE_URL: "http://localhost:1234/" }, input: JSON.stringify({ session_id: "x", cwd: tmpdir() }) });
 
   assert.deepEqual(urls, ["http://localhost:1234/events/claude"]);
+});
+
+test("without the office secret it reports nothing and prints nothing", async (t) => {
+  const office = await startFakeOffice(t);
+  const { env } = fakeHome(t);
+
+  const result = await runHookScript(SCRIPT, { env: { ...env, OFFICE_URL: office.url }, input: JSON.stringify({ session_id: "x", cwd: tmpdir() }) });
+
+  assert.equal(result.code, 0);
+  assert.equal(result.stdout, "");
+  assert.deepEqual(office.requests, []);
 });
