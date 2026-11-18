@@ -1,7 +1,7 @@
+import { layoutRoom } from "../domain/room/room-layout.js";
+import { seatStop } from "../domain/room/room-spots.js";
+import { wallWidthOf } from "../domain/room/wall-plan.js";
 import { hashOf, rng } from "../domain/shared/seeded-random.js";
-import { layoutRoom } from "../view/room-layout.js";
-import { seatStop } from "../view/room-places.js";
-import { wallWidthOf } from "../view/wall-plan.js";
 import { loungeSet, meetingSet } from "./commons.js";
 import { prop, shelfUnit, wallItem } from "./decor.js";
 import { bin, desk, station, vacantStation } from "./furniture.js";

@@ -1,8 +1,9 @@
+import { assignPlaces } from "../domain/behavior/room-places.js";
+import { nearestLaneZ, routeBetween } from "../domain/room/room-routes.js";
+import { exitStop } from "../domain/room/room-spots.js";
 import { freshestThoughts, thoughtAt } from "../view/agent-thoughts.js";
 import { createConversationTracker } from "../view/conversation-tracker.js";
 import { createFreeTimeClock } from "../view/free-time-clock.js";
-import { assignPlaces, exitStop } from "../view/room-places.js";
-import { nearestLaneZ, routeBetween } from "../view/room-routes.js";
 import { THREE } from "./kit.js";
 import { isWalking, placeAt, setReaction, standAt, stepPerson, TAG_HEIGHT_ABOVE_HIP, walkTo } from "./people.js";
 import { buildRoom } from "./room.js";
