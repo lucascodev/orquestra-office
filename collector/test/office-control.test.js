@@ -1,8 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { createPendingDecisions } from "../src/control/domain/pending-decisions.js";
-import { createServer } from "../src/http/server.js";
-import { createOfficeStore } from "../src/office/domain/office-store.js";
+import { createOffice } from "../src/composition.js";
 
 const JSON_HEADERS = { "Content-Type": "application/json" };
 const SESSION = { session_id: "s1", cwd: "/tmp/demo" };
@@ -11,9 +9,7 @@ const EXPIRING_HOLD_MS = 20;
 const EXPIRY_TEST_TIMEOUT_MS = 2_000;
 
 async function withOffice(run, { holdMs = HOLD_MS } = {}) {
-  const store = createOfficeStore();
-  const decisions = createPendingDecisions({ holdMs });
-  const server = createServer({ store, webDir: "/nonexistent", decisions });
+  const { server, store, decisions } = createOffice({ webDir: "/nonexistent", holdMs });
   await new Promise((resolve) => server.listen(0, "127.0.0.1", resolve));
   const base = `http://127.0.0.1:${server.address().port}`;
   try { await run(base, store, decisions); } finally { server.closeAllConnections(); server.close(); }

@@ -1,32 +1,33 @@
-import { createPendingDecisions } from "./control/domain/pending-decisions.js";
-import { createServer } from "./http/server.js";
-import { createOfficeStore } from "./office/domain/office-store.js";
-import { createOfficeStateFile } from "./office/infra/office-state-file.js";
+import { fileURLToPath } from "node:url";
+import { createOffice } from "./composition.js";
 
+const DEFAULT_PORT = 8420;
+const DEFAULT_HOST = "127.0.0.1";
 const DEFAULT_HOLD_SECONDS = 120;
+const MS_PER_SECOND = 1_000;
+const DEFAULT_WEB_DIR = fileURLToPath(new URL("../../web", import.meta.url));
+const DEFAULT_DATA_DIR = fileURLToPath(new URL("../data", import.meta.url));
 
-const port = Number(process.env.PORT ?? 8420);
-const dataDir = process.env.DATA_DIR ?? "./data";
-const webDir = process.env.WEB_DIR ?? "../web";
+const port = Number(process.env.PORT ?? DEFAULT_PORT);
+const host = process.env.OFFICE_HOST || DEFAULT_HOST;
 const holdSeconds = Number(process.env.OFFICE_HOLD_SECONDS) || DEFAULT_HOLD_SECONDS;
-const allowedHosts = (process.env.OFFICE_ALLOWED_HOSTS ?? "").split(",").map((host) => host.trim()).filter(Boolean);
+const allowedHosts = (process.env.OFFICE_ALLOWED_HOSTS ?? "").split(",").map((name) => name.trim()).filter(Boolean);
 
-const persistence = createOfficeStateFile(dataDir);
-const store = createOfficeStore(persistence.load());
-store.onChange(() => persistence.scheduleSave(store.snapshot()));
-
-const decisions = createPendingDecisions({ holdMs: holdSeconds * 1000 });
-const server = createServer({ store, webDir, decisions, allowedHosts });
-server.listen(port, "0.0.0.0", () => {
-  console.log(`office collector listening on ${port}`);
+const office = createOffice({
+  webDir: process.env.WEB_DIR ?? DEFAULT_WEB_DIR,
+  dataDir: process.env.DATA_DIR ?? DEFAULT_DATA_DIR,
+  holdMs: holdSeconds * MS_PER_SECOND,
+  allowedHosts,
 });
 
-const sweep = setInterval(() => store.sweep(Date.now()), 30_000);
+office.server.listen(port, host, () => {
+  console.log(`office collector listening on ${host}:${port}`);
+});
+office.startSweep();
 
 function shutdown() {
-  clearInterval(sweep);
-  persistence.saveNow(store.snapshot());
-  server.close(() => process.exit(0));
+  office.stop();
+  office.server.close(() => process.exit(0));
 }
 process.on("SIGTERM", shutdown);
 process.on("SIGINT", shutdown);

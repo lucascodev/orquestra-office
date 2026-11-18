@@ -1,5 +1,6 @@
 import { OUTCOME } from "../control/application/outcome.js";
-import { isJson, isSameOrigin, readJsonBody, sendJson } from "./request-guard.js";
+import { readJsonBody, sendJson } from "./json-io.js";
+import { isJson, isSameOrigin } from "./request-policy.js";
 
 const API_BODY_LIMIT = 64 * 1024;
 const STATUS_OF_OUTCOME = { [OUTCOME.DONE]: 200, [OUTCOME.NOT_FOUND]: 404, [OUTCOME.INVALID]: 400 };

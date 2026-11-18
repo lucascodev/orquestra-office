@@ -2,12 +2,10 @@ import { test } from "node:test";
 import { request } from "node:http";
 import { fileURLToPath } from "node:url";
 import assert from "node:assert/strict";
-import { createServer } from "../src/http/server.js";
-import { createOfficeStore } from "../src/office/domain/office-store.js";
+import { createOffice } from "../src/composition.js";
 
 async function withServer(run, options = {}) {
-  const store = createOfficeStore();
-  const server = createServer({ store, webDir: fileURLToPath(new URL("../../web", import.meta.url)), ...options });
+  const { server, store } = createOffice({ webDir: fileURLToPath(new URL("../../web", import.meta.url)), ...options });
   await new Promise((resolve) => server.listen(0, "127.0.0.1", resolve));
   const base = `http://127.0.0.1:${server.address().port}`;
   try { await run(base, store); } finally { server.closeAllConnections(); server.close(); }

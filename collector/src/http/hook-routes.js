@@ -4,7 +4,8 @@ import { questionsOf } from "../claude/hook-questions.js";
 import { continueWithMessages, NO_DECISION, permissionResponse, questionResponse } from "../claude/hook-responses.js";
 import { normalizeStatusline } from "../claude/statusline-reading.js";
 import { normalizeCodexEvent } from "../codex/codex-event.js";
-import { isJson, readJsonBody, sendJson } from "./request-guard.js";
+import { readJsonBody, sendJson } from "./json-io.js";
+import { isJson } from "./request-policy.js";
 
 const EVENT_BODY_LIMIT = 8 * 1024 * 1024;
 
