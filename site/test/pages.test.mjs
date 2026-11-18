@@ -5,7 +5,8 @@ import { join } from "node:path";
 import { after, before, describe, it } from "node:test";
 import { fileURLToPath } from "node:url";
 import { assembleSite } from "../assemble.mjs";
-import { hasInlineScript, startTags } from "./support/html.mjs";
+import { LANDING_CONTENT_SECURITY_POLICY } from "../content-security-policy.mjs";
+import { hasInlineScript, headOf, startTags } from "./support/html.mjs";
 import { skeletonOf } from "./support/skeleton.mjs";
 
 const SITE_DIR = fileURLToPath(new URL("..", import.meta.url));
@@ -20,8 +21,10 @@ const REFERENCE_ATTRIBUTES = ["href", "src"];
 const ID_REFERENCE_ATTRIBUTES = ["aria-controls", "aria-labelledby"];
 const EXTERNAL = /^(?:[a-z]+:)?\/\//i;
 const EVENT_HANDLER = /^on/;
+const POLICY_HEADER = "content-security-policy";
 
 const readPage = (page) => readFileSync(join(SITE_DIR, page.path), "utf8");
+const policiesIn = (html) => startTags(html).filter((tag) => tag.name === "meta" && tag.attributes.get("http-equiv")?.toLowerCase() === POLICY_HEADER).map((tag) => tag.attributes.get("content"));
 const attribute = (tags, name, value) => tags.filter((tag) => tag.attributes.get(name) === value);
 
 describe("landing pages", () => {
@@ -84,6 +87,14 @@ describe("landing pages", () => {
       const fragments = tags.map((tag) => tag.attributes.get("href")).filter((href) => href?.startsWith("#")).map((href) => href.slice(1));
       const ariaIds = tags.flatMap((tag) => ID_REFERENCE_ATTRIBUTES.map((name) => tag.attributes.get(name))).filter(Boolean).flatMap((value) => value.split(/\s+/));
       for (const id of [...fragments, ...ariaIds]) assert.ok(ids.has(id), `${page.path}: #${id} does not exist`);
+    }
+  });
+
+  it("declares exactly the expected content security policy once, in the head", () => {
+    for (const page of PAGES) {
+      const html = readPage(page);
+      assert.deepEqual(policiesIn(html), [LANDING_CONTENT_SECURITY_POLICY], page.path);
+      assert.deepEqual(policiesIn(headOf(html)), [LANDING_CONTENT_SECURITY_POLICY], `${page.path}: policy outside the head`);
     }
   });
 

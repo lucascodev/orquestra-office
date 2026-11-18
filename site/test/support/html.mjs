@@ -1,5 +1,6 @@
 const START_TAG = /<([a-zA-Z][\w-]*)((?:\s+[^\s=>/]+(?:\s*=\s*(?:"[^"]*"|'[^']*'|[^\s>]+))?)*)\s*\/?>/g;
 const ATTRIBUTE = /([^\s=>/]+)(?:\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s>]+)))?/g;
+const HEAD = /<head(?:\s[^>]*)?>([\s\S]*?)<\/head>/;
 const BODY = /<body[^>]*>([\s\S]*)<\/body>/;
 const INLINE_SCRIPT = /<script(?![^>]*\bsrc=)[^>]*>/;
 
@@ -12,6 +13,8 @@ function attributesOf(source) {
 }
 
 export const startTags = (html) => [...html.matchAll(START_TAG)].map(([, name, attributes]) => ({ name: name.toLowerCase(), attributes: attributesOf(attributes) }));
+
+export const headOf = (html) => HEAD.exec(html)?.[1] ?? "";
 
 export const bodyOf = (html) => BODY.exec(html)?.[1] ?? "";
 
