@@ -2,8 +2,9 @@ import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
 import { copyFileSync, existsSync, mkdirSync, mkdtempSync, realpathSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { join, resolve } from "node:path";
+import { delimiter, join, resolve } from "node:path";
 import { test } from "node:test";
+import { fileURLToPath, pathToFileURL } from "node:url";
 import { startFakeOffice } from "./support/fake-office.mjs";
 import { requestedUrls, runHookScript, runRecordingFetch } from "./support/run-hook-script.mjs";
 
@@ -89,6 +90,32 @@ test("never runs a git.exe or git.cmd planted in the opened repository", { skip:
 
   assert.equal(result.code, 0);
   assert.equal(existsSync(marker), false);
+});
+
+const OLD_LIBUV = pathToFileURL(fileURLToPath(new URL("./support/old-libuv.mjs", import.meta.url))).href;
+
+function gitOnPath(t) {
+  const dir = realpathSync.native(mkdtempSync(join(tmpdir(), "office-fake-git-")));
+  t.after(() => rmSync(dir, { recursive: true, force: true }));
+  const marker = join(dir, "fake-git-ran");
+  const preload = join(dir, "mark.cjs");
+  copyFileSync(process.execPath, join(dir, "git.exe"));
+  writeFileSync(preload, MARK_WHEN_RUN_AS_GIT(marker));
+  const env = { OFFICE_URL: UNREACHABLE_OFFICE, PATH: `${dir}${delimiter}${process.env.PATH}`, NODE_OPTIONS: `--require "${preload.replaceAll("\\", "/")}"` };
+  return { marker, env };
+}
+
+test("with libuv 1.47 on Windows the hook never looks git up", { skip: process.platform !== "win32" && "the libuv version only matters on Windows" }, async (t) => {
+  const input = JSON.stringify({ session_id: "x", cwd: tmpdir() });
+  const current = gitOnPath(t);
+  const old = gitOnPath(t);
+
+  await runHookScript(SCRIPT, { env: current.env, input });
+  const result = await runHookScript(SCRIPT, { env: old.env, input, nodeArgs: ["--import", OLD_LIBUV] });
+
+  assert.equal(existsSync(current.marker), true, "the git on PATH should run with the current libuv, or this test proves nothing");
+  assert.equal(result.code, 0);
+  assert.equal(existsSync(old.marker), false);
 });
 
 const BLANK_OFFICE_URLS = ["", "   "];
