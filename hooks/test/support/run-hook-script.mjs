@@ -6,8 +6,12 @@ import { fileURLToPath, pathToFileURL } from "node:url";
 
 export const HOOKS_DIR = fileURLToPath(new URL("../../", import.meta.url)).replace(/[\\/]$/, "");
 
-// The child never inherits the real environment, so a test can never reach the user's ~/.claude or ~/.codex.
-export const BASE_ENV = { PATH: process.env.PATH, SystemRoot: process.env.SystemRoot };
+const THROWAWAY_HOME = mkdtempSync(join(tmpdir(), "office-throwaway-home-"));
+process.on("exit", () => rmSync(THROWAWAY_HOME, { recursive: true, force: true }));
+
+// The child never inherits the real environment, and its home is a throwaway folder unless a test passes another,
+// so a test can never reach the user's ~/.claude, ~/.codex or ~/.orquestra-office.
+export const BASE_ENV = { PATH: process.env.PATH, SystemRoot: process.env.SystemRoot, HOME: THROWAWAY_HOME, USERPROFILE: THROWAWAY_HOME };
 
 const RECORD_FETCH = pathToFileURL(fileURLToPath(new URL("./record-fetch.mjs", import.meta.url))).href;
 
