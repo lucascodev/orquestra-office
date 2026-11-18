@@ -22,6 +22,8 @@ const REFERENCE_ATTRIBUTES = ["href", "src"];
 const ID_REFERENCE_ATTRIBUTES = ["aria-controls", "aria-labelledby"];
 const EXTERNAL = /^(?:[a-z]+:)?\/\//i;
 const EVENT_HANDLER = /^on/;
+const INSTALL_SECTION = /<section [^>]*id="([^"]+)" aria-labelledby="([^"]+)">\s*<div [^>]*data-install>/;
+const MIN_INSTALL_LINKS = 2;
 const DEFAULT_INSTALL_WAY = "docker";
 const UPCOMING_INSTALL_WAY = "npx";
 const UPCOMING_COMMAND = /npx orquestra-office/;
@@ -90,6 +92,17 @@ describe("landing pages", () => {
       const fragments = tags.map((tag) => tag.attributes.get("href")).filter((href) => href?.startsWith("#")).map((href) => href.slice(1));
       const ariaIds = tags.flatMap((tag) => ID_REFERENCE_ATTRIBUTES.map((name) => tag.attributes.get(name))).filter(Boolean).flatMap((value) => value.split(/\s+/));
       for (const id of [...fragments, ...ariaIds]) assert.ok(ids.has(id), `${page.path}: #${id} does not exist`);
+    }
+  });
+
+  it("names every link to the install section like its heading", () => {
+    for (const page of PAGES) {
+      const html = readPage(page);
+      const [, sectionId, titleId] = INSTALL_SECTION.exec(html);
+      const [, title] = new RegExp(`id="${titleId}">([^<]+)<`).exec(html);
+      const linkTexts = [...html.matchAll(new RegExp(`<a [^>]*href="#${sectionId}"[^>]*>([^<]+)</a>`, "g"))].map(([, text]) => text);
+      assert.ok(linkTexts.length >= MIN_INSTALL_LINKS, page.path);
+      for (const text of linkTexts) assert.equal(text, title, page.path);
     }
   });
 
