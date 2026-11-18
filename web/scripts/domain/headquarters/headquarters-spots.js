@@ -1,4 +1,4 @@
-import { CONVIVENCE_SPOTS, FREE_TIME_SPOTS, RECEPTION_WATER_SPOT } from "../../data/headquarters-areas.js";
+import { CONVIVENCE_SPOTS, FREE_TIME_SPOTS, RECEPTION_WATER_SPOT, RECEPTIONIST } from "../../data/headquarters-areas.js";
 import { CHAIR_HIP, PUFF_HIP, SOFA_HIP, STANDING_HIP } from "../room/room-dimensions.js";
 import { seatStop } from "../room/room-spots.js";
 import { atDepth } from "./facade-offsets.js";
@@ -58,6 +58,7 @@ export function headquartersSpots(layout) {
     freeTime: freeTimeSpots(layout),
     exit: stopOf({ ...layout.yard.exit, faces: "front" }),
     arrival: stopOf({ ...layout.yard.arrival, faces: "back" }),
+    receptionist: stopOf(RECEPTIONIST),
     activities: HEADQUARTERS_ACTIVITIES,
   };
 }

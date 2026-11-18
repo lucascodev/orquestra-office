@@ -110,6 +110,18 @@ describe("headquarters desks, arrival and exit", () => {
   });
 });
 
+describe("headquarters receptionist", () => {
+  it("stands behind the reception counter, facing the main door, wherever the facade is", () => {
+    for (const projectCount of [4, 9]) {
+      const { spots } = spotsOf(officeWith(projectCount));
+      assert.deepEqual(placeOf(spots.receptionist), [22.8, 11.1]);
+      assert.equal(spots.receptionist.facing, 0);
+      assert.equal(spots.receptionist.isSeat, false);
+      assert.equal(spots.receptionist.hipY, STANDING_HIP);
+    }
+  });
+});
+
 describe("free time activities", () => {
   it("knows the new activities of the games room and how people react to them", () => {
     const reactions = Object.fromEntries(FREE_TIME.map((activity) => [activity.id, activity.reaction]));

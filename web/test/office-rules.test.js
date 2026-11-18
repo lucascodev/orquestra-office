@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import { FIRST_NAMES } from "../scripts/data/first-names.js";
-import { withAgentNames } from "../scripts/domain/office/agent-names.js";
+import { withAgentNames, withBuildingAgentNames } from "../scripts/domain/office/agent-names.js";
 import { statusOf } from "../scripts/domain/office/agent-status.js";
 import { buildDecision } from "../scripts/domain/office/decision-body.js";
 import { needsYou, sortedProjects } from "../scripts/domain/office/project-order.js";
@@ -43,6 +43,38 @@ describe("agent names", () => {
     const named = withAgentNames(project);
     assert.deepEqual(named.agents["claude:a1"], { ...agent, name: "Heitor" });
     assert.equal(named.key, project.key);
+    assert.equal(project.agents["claude:a1"].name, undefined);
+  });
+});
+
+describe("agent names in the headquarters", () => {
+  const officeOf = (...projects) => Object.fromEntries(projects.map((project) => [project.key, project]));
+  const buildingNamesOf = (office) => Object.fromEntries(Object.values(withBuildingAgentNames(office))
+    .flatMap((project) => Object.values(project.agents).map((agent) => [agent.key, agent.name])));
+
+  it("never gives the same name to two agents of different projects", () => {
+    const office = officeOf(
+      projectOf([agentOf("claude:k6")], { key: "c:/a" }),
+      projectOf([agentOf("claude:k20")], { key: "c:/b" }),
+    );
+    assert.deepEqual(buildingNamesOf(office), { "claude:k6": "Rita", "claude:k20": "Raul" });
+  });
+
+  it("keeps the name an agent already has and keeps it out of the others' reach", () => {
+    const office = officeOf(
+      projectOf([agentOf("claude:k6", { name: "Raul" })], { key: "c:/a" }),
+      projectOf([agentOf("claude:k20")], { key: "c:/b" }),
+    );
+    const names = buildingNamesOf(office);
+    assert.equal(names["claude:k6"], "Raul");
+    assert.notEqual(names["claude:k20"], "Raul");
+  });
+
+  it("adds the names without touching the projects", () => {
+    const project = projectOf([agentOf("claude:a1")]);
+    const named = withBuildingAgentNames(officeOf(project));
+    assert.equal(named[project.key].key, project.key);
+    assert.equal(named[project.key].agents["claude:a1"].name, "Heitor");
     assert.equal(project.agents["claude:a1"].name, undefined);
   });
 });

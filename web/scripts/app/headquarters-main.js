@@ -1,6 +1,8 @@
+import { withBuildingAgentNames } from "../domain/office/agent-names.js";
 import { createDemoBackend } from "../infra/backends/demo-backend.js";
 import { createLiveBackend } from "../infra/backends/live-backend.js";
 import { createHeadquartersRenderer } from "../three/scene/headquarters-renderer.js";
+import { describeStatus } from "../view/office/status-display.js";
 import { createDataSource } from "./data-source.js";
 
 const MODE_PARAM = "modo";
@@ -31,10 +33,10 @@ addStylesheet();
 document.body.classList.add("is-headquarters");
 const office = document.getElementById("office");
 const showStats = params.get(MEASURE_PARAM) === MEASURE_ON ? createMeter(office) : () => {};
-const headquarters = createHeadquartersRenderer({ onFrame: showStats });
+const headquarters = createHeadquartersRenderer({ onFrame: showStats, describeStatus });
 if (headquarters) office.prepend(headquarters.element);
 else office.textContent = NO_WEBGL;
 
-const source = createDataSource((state) => headquarters?.show(state.projects));
+const source = createDataSource((state) => headquarters?.show(withBuildingAgentNames(state.projects)));
 const demo = () => createDemoBackend({ scene: params.get(SCENE_PARAM) });
 source.start(params.get(MODE_PARAM) === DEMO_MODE ? [demo()] : [createLiveBackend(), demo()]);

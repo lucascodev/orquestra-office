@@ -86,6 +86,11 @@ export function createPerson(parent, agent) {
   return person;
 }
 
+export function removePerson(person) {
+  person.root.removeFromParent();
+  person.emote.dispose();
+}
+
 export function setReaction(person, reactionId) {
   const reaction = REACTIONS[reactionId] ?? REACTIONS.typing;
   const hasChanged = person.reaction !== reaction;
