@@ -1,5 +1,5 @@
-import { cpSync, existsSync, mkdirSync, readdirSync, rmSync, statSync, writeFileSync } from "node:fs";
-import { isAbsolute, join, relative, resolve, sep } from "node:path";
+import { cpSync, existsSync, mkdirSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
+import { extname, isAbsolute, join, relative, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const SITE_DIR = fileURLToPath(new URL(".", import.meta.url));
@@ -11,6 +11,9 @@ const ASSEMBLY_MARKER = ".site-assembly";
 
 const PUBLISHED_SITE_ENTRIES = ["index.html", "en", "styles", "scripts", "assets"];
 const PUBLISHED_WEB_ENTRIES = ["index.html", "scripts", "styles", "vendor"];
+const TEXT_EXTENSIONS = new Set([".html", ".css", ".js", ".mjs", ".json", ".svg", ".txt", ".xml"]);
+
+const UNRESOLVED_PLACEHOLDERS = ["OWNER"];
 
 const copyEntries = (fromDir, toDir, entries) => {
   for (const entry of entries) cpSync(join(fromDir, entry), join(toDir, entry), { recursive: true });
@@ -31,7 +34,20 @@ function isReplaceable(target) {
   return entries.length === 0 || entries.includes(ASSEMBLY_MARKER);
 }
 
-export function assembleSite(outputDir = DEFAULT_OUTPUT_DIR) {
+const publishedTextFiles = (dir) => readdirSync(dir, { recursive: true }).filter((path) => TEXT_EXTENSIONS.has(extname(path))).map((path) => path.split(sep).join("/"));
+
+function assertNoPlaceholderLeft(dir, placeholders) {
+  const files = publishedTextFiles(dir);
+  for (const placeholder of placeholders) {
+    const pattern = new RegExp(`\\b${placeholder}\\b`);
+    const filesWithPlaceholder = files.filter((path) => pattern.test(readFileSync(join(dir, path), "utf8")));
+    if (filesWithPlaceholder.length > 0) {
+      throw new Error(`placeholder ${placeholder} left in ${filesWithPlaceholder.join(", ")}: replace it before publishing the site`);
+    }
+  }
+}
+
+export function assembleSite(outputDir = DEFAULT_OUTPUT_DIR, { placeholders = UNRESOLVED_PLACEHOLDERS } = {}) {
   const target = resolve(outputDir);
   if (holdsSources(target)) throw new Error(`refusing to replace ${target}: it holds the site or the office sources`);
   if (!isReplaceable(target)) throw new Error(`refusing to replace ${target}: it is not empty and has no ${ASSEMBLY_MARKER} file from an earlier assembly`);
@@ -40,6 +56,7 @@ export function assembleSite(outputDir = DEFAULT_OUTPUT_DIR) {
   writeFileSync(join(target, ASSEMBLY_MARKER), "");
   copyEntries(SITE_DIR, target, PUBLISHED_SITE_ENTRIES);
   copyEntries(WEB_DIR, join(target, DEMO_DIR_NAME), PUBLISHED_WEB_ENTRIES);
+  assertNoPlaceholderLeft(target, placeholders);
   return target;
 }
 

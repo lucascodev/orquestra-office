@@ -30,7 +30,7 @@ describe("landing pages", () => {
 
   before(() => {
     workDir = mkdtempSync(join(tmpdir(), "orquestra-pages-"));
-    assembledDir = assembleSite(join(workDir, "_site"));
+    assembledDir = assembleSite(join(workDir, "_site"), { placeholders: [] });
   });
 
   after(() => rmSync(workDir, { recursive: true, force: true }));

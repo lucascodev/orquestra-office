@@ -10,6 +10,10 @@ import { startTags } from "./support/html.mjs";
 const SITE_DIR = fileURLToPath(new URL("..", import.meta.url));
 const REPOSITORY_DIR = resolve(SITE_DIR, "..");
 const ROOT_RELATIVE = /^\//;
+const OWNER_PLACEHOLDER = /\bOWNER\b/;
+const LANDING_PAGES = ["index.html", "en/index.html"];
+const SITE_NAME = "Orquestra Office";
+const WITHOUT_PLACEHOLDERS = { placeholders: [] };
 const FOREIGN_FILE_NAME = "notes.txt";
 const FOREIGN_CONTENT = "not part of the site";
 
@@ -19,7 +23,7 @@ describe("site assembly", () => {
 
   before(() => {
     workDir = mkdtempSync(join(tmpdir(), "orquestra-site-"));
-    outputDir = assembleSite(join(workDir, "_site"));
+    outputDir = assembleSite(join(workDir, "_site"), WITHOUT_PLACEHOLDERS);
   });
 
   after(() => rmSync(workDir, { recursive: true, force: true }));
@@ -52,7 +56,7 @@ describe("site assembly", () => {
   it("replaces a missing folder, an empty one and one it assembled before", () => {
     const emptyDir = mkdtempSync(join(workDir, "empty-"));
     for (const dir of [join(workDir, "missing"), emptyDir, outputDir]) {
-      assembleSite(dir);
+      assembleSite(dir, WITHOUT_PLACEHOLDERS);
       assert.ok(existsSync(join(dir, "index.html")), dir);
     }
   });
@@ -61,8 +65,21 @@ describe("site assembly", () => {
     const foreignDir = mkdtempSync(join(workDir, "foreign-"));
     const foreignFile = join(foreignDir, FOREIGN_FILE_NAME);
     writeFileSync(foreignFile, FOREIGN_CONTENT);
-    assert.throws(() => assembleSite(foreignDir), /refusing to replace/);
+    assert.throws(() => assembleSite(foreignDir, WITHOUT_PLACEHOLDERS), /refusing to replace/);
     assert.equal(readFileSync(foreignFile, "utf8"), FOREIGN_CONTENT);
     assert.ok(!existsSync(join(foreignDir, "index.html")));
+  });
+
+  it("refuses to finish the site while a placeholder is left in a published file", () => {
+    assert.throws(
+      () => assembleSite(join(workDir, "with-placeholder"), { placeholders: [SITE_NAME] }),
+      (error) => error.message.includes(SITE_NAME) && LANDING_PAGES.every((page) => error.message.includes(page)),
+    );
+  });
+
+  it("blocks the real site while the pages still name the OWNER placeholder", (t) => {
+    const isOwnerLeft = LANDING_PAGES.some((page) => OWNER_PLACEHOLDER.test(readFileSync(join(SITE_DIR, page), "utf8")));
+    if (!isOwnerLeft) return t.skip("the OWNER placeholder was already replaced");
+    assert.throws(() => assembleSite(join(workDir, "with-owner")), OWNER_PLACEHOLDER);
   });
 });
