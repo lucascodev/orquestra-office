@@ -1,0 +1,15 @@
+export function plain() {}
+export async function later() {}
+export function* steps() {}
+export const one = 1;
+export let two = 2;
+export class Three {}
+export default function () {}
+const four = 4;
+const five = 5;
+export { four, five as six };
+export { seven, eight as nine } from "./elsewhere.js";
+export * as ten from "./ten.js";
+export * from "./everything.js";
+function hidden() {}
+const alsoHidden = "export const nope";

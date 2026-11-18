@@ -1,0 +1,83 @@
+import assert from "node:assert/strict";
+import { describe, it } from "node:test";
+import { FIRST_NAMES } from "../scripts/data/first-names.js";
+import { withAgentNames } from "../scripts/view/agent-names.js";
+import { needsYou, sortedProjects } from "../scripts/view/office-view.js";
+import { statusOf } from "../scripts/view/status.js";
+
+const NOW = 1_800_000_000_000;
+const MINUTE = 60_000;
+
+const agentOf = (key, extra = {}) => ({ key, kind: "main", source: "claude", status: "working", startedAt: NOW, updatedAt: NOW, endedAt: null, ...extra });
+const projectOf = (agents, extra = {}) => ({ key: "c:/demo", name: "demo", updatedAt: NOW, agents: Object.fromEntries(agents.map((agent) => [agent.key, agent])), ...extra });
+const namesOf = (project) => Object.fromEntries(Object.values(withAgentNames(project).agents).map((agent) => [agent.key, agent.name]));
+
+describe("agent names", () => {
+  it("names each agent the same way on every release, so people keep their colleagues' names", () => {
+    const project = projectOf(["claude:a1", "claude:a1:s1", "codex:b1", "claude:c1"].map((key) => agentOf(key)));
+    assert.deepEqual(namesOf(project), { "claude:a1": "Heitor", "claude:a1:s1": "Tiago", "codex:b1": "Nara", "claude:c1": "Luca" });
+  });
+
+  it("gives the next free name to an agent whose preferred name is already taken", () => {
+    const project = projectOf([agentOf("claude:k6"), agentOf("claude:k20")]);
+    assert.deepEqual(namesOf(project), { "claude:k6": "Rita", "claude:k20": "Raul" });
+  });
+
+  it("keeps the names when start times change or agents arrive in another order", () => {
+    const before = projectOf([agentOf("claude:k6", { startedAt: NOW }), agentOf("claude:k20", { startedAt: NOW - MINUTE })]);
+    const after = projectOf([agentOf("claude:k20", { startedAt: NOW + MINUTE }), agentOf("claude:k6", { startedAt: NOW - 10 * MINUTE })]);
+    assert.deepEqual(namesOf(after), namesOf(before));
+  });
+
+  it("never repeats a name while the list of first names lasts", () => {
+    const agents = FIRST_NAMES.map((_, i) => agentOf(`claude:session-${i}`));
+    const names = Object.values(namesOf(projectOf(agents)));
+    assert.equal(new Set(names).size, FIRST_NAMES.length);
+    assert.deepEqual([...names].sort(), [...FIRST_NAMES].sort());
+  });
+
+  it("adds the name without touching the project or the other agent fields", () => {
+    const agent = agentOf("claude:a1", { label: "Claude Code", action: "editando a.js" });
+    const project = projectOf([agent]);
+    const named = withAgentNames(project);
+    assert.deepEqual(named.agents["claude:a1"], { ...agent, name: "Heitor" });
+    assert.equal(named.key, project.key);
+    assert.equal(project.agents["claude:a1"].name, undefined);
+  });
+});
+
+describe("project order", () => {
+  const waiting = (key) => agentOf(key, { status: "needs_you" });
+
+  it("counts only the agents that need you", () => {
+    const project = projectOf([waiting("claude:a"), waiting("claude:b"), agentOf("claude:c", { status: "waiting" }), agentOf("claude:d", { status: "blocked" })]);
+    assert.equal(needsYou(project), 2);
+    assert.equal(needsYou(projectOf([])), 0);
+  });
+
+  it("puts the rooms with more agents needing you first, then the most recently active", () => {
+    const projects = {
+      quiet: projectOf([agentOf("claude:q")], { key: "quiet", updatedAt: NOW }),
+      recent: projectOf([agentOf("claude:r")], { key: "recent", updatedAt: NOW + MINUTE }),
+      oneNeed: projectOf([waiting("claude:o")], { key: "oneNeed", updatedAt: NOW - 10 * MINUTE }),
+      twoNeeds: projectOf([waiting("claude:t1"), waiting("claude:t2")], { key: "twoNeeds", updatedAt: NOW - 20 * MINUTE }),
+    };
+    assert.deepEqual(sortedProjects(projects).map((project) => project.key), ["twoNeeds", "oneNeed", "recent", "quiet"]);
+  });
+
+  it("returns an empty list when there are no rooms", () => {
+    assert.deepEqual(sortedProjects({}), []);
+  });
+});
+
+describe("agent status", () => {
+  it("keeps every status the office knows", () => {
+    const known = ["working", "reviewing", "needs_you", "waiting", "break", "blocked", "idle"];
+    assert.deepEqual(known.map((status) => statusOf({ status })), known);
+  });
+
+  it("shows an unknown or missing status as free", () => {
+    assert.equal(statusOf({ status: "dancing" }), "idle");
+    assert.equal(statusOf({}), "idle");
+  });
+});
