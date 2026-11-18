@@ -1,9 +1,10 @@
 import { freshestThoughts, thoughtAt } from "../../domain/behavior/agent-thoughts.js";
 import { createFreeTimeClock } from "../../domain/behavior/free-time-clock.js";
+import { planMovement } from "../../domain/behavior/movement-plan.js";
 import { assignPlaces } from "../../domain/behavior/room-places.js";
 import { createConversationTracker } from "../../domain/conversations/conversation-tracker.js";
 import { isScreenLit } from "../../domain/office/agent-status.js";
-import { nearestLaneZ, routeBetween } from "../../domain/room/room-routes.js";
+import { routeWithin } from "../../domain/room/room-routes.js";
 import { exitStop } from "../../domain/room/room-spots.js";
 import { buildRoom } from "../furniture/room.js";
 import { THREE } from "../kit.js";
@@ -17,12 +18,9 @@ const FRAME_MS = 1000 / 12;
 const MAX_STEP_SECONDS = 0.25;
 const AMBIENT_INTENSITY = 2.3;
 const SUN_INTENSITY = 1.1;
-const SAME_STOP = 0.01;
 const ROUTINE_CHECK_MS = 2_000;
 const HURRYING_THOUGHTS = "hurrying";
 const ROOM_ORIGIN = { x: 0, z: 0 };
-
-const isSameStop = (a, b) => Boolean(a && b) && Math.abs(a.x - b.x) < SAME_STOP && Math.abs(a.z - b.z) < SAME_STOP;
 
 export function createRoomRenderer({ onPick, describeStatus }) {
   const stage = document.createElement("div");
@@ -64,6 +62,7 @@ export function createRoomRenderer({ onPick, describeStatus }) {
   let places = new Map();
   const visitedRooms = new Set();
   let room = null;
+  let roomPaths = null;
   let roomAgents = [];
   let lastRoutineCheck = 0;
   let roomKey = "";
@@ -147,35 +146,28 @@ export function createRoomRenderer({ onPick, describeStatus }) {
     if (room) scene.remove(room.root);
     room = buildRoom({ project, theme, origin: ROOM_ORIGIN });
     roomKey = project.key;
+    roomPaths = { door: exitStop(room.layout), routeFor: routeWithin(room.layout.zones.lanes) };
     scene.add(room.root);
     aspect = frameRoom({ camera, sun, size: room.size });
     createNameTags();
     resize();
   }
 
-  function startingPoint(person) {
-    const seen = lastSeen.get(person.key);
-    if (seen) return seen;
-    return visitedRooms.has(roomKey) ? exitStop(room.layout) : null;
-  }
+  const movementOf = (person) => ({
+    stop: person.stop,
+    position: person.hasPosition ? { x: person.root.position.x, z: person.root.position.z } : null,
+    isWalking: isWalking(person),
+    isHurrying: person.isHurrying,
+    lastSeen: lastSeen.get(person.key) ?? null,
+  });
 
-  function keepsCourse(person, stop, isUrgent) {
-    if (!isSameStop(person.stop, stop)) return false;
-    return !isUrgent || !isWalking(person) || person.isHurrying;
-  }
-
-  function direct(person, { stop, isUrgent }) {
-    if (keepsCourse(person, stop, isUrgent)) return;
-    const { lanes } = room.layout.zones;
-    const staysSeated = !person.hasPosition && Boolean(lastSeen.get(person.key)?.wasAtDesk) && Boolean(stop.isDesk);
-    const from = person.hasPosition ? { x: person.root.position.x, z: person.root.position.z } : startingPoint(person);
-    if (!from || reduceMotion || staysSeated || isSameStop(from, stop)) {
-      placeAt(person, stop);
-      return;
-    }
-    if (!person.hasPosition) standAt(person, from);
-    const origin = isSameStop(from, person.stop) ? person.stop : { ...from, laneZ: nearestLaneZ(from.z, lanes.laneZs), spine: null };
-    walkTo(person, stop, routeBetween(origin, stop, lanes), { isUrgent });
+  function direct(person, place) {
+    const paths = { ...roomPaths, hasVisited: visitedRooms.has(roomKey) };
+    const plan = planMovement({ person: movementOf(person), place, room: paths, isMotionReduced: reduceMotion });
+    if (plan.kind === "place") placeAt(person, plan.stop);
+    if (plan.kind !== "walk") return;
+    if (!person.hasPosition) standAt(person, plan.from);
+    walkTo(person, place.stop, plan.path, { isUrgent: plan.isUrgent });
   }
 
   function noteReaction(person, reactionId, seconds) {

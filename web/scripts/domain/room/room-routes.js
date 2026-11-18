@@ -33,3 +33,9 @@ export function routeBetween(from, to, lanes) {
 export function nearestLaneZ(z, laneZs) {
   return laneZs.reduce((best, laneZ) => (Math.abs(laneZ - z) < Math.abs(best - z) ? laneZ : best), laneZs[0]);
 }
+
+// A loose point, where someone was caught mid-walk or last seen, has no lane of its own and joins the nearest one.
+export function routeWithin(lanes) {
+  const onLane = (from) => (from.laneZ === undefined ? { ...from, laneZ: nearestLaneZ(from.z, lanes.laneZs), spine: null } : from);
+  return (from, to) => routeBetween(onLane(from), to, lanes);
+}
