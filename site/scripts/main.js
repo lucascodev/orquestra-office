@@ -3,5 +3,5 @@ import { setupInstallTabs } from "./install-tabs.js";
 
 const installSection = document.querySelector("[data-install]");
 
-setupInstallTabs(installSection);
 setupCommandCopy(installSection);
+setupInstallTabs(installSection);

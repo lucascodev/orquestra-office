@@ -3,6 +3,7 @@ const ATTRIBUTE = /([^\s=>/]+)(?:\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s>]+)))?/g;
 const HEAD = /<head(?:\s[^>]*)?>([\s\S]*?)<\/head>/;
 const BODY = /<body[^>]*>([\s\S]*)<\/body>/;
 const POLICY_HEADER = "content-security-policy";
+const TEMPLATE = /<template\b[^>]*>[\s\S]*?<\/template>/g;
 const INLINE_SCRIPT = /<script(?![^>]*\bsrc=)[^>]*>/;
 
 function attributesOf(source) {
@@ -22,3 +23,7 @@ export const bodyOf = (html) => BODY.exec(html)?.[1] ?? "";
 export const hasInlineScript = (html) => INLINE_SCRIPT.test(html);
 
 export const contentSecurityPoliciesIn = (html) => startTags(html).filter((tag) => tag.name === "meta" && tag.attributes.get("http-equiv")?.toLowerCase() === POLICY_HEADER).map((tag) => tag.attributes.get("content"));
+
+export const withoutTemplates = (html) => html.replace(TEMPLATE, "");
+
+export const templatesOf = (html) => html.match(TEMPLATE)?.join("\n") ?? "";

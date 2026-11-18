@@ -192,33 +192,27 @@
   <div class="container install" data-install>
     <div class="install-intro">
       <h2 class="section-title" id="install-title">Install</h2>
-      <p class="lead">One command and you are done. Sessions you open afterwards show up in the office on their own.</p>
+      <p class="lead">Once it is installed, the sessions you open show up in the office on their own.</p>
       <h3 class="install-subtitle">Requirements</h3>
       <ul class="requirements">
         <li data-install-way="docker">Docker</li>
         <li>Node.js 22+</li>
         <li>Claude Code or Codex</li>
       </ul>
-      <p class="install-note" data-install-way="npx">To remove it, run <code>npx orquestra-office uninstall</code>: the office hooks go away and yours stay.</p>
+      <template data-upcoming-install-way="npx">
+        <p class="install-note" data-install-way="npx">To remove it, run <code>npx orquestra-office uninstall</code>: the office hooks go away and yours stay.</p>
+      </template>
       <p class="install-note" data-install-way="docker">To remove it, run <code>node hooks/install-claude-hooks.mjs --remove</code>, <code>node hooks/install-codex-notify.mjs --remove</code> and <code>docker compose down</code>: the office hooks go away and yours stay.</p>
     </div>
     <div class="install-ways">
       <div class="install-tabs" role="tablist" aria-label="Ways to install" hidden data-install-tabs>
-        <button class="install-tab" type="button" role="tab" id="tab-npx" aria-controls="panel-npx" aria-selected="true" data-install-tab="npx">npx <span class="tab-badge">recommended</span></button>
-        <button class="install-tab" type="button" role="tab" id="tab-docker" aria-controls="panel-docker" aria-selected="false" tabindex="-1" data-install-tab="docker">Docker</button>
+        <button class="install-tab" type="button" role="tab" id="tab-docker" aria-controls="panel-docker" aria-selected="true" data-install-tab="docker">Docker</button>
+        <button class="install-tab" type="button" role="tab" id="tab-npx" aria-controls="panel-npx" aria-selected="false" tabindex="-1" data-install-tab="npx">npx <span class="tab-badge">coming soon</span></button>
       </div>
       <div class="terminal-card">
         <div class="terminal-head">
           <span>Terminal · Windows, macOS and Linux</span>
-          <button class="copy-button" type="button" data-copy-commands data-done-label="copied" data-done-status="Commands copied to the clipboard." data-failed-status="Could not copy. The commands are selected: copy them with the keyboard." hidden><span data-copy-label>copy</span><span class="visually-hidden"> the commands</span></button>
-        </div>
-        <div class="install-panel" role="tabpanel" id="panel-npx" aria-labelledby="tab-npx" tabindex="0" data-install-way="npx">
-          <pre class="shell shell-large"><span class="shell-prompt" aria-hidden="true">$ </span><span data-command>npx orquestra-office</span></pre>
-          <ol class="install-steps">
-            <li>installs the Claude Code hooks and the Codex notify, backing up your settings first</li>
-            <li>starts the collector on your machine only, at localhost:8420</li>
-            <li>opens the office in your browser</li>
-          </ol>
+          <button class="copy-button" type="button" data-install-way="docker" data-copy-commands data-done-label="copied" data-done-status="Commands copied to the clipboard." data-failed-status="Could not copy. The commands are selected: copy them with the keyboard." hidden><span data-copy-label>copy</span><span class="visually-hidden"> the commands</span></button>
         </div>
         <div class="install-panel" role="tabpanel" id="panel-docker" aria-labelledby="tab-docker" tabindex="0" data-install-way="docker">
 <pre class="shell"><span class="shell-comment"># 1. get the project</span>
@@ -232,6 +226,17 @@
 
 <span class="shell-comment"># 3. open the office</span>
 <span class="shell-url">http://localhost:8420</span></pre>
+        </div>
+        <div class="install-panel" role="tabpanel" id="panel-npx" aria-labelledby="tab-npx" tabindex="0" data-install-way="npx">
+          <p class="install-soon">Soon, a single command will do all of this. For now, install from the Docker tab.</p>
+          <template data-upcoming-install-way="npx">
+            <pre class="shell shell-large"><span class="shell-prompt" aria-hidden="true">$ </span><span data-command>npx orquestra-office</span></pre>
+          </template>
+          <ol class="install-steps">
+            <li>installs the Claude Code hooks and the Codex notify, backing up your settings first</li>
+            <li>starts the collector on your machine only, at localhost:8420</li>
+            <li>opens the office in your browser</li>
+          </ol>
         </div>
       </div>
       <p class="visually-hidden" role="status" data-copy-status></p>

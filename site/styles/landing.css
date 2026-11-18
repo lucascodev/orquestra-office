@@ -701,6 +701,13 @@ code {
   color: var(--accent);
 }
 
+.install-soon {
+  margin: 0;
+  padding: 20px 20px 12px;
+  color: var(--text);
+  font-size: 15px;
+}
+
 .install-steps {
   margin: 0;
   padding: 0 20px 20px 40px;

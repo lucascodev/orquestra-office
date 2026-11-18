@@ -6,7 +6,8 @@ import { after, before, describe, it } from "node:test";
 import { fileURLToPath } from "node:url";
 import { assembleSite } from "../assemble.mjs";
 import { LANDING_CONTENT_SECURITY_POLICY } from "../content-security-policy.mjs";
-import { contentSecurityPoliciesIn, hasInlineScript, headOf, startTags } from "./support/html.mjs";
+import { isShownForWay } from "../scripts/install-way.js";
+import { contentSecurityPoliciesIn, hasInlineScript, headOf, startTags, templatesOf, withoutTemplates } from "./support/html.mjs";
 import { skeletonOf } from "./support/skeleton.mjs";
 
 const SITE_DIR = fileURLToPath(new URL("..", import.meta.url));
@@ -21,6 +22,10 @@ const REFERENCE_ATTRIBUTES = ["href", "src"];
 const ID_REFERENCE_ATTRIBUTES = ["aria-controls", "aria-labelledby"];
 const EXTERNAL = /^(?:[a-z]+:)?\/\//i;
 const EVENT_HANDLER = /^on/;
+const DEFAULT_INSTALL_WAY = "docker";
+const UPCOMING_INSTALL_WAY = "npx";
+const UPCOMING_COMMAND = /npx orquestra-office/;
+const UPCOMING_COPYABLE_COMMAND = /<span data-command>npx orquestra-office<\/span>/;
 
 const readPage = (page) => readFileSync(join(SITE_DIR, page.path), "utf8");
 const attribute = (tags, name, value) => tags.filter((tag) => tag.attributes.get(name) === value);
@@ -86,6 +91,27 @@ describe("landing pages", () => {
       const ariaIds = tags.flatMap((tag) => ID_REFERENCE_ATTRIBUTES.map((name) => tag.attributes.get(name))).filter(Boolean).flatMap((value) => value.split(/\s+/));
       for (const id of [...fragments, ...ariaIds]) assert.ok(ids.has(id), `${page.path}: #${id} does not exist`);
     }
+  });
+
+  it("opens the install section on the Docker tab", () => {
+    for (const page of PAGES) {
+      const selectedWays = startTags(readPage(page)).filter((tag) => tag.attributes.get("role") === "tab" && tag.attributes.get("aria-selected") === "true").map((tag) => tag.attributes.get("data-install-tab"));
+      assert.deepEqual(selectedWays, [DEFAULT_INSTALL_WAY], page.path);
+    }
+  });
+
+  it("shows no npx command and no copy button on the npx tab until the package is published", () => {
+    for (const page of PAGES) {
+      const shownHtml = withoutTemplates(readPage(page));
+      assert.doesNotMatch(shownHtml, UPCOMING_COMMAND, page.path);
+      const [copyButton] = startTags(shownHtml).filter((tag) => tag.attributes.has("data-copy-commands"));
+      assert.ok(copyButton.attributes.has("data-install-way"), `${page.path}: the copy button shows on every tab`);
+      assert.equal(isShownForWay(copyButton.attributes.get("data-install-way"), UPCOMING_INSTALL_WAY), false, page.path);
+    }
+  });
+
+  it("keeps the npx command in a template, ready to come back", () => {
+    for (const page of PAGES) assert.match(templatesOf(readPage(page)), UPCOMING_COPYABLE_COMMAND, page.path);
   });
 
   it("declares exactly the expected content security policy once, in the head", () => {
