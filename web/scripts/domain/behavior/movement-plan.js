@@ -24,7 +24,7 @@ function staysSeated(person, stop) {
 
 export function planMovement({ person, place, room, isMotionReduced }) {
   const { stop, isUrgent } = place;
-  if (keepsCourse(person, stop, isUrgent)) return KEEP;
+  if (!stop || keepsCourse(person, stop, isUrgent)) return KEEP;
   const from = person.position ?? startingPoint(person, room);
   if (!from || isMotionReduced || staysSeated(person, stop) || isSameStop(from, stop)) return { kind: "place", stop };
   const origin = isSameStop(from, person.stop) ? person.stop : { x: from.x, z: from.z };

@@ -5,6 +5,7 @@ import { freeTimePreferences } from "../scripts/domain/behavior/agent-reactions.
 import { temperamentOf } from "../scripts/domain/behavior/agent-temperament.js";
 import { freshestThoughts, thoughtAt } from "../scripts/domain/behavior/agent-thoughts.js";
 import { createFreeTimeClock } from "../scripts/domain/behavior/free-time-clock.js";
+import { planMovement } from "../scripts/domain/behavior/movement-plan.js";
 import { assignPlaces, placeAgents } from "../scripts/domain/behavior/room-places.js";
 import { fidgetAt } from "../scripts/domain/behavior/seated-fidgets.js";
 import { layoutHeadquarters } from "../scripts/domain/headquarters/headquarters-layout.js";
@@ -162,6 +163,17 @@ describe("where agents go in the headquarters", () => {
     assert.equal(handoff.reaction, "handingOver");
     assert.equal(handoff.stop.z, desk.z);
     assert.ok(Math.abs(handoff.stop.x - desk.x) < 1);
+  });
+
+  it("seats a working subagent whose main agent is gone at a desk of its project, so it can be walked there", () => {
+    const orphan = hqAgent("claude:p0-gone:s1", "working", { kind: "subagent", parentKey: "claude:gone" });
+    const { spots, places } = placesIn([hqAgent("claude:p0-here", "working"), orphan]);
+    const place = places.get(orphan.key);
+    assert.equal(place.stop, spots.desks.get(orphan.key));
+    assert.equal(place.stop.isDesk, true);
+    const person = { stop: null, position: null, isWalking: false, isHurrying: false, lastSeen: { x: 12, z: 7, wasAtDesk: false } };
+    const room = { door: spots.arrival, hasVisited: true, routeFor: (from, to) => [{ x: to.x, z: to.z }] };
+    assert.equal(planMovement({ person, place, room, isMotionReduced: false }).kind, "walk");
   });
 
   it("walks someone who left out through the main door", () => {

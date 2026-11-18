@@ -3,6 +3,16 @@ import { ISLAND_SEATS } from "./island-grid.js";
 
 // Creation order and not sortedProjects: that one moves projects up when they need you, and the islands would jump around.
 const byCreation = (a, b) => (a.createdAt ?? 0) - (b.createdAt ?? 0) || a.key.localeCompare(b.key);
+const byStart = (a, b) => a.startedAt - b.startedAt || a.key.localeCompare(b.key);
+
+// teamsOf only knows subagents of a main agent present; the ones left behind sit together, after the other teams.
+function teamsWithOrphans(project) {
+  const teams = teamsOf(project);
+  const seated = new Set(teams.flat().map((agent) => agent.key));
+  const orphans = Object.values(project.agents).filter((agent) => !seated.has(agent.key)).sort(byStart);
+  const orphanTeams = Map.groupBy(orphans, (agent) => agent.parentKey);
+  return [...teams, ...orphanTeams.values()];
+}
 
 function homeFor(islands, size) {
   const home = islands.find((island) => island.length + size <= ISLAND_SEATS);
@@ -46,7 +56,7 @@ function withReservedChairs(islands, roles) {
 }
 
 function islandsOfProject(project) {
-  const teams = teamsOf(project);
+  const teams = teamsWithOrphans(project);
   const seated = teams.reduce((total, team) => total + team.length, 0);
   const minimumIslands = Math.max(1, Math.ceil(seated / ISLAND_SEATS));
   return withReservedChairs(seatTeams(teams, minimumIslands), unplayedRoles(project)).map((occupants) => ({ project, occupants }));

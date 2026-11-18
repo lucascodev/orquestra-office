@@ -181,6 +181,13 @@ describe("islands per project", () => {
     ]);
   });
 
+  it("seats a subagent whose main agent is gone on its project's island, as a team of its own", () => {
+    const orphan = subagentOf("claude:gone", "s1", { startedAt: NOW - 5 * MINUTE });
+    const project = projectOf("c:/orphan", [agentOf("claude:here", { startedAt: NOW - 10 * MINUTE }), orphan]);
+    const islands = islandsOf(layoutHeadquarters(officeOf([project])), project.key);
+    assert.deepEqual(islands.map((island) => occupantsOf(island).filter(Boolean)), [["claude:here", orphan.key]]);
+  });
+
   it("keeps the seat of someone who is leaving until the collector forgets them", () => {
     const project = projectOf("c:/leaving", [agentOf("claude:gone", { endedAt: NOW - MINUTE }), agentOf("claude:here")]);
     assert.deepEqual(occupantsOf(islandsOf(layoutHeadquarters(officeOf([project])), project.key)[0]).filter(Boolean), ["claude:gone", "claude:here"]);
