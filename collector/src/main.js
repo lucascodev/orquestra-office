@@ -14,7 +14,7 @@ const holdSeconds = Number(process.env.OFFICE_HOLD_SECONDS) || DEFAULT_HOLD_SECO
 const allowedHosts = (process.env.OFFICE_ALLOWED_HOSTS ?? "").split(",").map((name) => name.trim()).filter(Boolean);
 
 const office = createOffice({
-  webDir: process.env.WEB_DIR ?? DEFAULT_WEB_DIR,
+  webDir: process.env.WEB_DIR || DEFAULT_WEB_DIR,
   dataDir: process.env.DATA_DIR || DEFAULT_DATA_DIR,
   holdMs: holdSeconds * MS_PER_SECOND,
   allowedHosts,
