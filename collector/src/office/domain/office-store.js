@@ -1,6 +1,8 @@
 import { agentKeyOf, mainAgentKey, sessionIdOfKey } from "./agent-key.js";
 import { hasAgentExpired, isBreakOver, isRoomAbandoned } from "./agent-expiry.js";
 import { dayOf, freshStats, growthOf } from "./daily-stats.js";
+import { dictionaryOf } from "./dictionary.js";
+import { officeStateFrom } from "./office-state.js";
 import { baseName } from "./path-name.js";
 import { projectKeyOf } from "./project-key.js";
 import { isTemplate, nextTemplate } from "./templates.js";
@@ -8,12 +10,8 @@ import { isTemplate, nextTemplate } from "./templates.js";
 const LOG_LIMIT = 20;
 const SOURCE_LABEL = { claude: "Claude Code", codex: "Codex" };
 
-function emptyState() {
-  return { projects: {}, sessions: {}, meters: {}, usage: { rateLimits: null, updatedAt: 0 } };
-}
-
 export function createOfficeStore(initial) {
-  const state = initial?.projects ? { ...emptyState(), ...initial } : emptyState();
+  const state = officeStateFrom(initial);
   const listeners = new Set();
 
   const emit = () => listeners.forEach((listener) => listener());
@@ -30,7 +28,7 @@ export function createOfficeStore(initial) {
         createdAt: event.at,
         updatedAt: event.at,
         stats: freshStats(dayOf(event.at)),
-        agents: {},
+        agents: dictionaryOf(),
       };
     }
     return state.projects[key];

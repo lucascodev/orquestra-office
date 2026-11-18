@@ -86,3 +86,12 @@ test("an unexpected failure in a route answers 500 and the office keeps running"
     assert.equal(console.error.mock.callCount(), 1);
   } finally { server.closeAllConnections(); server.close(); }
 });
+
+test("a template change for a project named like a prototype key does not reach every object", () => withServer(async (base) => {
+  try {
+    assert.equal((await post(`${base}/api/projects/__proto__/template`, { template: "cafe" })).status, 400);
+    assert.equal({}.template, undefined);
+  } finally {
+    delete Object.prototype.template;
+  }
+}));

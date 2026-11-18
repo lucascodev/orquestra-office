@@ -227,3 +227,59 @@ test("a usage counter that drops, as after /clear, adds only the new spend", () 
   const { tokens, costUsd } = projectOf(store).stats;
   assert.deepEqual({ tokens, costUsd }, { tokens: 800, costUsd: 1 });
 });
+
+const PROTOTYPE_KEYS = ["__proto__", "constructor"];
+
+test("a folder named like a prototype key is an ordinary room that sweep can clean", () => {
+  for (const cwd of PROTOTYPE_KEYS) {
+    const store = createOfficeStore();
+    store.apply(claude("SessionStart", { session_id: "s-proto", cwd }, STARTED_AT));
+    assert.doesNotThrow(() => store.sweep(STARTED_AT + 1));
+    assert.deepEqual(Object.keys(store.snapshot().projects), [cwd]);
+  }
+});
+
+test("a repository root named like a prototype key is an ordinary room", () => {
+  const store = createOfficeStore();
+  store.apply(claude("SessionStart", { office: { repoRoot: "__proto__" } }, STARTED_AT));
+  assert.doesNotThrow(() => store.sweep(STARTED_AT + 1));
+  assert.equal(projectOf(store).name, "__proto__");
+});
+
+test("a session id named like a prototype key is an ordinary session", () => {
+  for (const sessionId of PROTOTYPE_KEYS) {
+    const store = createOfficeStore();
+    store.apply(claude("SessionStart", { session_id: sessionId }, STARTED_AT));
+    store.recordUsage(reading(1_000, 0.5, STARTED_AT, sessionId));
+    assert.doesNotThrow(() => store.sweep(STARTED_AT + 1));
+    assert.deepEqual(agentKeysOf(store), [`claude:${sessionId}`]);
+  }
+});
+
+test("a template change for a project named like a prototype key does not reach every object", () => {
+  const store = createOfficeStore();
+  try {
+    assert.equal(store.setTemplate("__proto__", "cafe"), false);
+    assert.equal({}.template, undefined);
+  } finally {
+    delete Object.prototype.template;
+  }
+});
+
+test("a saved state left behind by a prototype key loads and sweeps without breaking", () => {
+  const saved = JSON.parse('{"projects":{},"sessions":{"s-proto":"__proto__","s-ctor":"constructor"},"meters":{}}');
+  const store = createOfficeStore(saved);
+  assert.doesNotThrow(() => store.sweep(STARTED_AT));
+  assert.deepEqual(store.snapshot().sessions, {});
+});
+
+test("a saved room named like a prototype key loads as an ordinary room", () => {
+  const savedRoom = { key: "__proto__", name: "__proto__", template: "cafe", createdAt: STARTED_AT, updatedAt: STARTED_AT, stats: { day: "2026-01-10", prompts: 0, tools: 0, turns: 0, tokens: 0, costUsd: 0 }, agents: {} };
+  const saved = JSON.parse(`{"projects":{"__proto__":${JSON.stringify(savedRoom)}},"sessions":{"s1":"__proto__"},"meters":{}}`);
+  const store = createOfficeStore(saved);
+  store.apply(claude("SessionStart", {}, STARTED_AT));
+  assert.doesNotThrow(() => store.sweep(STARTED_AT + 1));
+  assert.deepEqual(agentKeysOf(store), ["claude:s1"]);
+  assert.equal(store.closeProject("__proto__"), true);
+  assert.deepEqual(store.snapshot().projects, {});
+});

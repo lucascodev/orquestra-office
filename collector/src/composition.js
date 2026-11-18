@@ -51,8 +51,17 @@ export function createOffice({ webDir, dataDir = null, holdMs, allowedHosts = []
 
   let sweepTimer = null;
 
+  // A sweep that throws inside the timer would take the whole collector down with it.
+  function sweepSafely() {
+    try {
+      store.sweep(Date.now());
+    } catch (error) {
+      console.error("office sweep failed:", error);
+    }
+  }
+
   function startSweep() {
-    sweepTimer = setInterval(() => store.sweep(Date.now()), SWEEP_INTERVAL_MS);
+    sweepTimer = setInterval(sweepSafely, SWEEP_INTERVAL_MS);
   }
 
   function stop() {
