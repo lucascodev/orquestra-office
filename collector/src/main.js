@@ -15,7 +15,7 @@ const allowedHosts = (process.env.OFFICE_ALLOWED_HOSTS ?? "").split(",").map((na
 
 const office = createOffice({
   webDir: process.env.WEB_DIR ?? DEFAULT_WEB_DIR,
-  dataDir: process.env.DATA_DIR ?? DEFAULT_DATA_DIR,
+  dataDir: process.env.DATA_DIR || DEFAULT_DATA_DIR,
   holdMs: holdSeconds * MS_PER_SECOND,
   allowedHosts,
 });

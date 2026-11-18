@@ -18,7 +18,6 @@ import { createOfficeStateFile } from "./office/infra/office-state-file.js";
 
 const SWEEP_INTERVAL_MS = 30_000;
 
-// Without a dataDir the office lives only in memory, which is what the tests use.
 export function createOffice({ webDir, dataDir = null, holdMs, allowedHosts = [] }) {
   const stateFile = dataDir ? createOfficeStateFile(dataDir) : null;
   const store = createOfficeStore(stateFile?.load());
