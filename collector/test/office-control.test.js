@@ -7,6 +7,7 @@ const SESSION = { session_id: "s1", cwd: "/tmp/demo" };
 const HOLD_MS = 5_000;
 const EXPIRING_HOLD_MS = 20;
 const EXPIRY_TEST_TIMEOUT_MS = 2_000;
+const NO_VIEWER_TEST_TIMEOUT_MS = 1_000;
 
 async function withOffice(run, { holdMs = HOLD_MS } = {}) {
   const { server, store, decisions } = createOffice({ webDir: "/nonexistent", holdMs });
@@ -36,7 +37,7 @@ async function pendingRequest(base) {
 
 const permissionHook = (base) => post(`${base}/hooks/claude/permission`, { ...SESSION, hook_event_name: "PermissionRequest", tool_name: "Bash", tool_input: { command: "rm -rf build" } });
 
-test("with no office page open the permission goes straight back to the terminal", () => withOffice(async (base) => {
+test("with no office page open the permission goes straight back to the terminal", { timeout: NO_VIEWER_TEST_TIMEOUT_MS }, () => withOffice(async (base) => {
   assert.deepEqual(await (await permissionHook(base)).json(), {});
   assert.deepEqual((await stateOf(base)).pending, []);
 }));
