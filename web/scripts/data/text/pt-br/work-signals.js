@@ -20,4 +20,14 @@ export const WORK_SIGNALS = {
     passedSpoken: { one: "na última rodada, 1 teste passou", other: "na última rodada, {count} testes passaram", unknown: "a última rodada de testes passou" },
     missing: "—",
   },
+  event: {
+    testsRun: "rodou os testes: {result}",
+    failed: { one: "1 falhou", other: "{count} falharam", unknown: "houve falhas" },
+    passed: { one: "1 passou", other: "{count} passaram", unknown: "todos passaram" },
+    resultSeparator: ", ",
+    planApproved: "teve o plano aprovado",
+    where: "em {project}",
+    open: "Ver atividade",
+    openSpoken: "Ver a atividade de {name}",
+  },
 };

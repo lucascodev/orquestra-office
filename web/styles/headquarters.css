@@ -296,3 +296,13 @@
 .hq-member-checklist, .hq-member-tests { flex: none; color: var(--muted); font: 11px var(--font-mono); white-space: nowrap; }
 .hq-member-tests { min-width: 5ch; color: var(--subtle); text-align: right; }
 .hq-member-tests[data-signal] { color: var(--signal-color); }
+
+.hq-day-event { display: flex; align-items: center; gap: var(--space-4); padding-top: var(--space-3); border-top: 1px solid var(--border); font-size: 12px; }
+.hq-day-event-time { flex: none; color: var(--subtle); font: 11px var(--font-mono); }
+.hq-day-event-text { flex: 1; min-width: 0; margin: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.hq-day-event .work-mark { font-size: 13px; }
+.hq-day-event .btn { flex: none; }
+@media (max-width: 719px) {
+  .hq-day-event-text { white-space: normal; }
+  .hq-day-event .btn { height: 36px; }
+}

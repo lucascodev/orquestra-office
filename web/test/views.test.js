@@ -21,6 +21,7 @@ import {
 } from "../scripts/view/hud/pending-alert-view.js";
 import { renderPendingCard } from "../scripts/view/sheet/pending-request-view.js";
 import { islandFacts } from "../scripts/domain/office/island-facts.js";
+import { latestWorkEvent } from "../scripts/domain/work-signals/latest-work-event.js";
 import { followingStoppedText, renderCameraControls, renderFollowing } from "../scripts/view/hud/camera-controls-view.js";
 import { renderSearchResults, resultCountText } from "../scripts/view/hud/search-results-view.js";
 import { renderIslandDay, renderIslandIdentity, renderIslandShell, renderIslandTeam } from "../scripts/view/sheet/island-sheet-view.js";
@@ -316,6 +317,20 @@ describe("headquarters day", () => {
 
   it("says the collector does not send the day yet", () => {
     assertMatchesRecording("hq-day-empty", renderDayTimeline(null));
+  });
+
+  const projectsWithEvent = () => ({
+    "c:/loja": projectOf("c:/loja", "loja <online>", [
+      agentOf("claude:n1", {
+        name: "<b>Nina</b>", log: [{ at: NOW - 5 * MINUTE, actionId: "tests-failed", subject: 2 }],
+        tests: { lastRun: { isOk: false, failed: 2, passed: 248, finishedAt: NOW - 5 * MINUTE } },
+      }),
+    ]),
+  });
+
+  it("ends with the newest test result of the day, everything from the agent escaped, and a way to its activity", () => {
+    const event = latestWorkEvent(projectsWithEvent(), { dayStart: Date.UTC(2026, 10, 18) });
+    assertMatchesRecording("hq-day-event", renderDayTimeline(null, event));
   });
 });
 

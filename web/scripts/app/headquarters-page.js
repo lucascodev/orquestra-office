@@ -11,6 +11,7 @@ import { islandFacts } from "../domain/office/island-facts.js";
 import { serverClockNow } from "../domain/office/pending-queue.js";
 import { searchEntries } from "../domain/office/search-entries.js";
 import { ownValueOf } from "../domain/shared/own-value.js";
+import { latestWorkEvent } from "../domain/work-signals/latest-work-event.js";
 import { renderAccounts } from "../view/hud/accounts-view.js";
 import { renderAreaList } from "../view/hud/area-list-view.js";
 import { followingStoppedText, renderCameraControls, renderFollowing } from "../view/hud/camera-controls-view.js";
@@ -31,7 +32,7 @@ const ANNOUNCE_DELAY_MS = 100;
 const LOWERED_ALERT_GAP_PX = 8;
 const NOTICE_GAP_PX = 8;
 const DAY_REFRESH_MS = 30_000;
-const FOCUS_KEYS = ["project", "area", "frame"];
+const FOCUS_KEYS = ["project", "area", "frame", "agent"];
 const DOCKED_PANELS = {
   left: [".hq-rooms", ".hq-legend"],
   right: [".hq-drawer"],
@@ -80,6 +81,8 @@ export function createHeadquartersPage({ hud, headquarters, source, newSessionDi
   const slot = (name) => hud.querySelector(`[data-slot="${name}"]`);
   const rooms = slot("rooms");
   const notice = slot("notice");
+  // Held from the start: on a phone the panel moves after the drawer, where the island's sheet has a slot of the same name.
+  const dayPanel = slot("day");
   const devicesButton = hud.querySelector("[data-open-devices]");
   const newSessionButton = hud.querySelector("[data-new-session]");
   const runnerOff = hud.querySelector("[data-runner-off]");
@@ -122,7 +125,8 @@ export function createHeadquartersPage({ hud, headquarters, source, newSessionDi
 
   function renderDay() {
     const now = clockNow();
-    setHtml(slot("day"), renderDayTimeline(dayTimeline(state.timeline, { now, dayStart: startOfDay(now) })));
+    const dayStart = startOfDay(now);
+    keepingFocus(dayPanel, () => setHtml(dayPanel, renderDayTimeline(dayTimeline(state.timeline, { now, dayStart }), latestWorkEvent(state.projects, { dayStart }))));
   }
 
   // Not paired, the page says how to pair; paired and live, it warns about old hooks or a missing secret.
@@ -399,6 +403,13 @@ export function createHeadquartersPage({ hud, headquarters, source, newSessionDi
   rooms.addEventListener("click", (event) => {
     const button = event.target.closest("[data-project], [data-area], [data-frame]");
     if (button) goToRoom(roomOfButton(button));
+  });
+  dayPanel.addEventListener("click", (event) => {
+    const button = event.target.closest("[data-agent]");
+    if (!button) return;
+    mobileSheet.close();
+    openAgent(button.dataset.agent, { opener: button });
+    fitMapBetweenPanels();
   });
   cameraPanel.addEventListener("click", (event) => {
     const button = event.target.closest("[data-camera]");
