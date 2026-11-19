@@ -210,3 +210,21 @@ A página não tem etapa de build: as bibliotecas ficam copiadas em `web/vendor`
 | highlight.js | 11.12.0 (build ES do `@highlightjs/cdn-assets`) | cores de sintaxe |
 
 Para atualizar uma delas, baixe o pacote do npm, confira o hash `integrity` do registro e substitua o arquivo em `web/vendor`. O DOMPurify vai com a extensão `.js`, porque o servidor do coletor não serve `.mjs`.
+
+### Landing
+
+A landing fica em `site/`, com a página em português em `site/index.html` e a em inglês em `site/en/index.html`. O `site/assemble.mjs` monta o site publicado: a landing na raiz e o escritório em `demo/`, que abre em modo demo dentro da página.
+
+As páginas trazem o marcador `OWNER` no lugar do dono do repositório no GitHub, nos links e nos endereços do GitHub Pages. Troque `OWNER` pelo usuário ou pela organização dona do repositório nas duas páginas. Enquanto ele existir, a montagem para com erro e o deploy não acontece.
+
+Para ver o site montado antes de publicar:
+
+```powershell
+node --test site/test/*.test.mjs
+node site/assemble.mjs _site
+python -m http.server 8000 -d _site
+```
+
+A montagem só substitui uma pasta que não existe, que está vazia ou que ela mesma montou antes (com o arquivo `.site-assembly`), então ela não apaga uma pasta sua por engano.
+
+Para publicar, em Settings, Pages, escolha a fonte "GitHub Actions". O workflow `Pages` roda os testes, monta o site e publica a cada push na `main`, e também pode ser disparado à mão.
