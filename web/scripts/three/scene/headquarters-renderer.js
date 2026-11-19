@@ -28,6 +28,7 @@ const MAP_INSTRUCTIONS = "Arraste ou use as setas para mover, a roda, a pinça o
 const FRAME_MS = 1000 / 12;
 const MAX_STEP_SECONDS = 0.25;
 const ROUTINE_CHECK_MS = 2_000;
+const SIGNAL_REFRESH_MS = 1_000;
 
 const seatSignature = (seat) => (seat.agent ? `${seat.agent.key}:${isScreenLit(seat.agent)}` : `-${seat.role ?? ""}`);
 const islandSignature = (island) => `${island.projectKey}|${island.theme.id}|${island.x}|${island.z}|${island.seats.map(seatSignature).join(",")}`;
@@ -61,7 +62,7 @@ const islandPiece = (island) => batchStatic(buildIsland(new THREE.Group(), islan
 // While measuring, each frame waits for the GPU to finish, so the time read is the whole frame and not only the commands sent.
 export function createHeadquartersRenderer({
   onFrame = () => {}, onPick = () => {}, onPickIsland = () => {}, onFollowChange = () => {}, onManualMove = () => {}, onView = () => {},
-  describeStatus = (status) => status, isMeasuring = false,
+  describeStatus = (status) => status, isMeasuring = false, clockNow = () => Date.now(),
 } = {}) {
   const stage = document.createElement("div");
   stage.className = "hq-stage";
@@ -96,7 +97,7 @@ export function createHeadquartersRenderer({
   const rig = createCameraRig({ isMotionReduced });
   scene.add(new THREE.AmbientLight("#ffffff", AMBIENT_INTENSITY), rig.sun, rig.sun.target);
 
-  const people = createHeadquartersPeople({ scene, tagLayer, onPick, describeStatus, isMotionReduced });
+  const people = createHeadquartersPeople({ scene, tagLayer, onPick, describeStatus, isMotionReduced, clockNow });
   const labels = createAreaLabels(labelLayer);
   const raycaster = new THREE.Raycaster();
   raycaster.layers.enable(FIGURE_LAYER);
@@ -109,6 +110,7 @@ export function createHeadquartersRenderer({
   let isDirty = true;
   let lastStep = 0;
   let lastRoutineCheck = 0;
+  let lastSignalRefresh = 0;
   let followedKey = null;
   let followScale = 1;
 
@@ -186,6 +188,13 @@ export function createHeadquartersRenderer({
     isDirty = true;
   }
 
+  // The tags are HTML over the canvas: their text changes without drawing the scene again.
+  function refreshSignals(now) {
+    if (now - lastSignalRefresh < SIGNAL_REFRESH_MS) return;
+    lastSignalRefresh = now;
+    people.refreshSignals();
+  }
+
   const groundOf = (person) => ({ x: person.root.position.x, z: person.root.position.z });
   const followTargetOf = (person) => centerBetweenPanels({ point: groundOf(person), scale: followScale, viewport: rig.viewport(), insets: rig.insets() });
 
@@ -238,6 +247,7 @@ export function createHeadquartersRenderer({
     requestAnimationFrame(tick);
     if (!layout || !canvas.isConnected || document.hidden) return;
     const workStart = performance.now();
+    refreshSignals(now);
     stepPeople(now);
     keepFollowing();
     if (rig.step(now)) isDirty = true;
