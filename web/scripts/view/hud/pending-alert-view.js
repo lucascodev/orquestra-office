@@ -1,9 +1,14 @@
+import { PLAN_APPROVAL_TEXT } from "../../data/text/pt-br/plan-approval.js";
 import { toolSummaryText } from "../../domain/terminal/tool-summary-text.js";
+import { isPlanRequest, planOfRequest } from "../../domain/work-sheet/plan-request.js";
 import { esc } from "../shared/escape-html.js";
 import { formatCountdown } from "../shared/format.js";
+import { renderPlanMarkdown } from "../shared/plan-markdown.js";
 import { shownQuestion } from "../shared/shown-question.js";
 
 const COMMAND_TOOL = "Bash";
+const PLAN_REASON_FIELD = "hq-plan-reason";
+const REASON_LIMIT = 1000;
 const QUESTION = "question";
 const UNKNOWN_AGENT = "Um agente";
 
@@ -55,12 +60,38 @@ function permissionBody(request) {
     : `<p class="hq-alert-what">${esc(summary)}</p>`;
   const explained = request.detail && summary && summary !== request.detail ? `<p class="hq-alert-summary">${esc(summary)}</p>` : "";
   return `<div class="hq-alert-body" data-pending="${esc(request.id)}">
+      <div class="hq-alert-decision" data-decision-bar>
       <div class="hq-alert-row">${command}
         <button class="btn btn-sm btn-secondary" type="button" data-decide="deny" aria-keyshortcuts="N">Negar <kbd aria-hidden="true">N</kbd></button>
         <button class="btn btn-sm btn-primary" type="button" data-decide="allow" aria-keyshortcuts="A">Permitir <kbd aria-hidden="true">A</kbd></button>
       </div>
       <div class="hq-alert-foot">${explained}
         <button class="btn btn-sm btn-ghost" type="button" data-decide="terminal">Decidir no terminal</button>
+      </div>
+      </div>
+      <p class="pending-error" role="alert" hidden></p>
+    </div>`;
+}
+
+function planContent(plan) {
+  if (!plan) return `<p class="hq-muted">${PLAN_APPROVAL_TEXT.missing}</p>`;
+  const cut = plan.isTruncated ? `<p class="plan-cut">${PLAN_APPROVAL_TEXT.truncated}</p>` : "";
+  return `${renderPlanMarkdown(plan.text)}${cut}`;
+}
+
+// The plan lives in its own box, apart from the bar that decides it; only the bar's buttons and its own field answer the
+// request. Approving takes a click: the plan has no A key, only N to keep planning.
+function planBody(request) {
+  return `<div class="hq-alert-body is-plan" data-pending="${esc(request.id)}">
+      <article class="hq-plan md" aria-label="${PLAN_APPROVAL_TEXT.planLabel}" tabindex="0">${planContent(planOfRequest(request))}</article>
+      <div class="hq-plan-decision" data-decision-bar data-reason-field="${PLAN_REASON_FIELD}">
+        <div class="field"><label for="${PLAN_REASON_FIELD}">${PLAN_APPROVAL_TEXT.reasonLabel}</label><textarea class="textarea" id="${PLAN_REASON_FIELD}" rows="2" maxlength="${REASON_LIMIT}" autocomplete="off" placeholder="${esc(PLAN_APPROVAL_TEXT.reasonPlaceholder)}"></textarea></div>
+        <div class="hq-alert-row">
+          <button class="btn btn-sm btn-ghost" type="button" data-decide="terminal">${PLAN_APPROVAL_TEXT.terminal}</button>
+          <span class="spacer"></span>
+          <button class="btn btn-sm btn-secondary" type="button" data-decide="deny" aria-keyshortcuts="N">${PLAN_APPROVAL_TEXT.keepPlanning} <kbd aria-hidden="true">N</kbd></button>
+          <button class="btn btn-sm btn-primary" type="button" data-decide="allow">${PLAN_APPROVAL_TEXT.approve}</button>
+        </div>
       </div>
       <p class="pending-error" role="alert" hidden></p>
     </div>`;
@@ -78,5 +109,6 @@ function questionBody(request) {
 }
 
 export function renderAlertBody(request) {
-  return request.kind === QUESTION ? questionBody(request) : permissionBody(request);
+  if (request.kind === QUESTION) return questionBody(request);
+  return isPlanRequest(request) ? planBody(request) : permissionBody(request);
 }

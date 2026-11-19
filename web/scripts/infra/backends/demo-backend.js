@@ -1,6 +1,7 @@
 import { ownValueOf } from "../../domain/shared/own-value.js";
 import { demoDay } from "../demo/demo-day.js";
 import { demoDevices, demoPairingCode } from "../demo/demo-devices.js";
+import { demoPlanDocument } from "../demo/demo-plans.js";
 import { createDemoAsker } from "../demo/demo-requests.js";
 import { demoStressState } from "../demo/demo-stress.js";
 import { demoHistory, demoTerminal } from "../demo/demo-terminal.js";
@@ -80,6 +81,7 @@ export function createDemoBackend({ scene = null, keepsAsking = false } = {}) {
     decide,
     sendMessage,
     loadHistory: async (agent) => demoHistory(agent),
+    loadPlan: async (agent) => demoPlanDocument(agent),
     closeProject,
     openSession: async () => ({ error: DEMO_ONLY }),
     watchTerminal,

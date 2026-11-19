@@ -1,4 +1,7 @@
+import { isDemoPlanRequest, proposeAgain } from "./demo-plans.js";
+
 const MIN = 60_000;
+const PLAN_WAITING_ACTION = "asking-plan-approval";
 const REQUEST_LIFETIME_MS = 2 * MIN;
 const ASKS_AGAIN_AFTER_TICKS = 3;
 const LOG_SIZE = 20;
@@ -9,8 +12,9 @@ function agentOf(state, agentKey) {
 }
 
 function waitAgain(agent, request, now) {
-  const actionId = WAITING_ACTION[request.kind];
-  const subject = request.kind === "permission" ? request.toolName : null;
+  const isPlan = isDemoPlanRequest(request);
+  const actionId = isPlan ? PLAN_WAITING_ACTION : WAITING_ACTION[request.kind];
+  const subject = request.kind === "permission" && !isPlan ? request.toolName : null;
   Object.assign(agent, { status: "needs_you", actionId, subject, updatedAt: now });
   agent.log = [...(agent.log ?? []), { at: now, actionId, subject }].slice(-LOG_SIZE);
 }
@@ -33,7 +37,8 @@ export function createDemoAsker(initialRequests) {
       if (entry.idleTicks < ASKS_AGAIN_AFTER_TICKS) continue;
       entry.idleTicks = 0;
       entry.times += 1;
-      state.pending = [...state.pending, { ...entry.request, id: `${entry.request.id}-${entry.times}`, createdAt: now, expiresAt: now + REQUEST_LIFETIME_MS }];
+      const asked = { ...entry.request, id: `${entry.request.id}-${entry.times}`, createdAt: now, expiresAt: now + REQUEST_LIFETIME_MS };
+      state.pending = [...state.pending, isDemoPlanRequest(asked) ? proposeAgain(agent, asked, now) : asked];
       waitAgain(agent, entry.request, now);
     }
   };

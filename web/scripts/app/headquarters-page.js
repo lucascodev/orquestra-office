@@ -248,7 +248,7 @@ export function createHeadquartersPage({ hud, headquarters, source, newSessionDi
   });
 
   const drawer = createAgentDrawer({
-    drawer: slot("drawer"), control: source, map: headquarters ?? NO_MAP, onResize: () => fitMapBetweenPanels(),
+    drawer: slot("drawer"), control: source, map: headquarters ?? NO_MAP, onResize: () => fitMapBetweenPanels(), clockNow,
     island: {
       announce,
       onOpenAgent: (agentKey, button) => openAgent(agentKey, { opener: button }),

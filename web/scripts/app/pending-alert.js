@@ -1,7 +1,8 @@
 import { crossesWarning, newArrivals, pendingInFocus, requesterOf } from "../domain/office/pending-queue.js";
 import { requestIntentText } from "../domain/office/request-intent-text.js";
+import { isPlanRequest } from "../domain/work-sheet/plan-request.js";
 import { arrivalsText, arrivalText, countdownText, renderAlertBody, renderAlertHead, warningText } from "../view/hud/pending-alert-view.js";
-import { submitDecision } from "./decision-form.js";
+import { decisionBarOf, decisionOf, submitDecision } from "./decision-form.js";
 import { listenForDecisionKeys } from "./keyboard-shortcuts.js";
 
 const COUNTDOWN_TICK_MS = 1_000;
@@ -97,9 +98,12 @@ export function createPendingAlert({ element, announce, control, clockNow, onLea
 
   function decideByKey(action) {
     if (Date.now() < shortcutsFrom) return;
-    const button = body.querySelector(`[data-decide="${action}"]`);
+    const bar = decisionBarOf(body.querySelector("[data-pending]"));
+    const button = bar ? [...bar.querySelectorAll("button[data-decide]")].find((candidate) => candidate.dataset.decide === action) : null;
     if (button && !button.disabled) button.click();
   }
+
+  const shownRequest = () => pending.find((request) => request.id === bodyId) ?? null;
 
   function step(direction) {
     const focus = focusNow();
@@ -112,11 +116,11 @@ export function createPendingAlert({ element, announce, control, clockNow, onLea
     if (stepButton) return step(stepButton.dataset.step);
     const openAgent = event.target.closest("[data-open-agent]");
     if (openAgent) return onOpenAgent(openAgent.dataset.openAgent, openAgent);
-    const decide = event.target.closest("[data-decide]");
-    if (decide) return submitDecision(control, decide.closest("[data-pending]"), decide.dataset.decide);
+    const decision = decisionOf(event.target.closest("[data-decide]"));
+    if (decision) return submitDecision(control, decision.card, decision.action);
     return undefined;
   });
-  listenForDecisionKeys(element, decideByKey);
+  listenForDecisionKeys(element, decideByKey, { canAllowByKey: () => !isPlanRequest(shownRequest()) });
   setInterval(tick, COUNTDOWN_TICK_MS);
 
   return { update };

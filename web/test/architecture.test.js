@@ -155,7 +155,9 @@ const LAYER_IMPORTS = {
   infra: ["domain", "data", "infra"],
   app: ["domain", "data", "view", "three", "infra", "app"],
 };
-const VENDOR_USERS = ["scripts/three/kit.js", "scripts/view/shared/qr-svg.js", "scripts/view/terminal/terminal-markdown.js"];
+const VENDOR_USERS = [
+  "scripts/three/kit.js", "scripts/view/shared/plan-markdown.js", "scripts/view/shared/qr-svg.js", "scripts/view/terminal/terminal-markdown.js",
+];
 const VENDOR = "vendor";
 
 const scriptsLayerOf = (path) => relative(SCRIPTS_DIR, path).split(sep)[0];
@@ -229,7 +231,7 @@ describe("web layers", () => {
     assert.deepEqual(crossings, []);
   });
 
-  it("reaches the vendored libraries only through the 3D kit, the QR drawing and the terminal markdown", () => {
+  it("reaches the vendored libraries only through the 3D kit, the QR drawing, the terminal markdown and the stricter plan markdown", () => {
     const users = [...new Set(scriptImports().filter(({ target }) => isInside(VENDOR_DIR, target)).map(({ file }) => shown(file)))].sort();
     assert.deepEqual(users, VENDOR_USERS);
   });

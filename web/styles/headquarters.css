@@ -306,3 +306,121 @@
   .hq-day-event-text { white-space: normal; }
   .hq-day-event .btn { height: 36px; }
 }
+
+/* ficha: abas */
+/* The agent's sheet with the tabs Agora, Tarefas, Plano and Testes, and the plan waiting for approval in the alert and the card. */
+.work-tabs { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: var(--space-1); padding: 3px; border-radius: 8px; background: var(--bg-canvas); }
+.work-tab { all: unset; position: relative; box-sizing: border-box; display: flex; align-items: center; justify-content: center; gap: 5px; min-width: 0; height: 30px; padding: 0 var(--space-3); border-radius: var(--radius-md); color: var(--muted); font-size: 12px; font-weight: 600; white-space: nowrap; cursor: pointer; }
+.work-tab:hover { color: var(--text); }
+.work-tab[aria-selected="true"] { background: var(--bg-selected); color: var(--text); box-shadow: inset 0 -2px 0 var(--accent); }
+.work-tab:focus-visible { outline: 2px solid var(--focus); outline-offset: 1px; }
+.work-tab-count { color: var(--muted); font: 11px var(--font-mono); }
+.work-tab-alert { position: absolute; top: 5px; right: 6px; width: 7px; height: 7px; border-radius: var(--radius-full); background: var(--danger); }
+
+.hq-drawer-body.has-work-tabs > .work-panel-now { display: flex; flex: 1 0 auto; flex-direction: column; gap: 10px; min-height: 0; }
+.work-panel { flex: 1 0 auto; min-width: 0; }
+.work-panel[hidden] { display: none !important; }
+.work-panel:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; border-radius: var(--radius-md); }
+
+.work-stack { display: flex; flex-direction: column; gap: 10px; }
+.work-stack :is(code, .work-clock, .work-time, .work-row-end, .work-failure-where) { font-variant-ligatures: none; }
+.work-empty { margin: 0; padding: var(--space-5); border: 1px dashed var(--border-strong); border-radius: 8px; color: var(--muted); font-size: 12px; }
+.work-note { margin: 0; padding-top: var(--space-4); border-top: 1px solid var(--border); color: var(--subtle); font-size: 11px; }
+.work-muted { color: var(--muted); font-size: 12px; }
+.work-heading { margin: 0 0 var(--space-1); color: var(--muted); font-size: 10px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; }
+
+.work-progress-head { display: flex; align-items: baseline; justify-content: space-between; gap: var(--space-4); }
+.work-progress-head b { font-size: 14px; }
+.work-progress { display: grid; grid-template-columns: repeat(var(--steps), minmax(0, 1fr)); gap: 3px; }
+.work-progress span { height: 6px; border-radius: 2px; background: var(--border-strong); }
+.work-progress [data-status="completed"] { background: var(--success); }
+.work-progress [data-status="in_progress"] { background: var(--accent); }
+.work-todos { display: flex; flex-direction: column; gap: var(--space-1); margin: 0; padding: 0; list-style: none; }
+.work-todo { display: flex; gap: 10px; padding: 7px var(--space-4); border-radius: var(--radius-md); }
+.work-todo-mark { flex: none; width: 1em; text-align: center; color: var(--subtle); font-weight: 700; }
+.work-todo-text { display: grid; min-width: 0; overflow-wrap: anywhere; }
+.work-todo[data-status="completed"] { color: var(--muted); }
+.work-todo[data-status="completed"] .work-todo-mark { color: var(--success); }
+.work-todo[data-status="completed"] .work-todo-text { text-decoration: line-through; text-decoration-color: var(--border-control); }
+.work-todo[data-status="in_progress"] { background: color-mix(in srgb, var(--accent) 10%, transparent); box-shadow: inset 2px 0 0 var(--accent); }
+.work-todo[data-status="in_progress"] .work-todo-mark, .work-todo-active { color: var(--accent); }
+.work-todo-text b { font-weight: 600; }
+.work-todo-active { font-size: 12px; }
+
+.work-plan-state { display: flex; align-items: center; gap: var(--space-4); margin: 0; padding: var(--space-4) 10px; border: 1px solid var(--border-strong); border-radius: var(--radius-md); background: var(--bg-raised); font-size: 12px; }
+.work-plan-state[data-state="approved"] { border-color: color-mix(in srgb, var(--success) 35%, transparent); background: color-mix(in srgb, var(--success) 8%, transparent); }
+.work-plan-state[data-state="proposed"] { border-color: var(--warning-border); background: var(--warning-bg); }
+.work-plan-mark { flex: none; font-weight: 700; color: var(--muted); }
+.work-plan-state[data-state="approved"] .work-plan-mark { color: var(--success); }
+.work-plan-state[data-state="proposed"] .work-plan-mark { color: var(--warning); }
+.work-plan-when { flex: 1; min-width: 0; }
+.work-plan, .hq-plan, .pending-plan { padding: var(--space-5); border: 1px solid var(--border-strong); border-radius: 8px; background: var(--bg-canvas); overflow-wrap: anywhere; }
+.work-plan:focus-visible, .hq-plan:focus-visible, .pending-plan:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+.plan-link-target { color: var(--muted); font: 11px var(--font-mono); }
+.plan-plain { white-space: pre-wrap; }
+.plan-cut { margin: var(--space-4) 0 0; color: var(--warning); font-size: 12px; }
+
+.work-card { display: flex; flex-direction: column; gap: var(--space-4); padding: 10px; border: 1px solid var(--border-strong); border-radius: 8px; background: var(--bg-raised); }
+.work-card.is-running { border-color: color-mix(in srgb, var(--info) 40%, transparent); background: color-mix(in srgb, var(--info) 7%, transparent); }
+.work-card[data-verdict="failed"] { border-color: color-mix(in srgb, var(--danger) 45%, transparent); background: color-mix(in srgb, var(--danger) 6%, transparent); }
+.work-card[data-verdict="passed"] { border-color: color-mix(in srgb, var(--success) 35%, transparent); background: color-mix(in srgb, var(--success) 6%, transparent); }
+.work-card-head { display: flex; align-items: center; gap: var(--space-4); }
+.work-card-head b { flex: 1; min-width: 0; }
+.work-mark { flex: none; width: 1em; text-align: center; font-weight: 700; }
+.is-running .work-mark { color: var(--info); }
+[data-verdict="failed"] > .work-mark, [data-verdict="failed"] .work-card-head .work-mark { color: var(--danger); }
+[data-verdict="passed"] > .work-mark, [data-verdict="passed"] .work-card-head .work-mark { color: var(--success); }
+.work-clock { color: var(--muted); font: 11px var(--font-mono); }
+.work-command { color: var(--text); font: 12px var(--font-mono); overflow-wrap: anywhere; }
+.work-sweep { position: relative; height: 4px; border-radius: var(--radius-full); background: color-mix(in srgb, var(--info) 15%, transparent); overflow: hidden; }
+.work-sweep span { position: absolute; inset: 0; width: 40%; border-radius: var(--radius-full); background: var(--info); animation: work-sweep 1.4s ease-in-out infinite; }
+@keyframes work-sweep { from { translate: -100% 0; } to { translate: 260% 0; } }
+.work-share { display: flex; gap: 2px; height: 8px; border-radius: 3px; overflow: hidden; }
+.work-share [data-kind="passed"] { background: var(--success); }
+.work-share [data-kind="skipped"] { background: var(--border-control); }
+.work-share [data-kind="failed"] { background: var(--danger); }
+.work-counts { display: flex; flex-wrap: wrap; gap: var(--space-2) 14px; margin: 0; font-size: 12px; }
+.work-counts b { font-family: var(--font-mono); }
+.work-counts [data-kind="passed"] { color: var(--success); }
+.work-counts [data-kind="failed"] { color: var(--danger); }
+.work-counts [data-kind="skipped"] { color: var(--muted); }
+.work-failures { display: flex; flex-direction: column; gap: var(--space-3); margin: 0; padding: 0; list-style: none; }
+.work-failure { display: flex; flex-direction: column; gap: 3px; padding: var(--space-4); border-radius: var(--radius-md); background: var(--bg-canvas); overflow-wrap: anywhere; }
+.work-failure b { font-weight: 600; }
+.work-failure-where { color: var(--muted); font: 11px var(--font-mono); }
+.work-failure-message { color: var(--danger); font: 12px var(--font-mono); white-space: pre-wrap; }
+
+.work-list { display: flex; flex-direction: column; gap: var(--space-2); }
+.work-list ol, .work-list ul { display: flex; flex-direction: column; gap: var(--space-2); margin: 0; padding: 0; list-style: none; }
+.work-row { display: grid; align-items: center; gap: var(--space-3); padding: 5px var(--space-3); border-radius: var(--radius-md); background: var(--bg-raised); font-size: 12px; }
+.work-run { grid-template-columns: 40px 14px minmax(0, 1fr) auto; }
+.work-file { grid-template-columns: 44px minmax(0, 1fr) auto; }
+.work-time { color: var(--subtle); font: 11px var(--font-mono); }
+.work-row-text { min-width: 0; overflow: hidden; color: var(--text); text-overflow: ellipsis; white-space: nowrap; }
+code.work-row-text { font: 12px var(--font-mono); }
+.work-row-end { font: 11px var(--font-mono); white-space: nowrap; }
+.work-run[data-verdict="failed"] :is(.work-mark, .work-row-end), .work-file[data-result="failing"] .work-row-end { color: var(--danger); }
+.work-run[data-verdict="passed"] :is(.work-mark, .work-row-end), .work-file[data-result="passing"] .work-row-end { color: var(--success); }
+.work-file[data-result="unknown"] .work-row-end { color: var(--subtle); }
+.work-file-action { font-size: 11px; color: var(--muted); }
+.work-file-action[data-action="created"] { color: var(--success); }
+.work-file-action[data-action="edited"] { color: var(--accent); }
+.work-file-action[data-action="read"] { color: var(--info); }
+
+/* The bar that decides a request wraps the rows it always had, without changing their layout. */
+.hq-alert-decision, .pending-decision { display: contents; }
+.hq-alert-body.is-plan { gap: var(--space-4); }
+.hq-plan { max-height: min(44vh, 360px); overflow: auto; }
+.hq-plan-decision { display: flex; flex-direction: column; gap: var(--space-4); }
+.hq-plan-decision .textarea { min-height: 0; font-size: 13px; resize: none; }
+.hq-plan-decision .hq-alert-row { flex-wrap: wrap; }
+.pending-plan { max-height: 50vh; overflow: auto; }
+
+@media (max-width: 719px) {
+  .work-tab { height: 40px; padding: 0 var(--space-2); font-size: 12px; }
+  .work-tab-count { font-size: 10px; }
+  .hq-plan { max-height: 32dvh; }
+  .hq-plan-decision .hq-alert-row .btn { min-height: 36px; }
+  .hq-plan-decision .hq-alert-row .spacer { display: none; }
+  .hq-plan-decision .btn-ghost { order: 3; width: 100%; }
+}

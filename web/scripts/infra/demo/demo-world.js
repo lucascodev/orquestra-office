@@ -1,8 +1,14 @@
 import { PERSONAL_ACCOUNT, WORK_ACCOUNT } from "./demo-accounts.js";
+import { checkoutChecklist, notifyChecklist, physicsChecklist } from "./demo-checklists.js";
+import { approvedPlan, approvePlan, isDemoPlanRequest, planRequest, proposedPlan } from "./demo-plans.js";
+import { testsDoneLongAgo, testsThatFailed, tickTestRunner } from "./demo-tests.js";
 
 const MIN = 60_000;
 const HOUR = 60 * MIN;
 const ORQUESTRA = "c:/projetos/orquestra";
+const PLATFORMER = "c:/projetos/jogo-de-plataforma";
+const PLANNER = "claude:e2";
+const TEST_RUNNER = "claude:d2";
 
 const did = (actionId, subject = null) => ({ actionId, subject });
 
@@ -82,12 +88,40 @@ function pendingRequests() {
           { label: "Física própria", description: "Menos dependências, mais trabalho." },
         ],
       }] },
+    planRequest(PLANNER, now),
   ];
 }
 
+// The main agent has finished planning and testing for now and is half way through its list; its log tells the timeline so.
+function mainAgent(now) {
+  const main = agent("claude:a1", "Claude Code", "working", did("editing", "office-store.js"), 0, {
+    checklist: notifyChecklist(now), plan: approvedPlan(now), tests: testsDoneLongAgo(now),
+  });
+  const decided = [{ at: now - 28 * MIN, ...did("plan-approved") }, { at: now - 19 * MIN, ...did("tests-passed", 242) }];
+  return { ...main, log: [...decided, ...main.log].sort((a, b) => a.at - b.at) };
+}
+
+function checkoutAgent(now) {
+  const checkout = agent("claude:c1", "Claude Code", "needs_you", did("permission-requested", "Bash"), 1, {
+    checklist: checkoutChecklist(now), plan: null, tests: testsThatFailed(now),
+  });
+  return { ...checkout, log: [...checkout.log, { at: now - 6 * MIN, ...did("tests-failed", 2) }].sort((a, b) => a.at - b.at) };
+}
+
+const plannerAgent = (now) => agent(PLANNER, "Claude Code 2", "needs_you", did("asking-plan-approval"), 0, {
+  activity: "asking", checklist: null, plan: proposedPlan(PLANNER, 1, now), tests: null,
+});
+
+const testRunner = (now) => agent(TEST_RUNNER, "Claude Code 2", "working", did("editing", "collision.ts"), 15, {
+  activity: "editing", checklist: physicsChecklist(now), plan: null, tests: null,
+});
+
+const NO_WORK_YET = { checklist: null, plan: null, tests: null };
+
 export function demoState() {
+  const now = Date.now();
   const sub = (parent, id, label, status, doing, minutesAgo) =>
-    agent(`${parent}:${id}`, label, status, doing, minutesAgo, { kind: "subagent", parentKey: parent });
+    agent(`${parent}:${id}`, label, status, doing, minutesAgo, { kind: "subagent", parentKey: parent, ...NO_WORK_YET });
   return {
     pending: pendingRequests(),
     outbox: {},
@@ -96,21 +130,22 @@ export function demoState() {
     projects: {
       [SHOWCASE]: showcaseProject(),
       [ORQUESTRA]: project(ORQUESTRA, "orquestra", "startup", 0, onAccount(PERSONAL_ACCOUNT, [
-        agent("claude:a1", "Claude Code", "working", did("editing", "office-store.js"), 0),
+        mainAgent(now),
         sub("claude:a1", "s1", "code-reviewer", "reviewing", did("reading", "server.js"), 1),
         sub("claude:a1", "s2", "security-engineer", "reviewing", did("reading"), 2),
         agent("codex:b1", "Codex", "waiting", did("turn-finished-waiting"), 4, { source: "codex" }),
       ]), ["code-reviewer", "security-engineer", "test-engineer", "tech-writer", "board-keeper"]),
       "c:/projetos/loja-online": project("c:/projetos/loja-online", "loja-online", "cafe", 3, onAccount(WORK_ACCOUNT, [
-        agent("claude:c1", "Claude Code", "needs_you", did("permission-requested", "Bash"), 1),
+        checkoutAgent(now),
         sub("claude:c1", "s3", "Explore", "break", did("task-delivered"), 6),
       ])),
       "c:/projetos/jogo-de-plataforma": project("c:/projetos/jogo-de-plataforma", "jogo-de-plataforma", "fliperama", 12, onAccount(PERSONAL_ACCOUNT, [
-        agent("claude:d1", "Claude Code", "needs_you", did("asking-question"), 2),
-        agent("claude:d2", "Claude Code 2", "blocked", did("api-error"), 15),
+        agent("claude:d1", "Claude Code", "needs_you", did("asking-question"), 2, NO_WORK_YET),
+        testRunner(now),
       ])),
-      "c:/projetos/site-institucional": project("c:/projetos/site-institucional", "site-institucional", "jardim", 40, onAccount(WORK_ACCOUNT, [
+      "c:/projetos/site-institucional": project("c:/projetos/site-institucional", "site-institucional", "jardim", 0, onAccount(WORK_ACCOUNT, [
         agent("claude:e1", "Claude Code", "idle", did("session-closed"), 40),
+        plannerAgent(now),
       ])),
     },
   };
@@ -163,6 +198,8 @@ export function tickDemo(state, step) {
     act(main, status, doing, activity);
   }
   if (state.projects[ORQUESTRA]) cycleHelper(state.projects[ORQUESTRA], step);
+  const runner = state.projects[PLATFORMER]?.agents[TEST_RUNNER];
+  if (runner) tickTestRunner(runner, step, Date.now());
   const walker = state.projects[SHOWCASE]?.agents[WALKER];
   if (walker && step % WALKER_TICKS_PER_STEP === 0) {
     const [status, activity, doing] = WALKER_ROUTINE[(step / WALKER_TICKS_PER_STEP) % WALKER_ROUTINE.length];
@@ -180,9 +217,19 @@ export function resolveDemoRequest(state, id, body) {
   state.pending = state.pending.filter((item) => item.id !== id);
   const target = findAgent(state, request.agentKey);
   if (!target || body.behavior === "terminal") return true;
+  if (isDemoPlanRequest(request)) {
+    resolvePlan(target, body.behavior === "allow");
+    return true;
+  }
   const outcome = body.answers ? did("question-answered") : did(body.behavior === "allow" ? "permission-approved" : "permission-denied", request.toolName);
   act(target, "working", outcome);
   return true;
+}
+
+// Approving notes it in the log as the collector does; asking for changes sends the agent back to planning.
+function resolvePlan(target, isApproved) {
+  if (isApproved) approvePlan(target, Date.now());
+  act(target, "working", isApproved ? did("plan-approved") : did("permission-denied", "ExitPlanMode"), isApproved ? "editing" : "planning");
 }
 
 export function queueDemoMessage(state, agentKey) {
