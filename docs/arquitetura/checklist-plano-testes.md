@@ -26,6 +26,7 @@ Campos novos no registro do agente, todos opcionais (ausentes em estado salvo an
 agent.checklist = {
   items: [{ id, text, status: "pending" | "in_progress" | "completed", activeText }], // até 50 itens, texto até 200
   updatedAt,
+  highestTaskNumber, // só com TaskCreate: maior id numérico já visto, contando os apagados, para numerar sem reaproveitar
 } | null;
 
 agent.plan = {

@@ -10,7 +10,10 @@ const DELETED = "deleted";
 const textOf = (value) => cleanLineOf(value, TEXT_LIMIT);
 const activeTextOf = (value) => textOf(value) || null;
 const statusOr = (status, fallback) => (CHECKLIST_STATUSES.has(status) ? status : fallback);
-const numberOf = (id) => (/^\d+$/.test(id) ? Number(id) : null);
+function numberOf(id) {
+  const number = /^\d+$/.test(id) ? Number(id) : null;
+  return Number.isSafeInteger(number) ? number : null;
+}
 
 function itemOf({ id, text, status, activeText }) {
   const shown = textOf(text);
@@ -27,10 +30,14 @@ export function checklistFromTodos(todos, at) {
   return { items, updatedAt: at };
 }
 
-function nextIdOf(items) {
-  const numbers = items.map((item) => numberOf(item.id)).filter((number) => number !== null);
-  return String(Math.max(0, ...numbers) + 1);
+// Claude Code never reuses a task number, so the highest one seen counts the deleted tasks too.
+function highestTaskNumberOf(checklist, ids) {
+  const numbers = ids.map(numberOf).filter((number) => number !== null);
+  return Math.max(checklist?.highestTaskNumber ?? 0, ...numbers);
 }
+
+const idsOf = (items) => items.map((item) => item.id);
+const nextIdOf = (checklist) => String(highestTaskNumberOf(checklist, idsOf(checklist?.items ?? [])) + 1);
 
 // Tasks created in one message reach the office in any order; numbered ids put them back in the order they were made.
 function inIdOrder(items, item) {
@@ -41,10 +48,14 @@ function inIdOrder(items, item) {
 
 export function withTaskCreated(checklist, task, at) {
   const items = checklist?.items ?? [];
-  const item = itemOf({ ...task, id: workIdOf(task.id) ?? nextIdOf(items), status: NEW_ITEM_STATUS });
+  const item = itemOf({ ...task, id: workIdOf(task.id) ?? nextIdOf(checklist), status: NEW_ITEM_STATUS });
   if (!item) return checklist ?? null;
   const others = items.filter((other) => other.id !== item.id);
-  return { items: inIdOrder(others, item).slice(-ITEM_LIMIT), updatedAt: at };
+  return {
+    items: inIdOrder(others, item).slice(-ITEM_LIMIT),
+    updatedAt: at,
+    highestTaskNumber: highestTaskNumberOf(checklist, [...idsOf(items), item.id]),
+  };
 }
 
 function updatedItem(item, { status, text, activeText }) {
@@ -62,5 +73,5 @@ export function withTaskUpdated(checklist, update, at) {
   const items = update.status === DELETED
     ? checklist.items.filter((item) => item.id !== id)
     : checklist.items.map((item) => (item.id === id ? updatedItem(item, update) : item));
-  return { items, updatedAt: at };
+  return { ...checklist, items, updatedAt: at };
 }
