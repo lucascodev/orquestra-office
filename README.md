@@ -165,7 +165,7 @@ Sessions that are already open keep the old hooks until they are closed.
 
 ## What is stored
 
-**On disk** (the `office-data` volume), only what is needed to draw the office: project folder, session id, subagent name, tool name, file name (without the path), the first word of a command (for example `cargo`, never the arguments) and the token and cost totals. For tests, it also keeps the counts of each run (passed, failed and skipped), the framework and the test files' paths relative to the project, never the test command. For the plan, only its version, state and times.
+**On disk** (the `office-data` volume), only what is needed to draw the office: project folder, session id, subagent name, tool name, file name (without the path), the first word of a command (for example `cargo`, never the arguments) and the token and cost totals. For tests, it also keeps the counts of each run (passed, failed and skipped), the framework and the test files' paths relative to the project, never the test command. For the plan, only its version, state and times. For the day's timeline, only totals per hour: time worked, time waiting for you, how many times you were asked and the cost, with no text, kept for 48 hours.
 
 **Paired devices** (`devices.json`, in the same volume): the browser name, the address it was opened from, the dates and the SHA-256 hash of the cookie, never the cookie itself. A device unused for 30 days drops off the list.
 

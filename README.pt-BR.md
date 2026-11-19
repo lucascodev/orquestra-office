@@ -165,7 +165,7 @@ As sessões já abertas continuam com os hooks antigos até serem fechadas.
 
 ## O que fica guardado
 
-**No disco** (volume `office-data`), só o necessário para desenhar o escritório: pasta do projeto, id da sessão, nome do subagente, nome da ferramenta, nome do arquivo (sem o caminho), o primeiro termo do comando (por exemplo `cargo`, nunca os argumentos) e os totais de tokens e custo. Dos testes, ficam também os números de cada rodada (passaram, falharam e pulados), o framework e o caminho dos arquivos de teste a partir da pasta do projeto, nunca o comando de teste. Do plano, só a versão, o estado e os horários.
+**No disco** (volume `office-data`), só o necessário para desenhar o escritório: pasta do projeto, id da sessão, nome do subagente, nome da ferramenta, nome do arquivo (sem o caminho), o primeiro termo do comando (por exemplo `cargo`, nunca os argumentos) e os totais de tokens e custo. Dos testes, ficam também os números de cada rodada (passaram, falharam e pulados), o framework e o caminho dos arquivos de teste a partir da pasta do projeto, nunca o comando de teste. Do plano, só a versão, o estado e os horários. Da linha do tempo do dia, só totais por hora: tempo trabalhando, tempo esperando você, quantas vezes você foi chamado e o custo, sem nenhum texto, guardados por 48 horas.
 
 **Aparelhos pareados** (`devices.json`, no mesmo volume): o nome do navegador, o endereço por onde foi aberto, as datas e o hash SHA-256 do cookie, nunca o cookie. Um aparelho sem uso por 30 dias sai da lista.
 
