@@ -114,7 +114,8 @@ for (const [what, value, expected] of ids) {
 
 test("a known framework is kept and an unknown one becomes null", () => {
   assert.equal(frameworkOf("vitest"), "vitest");
-  assert.equal(frameworkOf("node:test"), "node:test");
+  assert.equal(frameworkOf("node-test"), "node-test");
+  assert.equal(frameworkOf("mixed"), "mixed");
   assert.equal(frameworkOf("<script>"), null);
   assert.equal(frameworkOf(undefined), null);
 });

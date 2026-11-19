@@ -10,8 +10,8 @@ const recognized = [
   ["vitest run", "vitest run", "vitest"],
   ["mocha", "mocha 'test/**/*.spec.js'", "mocha"],
   ["ava", "ava --verbose", "ava"],
-  ["node --test", "node --test collector/test/*.test.js", "node:test"],
-  ["node --test after other flags", "node --experimental-vm-modules --test", "node:test"],
+  ["node --test", "node --test collector/test/*.test.js", "node-test"],
+  ["node --test after other flags", "node --experimental-vm-modules --test", "node-test"],
   ["bun test", "bun test", "bun"],
   ["deno test", "deno test --allow-read", "deno"],
   ["playwright test", "npx playwright test --project=chromium", "playwright"],
@@ -68,7 +68,7 @@ const recognized = [
   ["dart test", "dart test", "dart"],
   ["swift test", "swift test", "swift"],
   ["xcodebuild test", "xcodebuild -scheme App test", "xcodebuild"],
-  ["a test after cd", "cd collector && node --test", "node:test"],
+  ["a test after cd", "cd collector && node --test", "node-test"],
   ["a test after an environment variable", "CI=true npm test", null],
   ["a test after several environment variables", "NODE_ENV=test FORCE_COLOR=0 jest", "jest"],
   ["a test after a PowerShell environment variable", "$env:CI = 'true'; npx vitest run", "vitest"],
@@ -76,7 +76,7 @@ const recognized = [
   ["a test piped into tail", "npm test 2>&1 | tail -20", null],
   ["a test inside a subshell", "(cd web && npx vitest run)", "vitest"],
   ["a test later in a chain", "npm run build; pytest", "pytest"],
-  ["a test on its own line", "cd collector\nnode --test", "node:test"],
+  ["a test on its own line", "cd collector\nnode --test", "node-test"],
   ["a Windows executable", "C:\\tools\\pytest.exe", "pytest"],
 ];
 

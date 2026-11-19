@@ -31,6 +31,7 @@ import { createPublicOfficeView } from "./office/application/public-office-view.
 import { createRecordActivity } from "./office/application/record-activity.js";
 import { createOfficeStore } from "./office/domain/office-store.js";
 import { createOfficeStateFile } from "./office/infra/office-state-file.js";
+import { parseTestOutput } from "./work/domain/test-output.js";
 
 const SWEEP_INTERVAL_MS = 30_000;
 
@@ -75,8 +76,7 @@ export function createOffice({ webDir, dataDir = null, holdMs, allowedHosts = []
     isSecretMissing: () => officeKey.isMissing(),
   });
 
-  // At the merge, parseTestOutput from work/domain/test-output.js is passed here; until then runs have no counts.
-  const activity = createRecordActivity({ store, history });
+  const activity = createRecordActivity({ store, history, parseTestOutput });
   const hasViewers = () => {
     applyCurrentKey();
     return stream.viewerCount() > 0;

@@ -73,7 +73,7 @@ function packageManagerTest(args) {
 
 const TEST_RUNNERS = {
   ...FRAMEWORK_PROGRAMS,
-  node: (args) => (args.includes("--test") ? ranAs("node:test") : null),
+  node: (args) => (args.includes("--test") ? ranAs("node-test") : null),
   bun: bunTest,
   deno: whenFirst("deno", ["test"]),
   npm: packageScriptTest,
