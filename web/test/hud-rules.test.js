@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { insetsAroundPanels, PANEL_GAP } from "../scripts/domain/camera/frame-insets.js";
+import { ALERT_WIDTH, alertPlacement, insetsAroundPanels, PANEL_GAP } from "../scripts/domain/camera/frame-insets.js";
 import { areaBounds, projectBounds } from "../scripts/domain/camera/frame-target.js";
 import { layoutHeadquarters } from "../scripts/domain/headquarters/headquarters-layout.js";
 import { accountUsage, HIGH_USAGE_PERCENT } from "../scripts/domain/office/account-usage.js";
@@ -382,5 +382,29 @@ describe("decision shortcuts", () => {
     assert.equal(press("toString"), null);
     assert.equal(press("a", { hasModifier: true }), null);
     assert.equal(press("n", { isTyping: true }), null);
+  });
+});
+
+describe("request alert placement", () => {
+  const rect = (left, top, width, height) => ({ left, top, right: left + width, bottom: top + height });
+  const capsule = rect(16, 16, 268, 40);
+
+  it("stays centered on the screen when it fits between the brand and the accounts", () => {
+    assert.deepEqual(alertPlacement({ viewportWidth: 1920, left: capsule, right: rect(1500, 16, 404, 52) }), { isLowered: false, left: (1920 - ALERT_WIDTH) / 2, width: ALERT_WIDTH });
+  });
+
+  it("slides away from wide accounts, keeping a gap to both neighbors", () => {
+    const placement = alertPlacement({ viewportWidth: 1440, left: capsule, right: rect(975, 16, 449, 52) });
+    assert.deepEqual(placement, { isLowered: false, left: 975 - PANEL_GAP - ALERT_WIDTH, width: ALERT_WIDTH });
+  });
+
+  it("narrows down to fit the gap, and drops under the top row when even that is too tight", () => {
+    const narrow = alertPlacement({ viewportWidth: 1200, left: capsule, right: rect(760, 16, 424, 52) });
+    assert.deepEqual(narrow, { isLowered: false, left: 284 + PANEL_GAP, width: 760 - PANEL_GAP - (284 + PANEL_GAP) });
+    assert.deepEqual(alertPlacement({ viewportWidth: 900, left: capsule, right: rect(480, 16, 404, 52) }), { isLowered: true, left: null, width: null });
+  });
+
+  it("uses the screen edges when a neighbor is missing", () => {
+    assert.deepEqual(alertPlacement({ viewportWidth: 1440, left: null, right: null }), { isLowered: false, left: (1440 - ALERT_WIDTH) / 2, width: ALERT_WIDTH });
   });
 });

@@ -1,5 +1,5 @@
 import { KEY_ZOOM_FACTOR } from "../domain/camera/camera-commands.js";
-import { insetsAroundPanels } from "../domain/camera/frame-insets.js";
+import { alertPlacement, insetsAroundPanels } from "../domain/camera/frame-insets.js";
 import { areaBounds, projectBounds } from "../domain/camera/frame-target.js";
 import { layoutHeadquarters } from "../domain/headquarters/headquarters-layout.js";
 import { accountUsage } from "../domain/office/account-usage.js";
@@ -17,7 +17,6 @@ import { createPendingAlert } from "./pending-alert.js";
 const CENSUS_REFRESH_MS = 2_000;
 const ANNOUNCE_DELAY_MS = 100;
 const LOWERED_ALERT_GAP_PX = 8;
-const TOP_ROW = [".hq-capsule", ".hq-accounts"];
 const DAY_REFRESH_MS = 30_000;
 const FOCUS_KEYS = ["project", "area", "frame"];
 const DOCKED_PANELS = {
@@ -32,7 +31,6 @@ const EMPTY_STATE = {
 };
 
 const startOfDay = (ms) => new Date(ms).setHours(0, 0, 0, 0);
-const sharesColumns = (a, b) => a.left < b.right && b.left < a.right;
 
 function focusSelectorOf(element) {
   const key = FOCUS_KEYS.find((name) => element.dataset[name] !== undefined);
@@ -144,14 +142,18 @@ export function createHeadquartersPage({ hud, headquarters, source, newSessionDi
       .map((element) => element.getBoundingClientRect());
   }
 
-  // Only the horizontal extents are compared, and they do not change when the alert drops, so this never flips back and forth.
+  // Placed from the brand and the accounts alone, which never move with it, so this never flips back and forth.
   function placeAlert() {
     const alertElement = slot("alert");
     if (alertElement.hidden) return;
-    const alertRect = alertElement.getBoundingClientRect();
-    const row = visibleRectsOf(TOP_ROW);
-    const isCrowded = row.some((rect) => sharesColumns(rect, alertRect));
-    alertElement.style.top = isCrowded ? `${Math.max(...row.map((rect) => rect.bottom)) + LOWERED_ALERT_GAP_PX}px` : "";
+    const [capsule = null] = visibleRectsOf([".hq-capsule"]);
+    const [besideAccounts = null] = visibleRectsOf([".hq-accounts"]);
+    const accounts = besideAccounts && capsule && besideAccounts.top < capsule.bottom ? besideAccounts : null;
+    const placement = alertPlacement({ viewportWidth: hud.clientWidth, left: capsule, right: accounts });
+    const rowBottom = Math.max(capsule?.bottom ?? 0, accounts?.bottom ?? 0);
+    Object.assign(alertElement.style, placement.isLowered
+      ? { top: `${rowBottom + LOWERED_ALERT_GAP_PX}px`, left: "", width: "", translate: "" }
+      : { top: "", left: `${placement.left}px`, width: `${placement.width}px`, translate: "none" });
   }
 
   function fitMapBetweenPanels() {
