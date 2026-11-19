@@ -1,6 +1,7 @@
 import { sumOf } from "../count.js";
 import { countOrZero, countWordsOf } from "../count-words.js";
 import { stackFrameLocationOf } from "../stack-frame.js";
+import { isSummaryCandidate } from "../summary-line.js";
 import { TEST_FRAMEWORK } from "../test-framework.js";
 
 const SUMMARY = /^Tests:\s+\d[a-z0-9, ]* total$/;
@@ -11,7 +12,7 @@ const IGNORED_HEADERS = new Set(["Console"]);
 const BLOCK_ENDS = ["PASS ", "FAIL ", "Test Suites:"];
 
 function countsOf(lines) {
-  const summaries = lines.filter((line) => SUMMARY.test(line)).map(countWordsOf);
+  const summaries = lines.filter((line) => isSummaryCandidate(line) && SUMMARY.test(line)).map(countWordsOf);
   if (summaries.length === 0) return null;
   const total = (...words) => sumOf(summaries.map((counts) => countOrZero(counts, ...words)));
   return { passed: total("passed"), failed: total("failed"), skipped: total("skipped", "todo") };
