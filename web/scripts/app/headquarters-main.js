@@ -42,7 +42,9 @@ const showStats = isMeasuring ? createFrameMeter(office) : () => {};
 const headquarters = createHeadquartersRenderer({
   onFrame: showStats, describeStatus, isMeasuring,
   onPick: (key) => page.openAgentFromMap(key),
+  onPickIsland: (projectKey) => page.openIslandFromMap(projectKey),
   onFollowChange: (key) => page.showFollowing(key),
+  onManualMove: () => page.cameraMovedByHand(),
 });
 if (headquarters) office.prepend(headquarters.element);
 else office.textContent = NO_WEBGL;

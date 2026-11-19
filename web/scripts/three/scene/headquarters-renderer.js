@@ -1,5 +1,6 @@
 import { boundsToFrameAt, wholeHeadquartersBounds } from "../../domain/camera/frame-target.js";
 import { centerBetweenPanels, panBy, screenToGround, zoomAt } from "../../domain/camera/viewpoint.js";
+import { projectAtPoint } from "../../domain/headquarters/area-of-point.js";
 import { layoutHeadquarters } from "../../domain/headquarters/headquarters-layout.js";
 import { headquartersSpots } from "../../domain/headquarters/headquarters-spots.js";
 import { areaLabelDetail } from "../../domain/headquarters/label-detail.js";
@@ -59,7 +60,8 @@ const islandPiece = (island) => batchStatic(buildIsland(new THREE.Group(), islan
 // theme, occupants or screens change, and the people on top, who live through every rebuild.
 // While measuring, each frame waits for the GPU to finish, so the time read is the whole frame and not only the commands sent.
 export function createHeadquartersRenderer({
-  onFrame = () => {}, onPick = () => {}, onFollowChange = () => {}, describeStatus = (status) => status, isMeasuring = false,
+  onFrame = () => {}, onPick = () => {}, onPickIsland = () => {}, onFollowChange = () => {}, onManualMove = () => {},
+  describeStatus = (status) => status, isMeasuring = false,
 } = {}) {
   const stage = document.createElement("div");
   stage.className = "hq-stage";
@@ -249,11 +251,14 @@ export function createHeadquartersRenderer({
     return null;
   }
 
+  const islandAt = (at) => projectAtPoint(layout, screenToGround(rig.viewpoint(), at, rig.viewport()));
+
   function moveCamera(next) {
     if (!layout) return;
     stopFollowing();
     rig.jumpTo(next(rig.viewpoint()));
     isDirty = true;
+    onManualMove();
   }
 
   function glideCamera(bounds) {
@@ -285,19 +290,28 @@ export function createHeadquartersRenderer({
     zoomAt: zoomBy,
     zoomAtCenter,
     frameAt: (at) => {
-      if (layout) glideCamera(boundsToFrameAt(layout, screenToGround(rig.viewpoint(), at, rig.viewport())));
+      if (!layout) return;
+      glideCamera(boundsToFrameAt(layout, screenToGround(rig.viewpoint(), at, rig.viewport())));
+      onManualMove();
     },
     frameWhole,
     stopFollowing,
     pick: (at) => {
-      const key = layout ? agentAt(at) : null;
-      if (key) onPick(key);
+      if (!layout) return;
+      const key = agentAt(at);
+      if (key) {
+        onPick(key);
+        return;
+      }
+      const projectKey = islandAt(at);
+      if (projectKey) onPickIsland(projectKey);
     },
   });
 
   canvas.addEventListener("pointermove", (event) => {
     const rect = canvas.getBoundingClientRect();
-    canvas.style.cursor = layout && agentAt({ x: event.clientX - rect.left, y: event.clientY - rect.top }) ? "pointer" : "";
+    const at = { x: event.clientX - rect.left, y: event.clientY - rect.top };
+    canvas.style.cursor = layout && (agentAt(at) || islandAt(at)) ? "pointer" : "";
   });
   new ResizeObserver(resize).observe(stage);
   requestAnimationFrame(tick);

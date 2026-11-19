@@ -21,6 +21,8 @@ import { renderDayTimeline } from "../scripts/view/hud/day-timeline-view.js";
 import { renderLegend } from "../scripts/view/hud/legend-view.js";
 import { arrivalsText, arrivalText, countdownText, renderAlertBody, renderAlertHead, warningText } from "../scripts/view/hud/pending-alert-view.js";
 import { renderPendingCard, renderPendingStrip } from "../scripts/view/sheet/pending-request-view.js";
+import { islandFacts } from "../scripts/domain/office/island-facts.js";
+import { renderIslandDay, renderIslandIdentity, renderIslandShell, renderIslandTeam } from "../scripts/view/sheet/island-sheet-view.js";
 
 // ago(), clockTime() and resetTime() print in the machine's time zone; the recorded pages are in UTC.
 process.env.TZ = "UTC";
@@ -210,6 +212,12 @@ describe("headquarters agent drawer", () => {
     assertMatchesRecording("hq-drawer-identity", renderDrawerIdentity(agent, { mark: agentMark(agent), origin: originOf(agent), projectName: "loja <online>" }));
   });
 
+  it("adds the account the agent works on, spelled out", () => {
+    const agent = agentOf("claude:a1", { name: "Heitor" });
+    const identity = renderDrawerIdentity(agent, { mark: agentMark(agent), origin: originOf(agent), projectName: "orquestra-office", accountLabel: "Pessoal <casa>" });
+    assertMatchesRecording("hq-drawer-identity-account", identity);
+  });
+
   it("writes the status out in words with what the agent is doing and since when", () => {
     assertMatchesRecording("hq-drawer-status", renderDrawerStatus(agentOf("claude:a1", { status: "needs_you", action: undefined, actionId: "permission-requested", subject: "Bash" })));
   });
@@ -290,6 +298,38 @@ describe("headquarters room list", () => {
 
   it("says no project is open yet", () => {
     assertMatchesRecording("hq-room-list-empty", renderAreaList({ total: 0, projects: [], areas: census.areas }));
+  });
+
+  it("marks as current the room the camera went to, and none after the camera is moved by hand", () => {
+    const currentOf = (html) => [...html.matchAll(/data-(project|area|frame)="([^"]+)" aria-current="true"/g)].map(([, kind, id]) => `${kind}:${id}`);
+    assert.deepEqual(currentOf(renderAreaList(census)), ["frame:whole"]);
+    assert.deepEqual(currentOf(renderAreaList(census, { kind: "project", id: "c:/orquestra" })), ["project:c:/orquestra"]);
+    assert.deepEqual(currentOf(renderAreaList(census, { kind: "area", id: "pantry" })), ["area:pantry"]);
+    assert.deepEqual(currentOf(renderAreaList(census, null)), []);
+  });
+});
+
+describe("headquarters island sheet", () => {
+  const island = () => islandFacts(projectOf("c:/loja", "loja <online>", busyTeam()));
+
+  it("has the team, the day, the seven themes, a new session in the folder and closing the room", () => {
+    assertMatchesRecording("hq-island-shell", renderIslandShell());
+  });
+
+  it("names the island with its folder and theme", () => {
+    assertMatchesRecording("hq-island-identity", renderIslandIdentity(island()));
+  });
+
+  it("spells out the day's numbers, flagging who needs you", () => {
+    assertMatchesRecording("hq-island-day", renderIslandDay(island().day));
+  });
+
+  it("lists who is on the island with the status in words, the most urgent first", () => {
+    assertMatchesRecording("hq-island-team", renderIslandTeam(island().team));
+  });
+
+  it("says nobody works on an empty island and how the team shows up", () => {
+    assert.match(renderIslandTeam([]), /Ninguém trabalhando aqui agora/);
   });
 });
 

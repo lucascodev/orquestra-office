@@ -2,11 +2,12 @@ import { KEY_ZOOM_FACTOR } from "../domain/camera/camera-commands.js";
 import { alertPlacement, insetsAroundPanels } from "../domain/camera/frame-insets.js";
 import { areaBounds, projectBounds } from "../domain/camera/frame-target.js";
 import { layoutHeadquarters } from "../domain/headquarters/headquarters-layout.js";
-import { accountUsage } from "../domain/office/account-usage.js";
+import { accountUsage, agentAccountLabel } from "../domain/office/account-usage.js";
 import { withBuildingAgentNames } from "../domain/office/agent-names.js";
 import { areaCensus } from "../domain/office/area-census.js";
 import { canReceiveMessages } from "../domain/office/can-receive-messages.js";
 import { dayTimeline } from "../domain/office/day-timeline.js";
+import { islandFacts } from "../domain/office/island-facts.js";
 import { serverClockNow } from "../domain/office/pending-queue.js";
 import { renderAccounts } from "../view/hud/accounts-view.js";
 import { renderAreaList } from "../view/hud/area-list-view.js";
@@ -33,12 +34,22 @@ const EMPTY_STATE = {
 };
 
 const NO_MAP = { element: null, followedKey: () => null, follow: () => {}, stopFollowing: () => {}, tagOf: () => null };
+const WHOLE_ROOM = { kind: "whole", id: "whole" };
+const ROOM_ATTRIBUTE = { whole: "frame", project: "project", area: "area" };
 
 const startOfDay = (ms) => new Date(ms).setHours(0, 0, 0, 0);
 
 function focusSelectorOf(element) {
   const key = FOCUS_KEYS.find((name) => element.dataset[name] !== undefined);
   return key ? `[data-${key}="${CSS.escape(element.dataset[key])}"]` : null;
+}
+
+const roomSelectorOf = (room) => `[data-${ROOM_ATTRIBUTE[room.kind]}="${CSS.escape(room.id)}"]`;
+
+function roomOfButton(button) {
+  if (button.dataset.project !== undefined) return { kind: "project", id: button.dataset.project };
+  if (button.dataset.area !== undefined) return { kind: "area", id: button.dataset.area };
+  return WHOLE_ROOM;
 }
 
 // The floating panels around the full-window map: they read the state and tell the map where it is free to frame.
@@ -54,6 +65,8 @@ export function createHeadquartersPage({ hud, headquarters, source, newSessionDi
   // Redrawing the list between press and release would swap the button under the pointer and swallow the click.
   let isPressing = false;
   let hasDeferredRooms = false;
+  let currentRoom = WHOLE_ROOM;
+  let focusedProjectKey = null;
 
   const clockNow = () => serverClockNow({ localNow: Date.now(), generatedAt: state.generatedAt, receivedAt });
   const layoutNow = () => headquarters?.layoutShown() ?? layoutHeadquarters(state.projects);
@@ -77,7 +90,7 @@ export function createHeadquartersPage({ hud, headquarters, source, newSessionDi
       return;
     }
     const census = areaCensus({ layout: layoutNow(), projects: state.projects, stops: headquarters?.destinations() ?? new Map() });
-    keepingFocus(rooms, () => setHtml(rooms, renderAreaList(census)));
+    keepingFocus(rooms, () => setHtml(rooms, renderAreaList(census, currentRoom)));
   }
 
   function renderDay() {
@@ -116,18 +129,35 @@ export function createHeadquartersPage({ hud, headquarters, source, newSessionDi
       liveStatus,
       canReceiveMessages: Boolean(liveStatus) || canReceiveMessages(agent),
       projectName: project.name,
+      accountLabel: agentAccountLabel({ accounts: state.accounts, accountId: agent.accountId }),
       isFollowed: headquarters?.followedKey() === agent.key,
     };
   }
 
   function openAgent(agentKey, { opener = null, focus = "close" } = {}) {
     const found = findAgent(agentKey);
-    if (found) drawer.open(found.agent, drawerContext(found), { opener, focus });
+    if (!found) return;
+    focusedProjectKey = found.project.key;
+    drawer.open(found.agent, drawerContext(found), { opener, focus });
   }
 
   const openAgentFromMap = (agentKey) => openAgent(agentKey, { opener: headquarters?.tagOf(agentKey) });
 
+  const islandFactsOf = (projectKey) => (Object.hasOwn(state.projects, projectKey) ? islandFacts(state.projects[projectKey]) : null);
+  const islandContext = () => ({ canOpenSession: state.runner.isAvailable });
+  const suggestedFolder = () => (focusedProjectKey && Object.hasOwn(state.projects, focusedProjectKey) ? focusedProjectKey : "");
+
+  function openIsland(projectKey, opener) {
+    const facts = islandFactsOf(projectKey);
+    if (!facts) return;
+    focusedProjectKey = projectKey;
+    drawer.openIsland(facts, islandContext(), { opener });
+    fitMapBetweenPanels();
+  }
+
   function updateDrawer() {
+    const openIslandKey = drawer.openProjectKey();
+    if (openIslandKey) drawer.updateIsland(islandFactsOf(openIslandKey), islandContext());
     const openKey = drawer.openAgentKey();
     if (!openKey) return;
     const found = findAgent(openKey);
@@ -161,19 +191,41 @@ export function createHeadquartersPage({ hud, headquarters, source, newSessionDi
     onOpenAgent: (agentKey, button) => openAgent(agentKey, { opener: button, focus: "request" }),
   });
 
-  const drawer = createAgentDrawer({ drawer: slot("drawer"), control: source, map: headquarters ?? NO_MAP, onResize: () => fitMapBetweenPanels() });
+  const drawer = createAgentDrawer({
+    drawer: slot("drawer"), control: source, map: headquarters ?? NO_MAP, onResize: () => fitMapBetweenPanels(),
+    island: {
+      announce,
+      onOpenAgent: (agentKey, button) => openAgent(agentKey, { opener: button }),
+      onNewSession: (projectKey) => newSessionDialog.show(projectKey),
+    },
+  });
 
-  function frameRoom(button) {
+  function frameRoom(room) {
     if (!headquarters) return;
-    if (button.dataset.frame !== undefined) headquarters.frameWhole();
-    if (button.dataset.project !== undefined) headquarters.frame(projectBounds(layoutNow(), button.dataset.project));
-    if (button.dataset.area !== undefined) headquarters.frame(areaBounds(layoutNow(), button.dataset.area));
+    if (room.kind === "whole") headquarters.frameWhole();
+    if (room.kind === "project") headquarters.frame(projectBounds(layoutNow(), room.id));
+    if (room.kind === "area") headquarters.frame(areaBounds(layoutNow(), room.id));
+  }
+
+  // The island's sheet looks the list button up again when it closes, since the list is redrawn every few seconds.
+  function goToRoom(room, opener = null) {
+    currentRoom = room;
+    if (room.kind === "whole") focusedProjectKey = null;
+    renderRooms();
+    if (room.kind === "project") openIsland(room.id, opener ?? (() => rooms.querySelector(roomSelectorOf(room))));
+    frameRoom(room);
+  }
+
+  function cameraMovedByHand() {
+    if (!currentRoom) return;
+    currentRoom = null;
+    renderRooms();
   }
 
   const CAMERA_ACTIONS = {
     in: () => headquarters?.zoomAtCenter(KEY_ZOOM_FACTOR),
     out: () => headquarters?.zoomAtCenter(1 / KEY_ZOOM_FACTOR),
-    whole: () => headquarters?.frameWhole(),
+    whole: () => goToRoom(WHOLE_ROOM),
   };
 
   function visibleRectsOf(selectors) {
@@ -216,13 +268,13 @@ export function createHeadquartersPage({ hud, headquarters, source, newSessionDi
   window.addEventListener("pointercancel", releasePress);
   rooms.addEventListener("click", (event) => {
     const button = event.target.closest("[data-project], [data-area], [data-frame]");
-    if (button) frameRoom(button);
+    if (button) goToRoom(roomOfButton(button));
   });
   hud.querySelector(".hq-camera").addEventListener("click", (event) => {
     const button = event.target.closest("[data-camera]");
     if (button) CAMERA_ACTIONS[button.dataset.camera]?.();
   });
-  newSessionButton.addEventListener("click", () => newSessionDialog.show(""));
+  newSessionButton.addEventListener("click", () => newSessionDialog.show(suggestedFolder()));
 
   setHtml(slot("legend"), renderLegend());
   const panelWatcher = new ResizeObserver(fitMapBetweenPanels);
@@ -233,6 +285,7 @@ export function createHeadquartersPage({ hud, headquarters, source, newSessionDi
 
   return {
     receive, awaitAgent, openAgentFromMap, showFollowing: (followedKey) => drawer.showFollowing(followedKey),
-    refitMap: fitMapBetweenPanels, clockNow, state: () => state,
+    openIslandFromMap: (projectKey) => goToRoom({ kind: "project", id: projectKey }, headquarters?.element),
+    cameraMovedByHand, refitMap: fitMapBetweenPanels, clockNow, state: () => state,
   };
 }

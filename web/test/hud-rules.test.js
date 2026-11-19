@@ -2,12 +2,14 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import { ALERT_WIDTH, alertPlacement, insetsAroundPanels, PANEL_GAP } from "../scripts/domain/camera/frame-insets.js";
 import { areaBounds, projectBounds } from "../scripts/domain/camera/frame-target.js";
+import { projectAtPoint } from "../scripts/domain/headquarters/area-of-point.js";
 import { layoutHeadquarters } from "../scripts/domain/headquarters/headquarters-layout.js";
-import { accountUsage, HIGH_USAGE_PERCENT } from "../scripts/domain/office/account-usage.js";
+import { accountUsage, agentAccountLabel, HIGH_USAGE_PERCENT } from "../scripts/domain/office/account-usage.js";
 import { areaCensus } from "../scripts/domain/office/area-census.js";
 import { dayTimeline } from "../scripts/domain/office/day-timeline.js";
 import { decisionForKey } from "../scripts/domain/office/decision-shortcuts.js";
 import { searchHeadquarters } from "../scripts/domain/office/headquarters-search.js";
+import { islandFacts } from "../scripts/domain/office/island-facts.js";
 import { crossesWarning, newArrivals, pendingInFocus, requesterOf, serverClockNow } from "../scripts/domain/office/pending-queue.js";
 import { requestIntentText } from "../scripts/domain/office/request-intent-text.js";
 
@@ -227,6 +229,19 @@ describe("account usage", () => {
     assert.deepEqual(accountUsage({ accounts: {}, usage: { rateLimits: {} } }), []);
     assert.deepEqual(accountUsage({}), []);
   });
+
+  it("names the account an agent works on only when there is more than one account to tell apart", () => {
+    const accounts = {
+      a1: { id: "a1", label: "Pessoal", rateLimits: null, updatedAt: NOW },
+      b1: { id: "b1", label: "Trabalho", rateLimits: null, updatedAt: NOW },
+    };
+    assert.equal(agentAccountLabel({ accounts, accountId: "b1" }), "Trabalho");
+    assert.equal(agentAccountLabel({ accounts, accountId: "gone" }), null);
+    assert.equal(agentAccountLabel({ accounts, accountId: "toString" }), null);
+    assert.equal(agentAccountLabel({ accounts, accountId: null }), null);
+    assert.equal(agentAccountLabel({ accounts: { a1: accounts.a1 }, accountId: "a1" }), null);
+    assert.equal(agentAccountLabel({ accounts: null, accountId: "a1" }), null);
+  });
 });
 
 const agentOf = (key, status, extra = {}) => ({ key, name: key.split(":")[1], label: "Claude Code", status, ...extra });
@@ -278,6 +293,48 @@ describe("area census", () => {
     const census = areaCensus({ layout: layoutHeadquarters(projects), projects, stops: new Map() });
     assert.equal(census.total, 0);
     assert.deepEqual(census.projects, [{ key: "c:/vazio", name: "vazio", themeId: "cafe", total: 0, byStatus: [] }]);
+  });
+});
+
+describe("island sheet facts", () => {
+  const withStats = (project, stats) => ({ ...project, stats });
+
+  it("adds up the open sessions and the day of the project, counting who needs you", () => {
+    const project = withStats(projectOf("c:/loja", "loja-online", [
+      agentOf("claude:Vitor", "needs_you"),
+      agentOf("claude:Otto", "break", { kind: "subagent", parentKey: "claude:Vitor" }),
+      agentOf("claude:Ana", "working", { kind: "main" }),
+      agentOf("claude:Rui", "idle", { kind: "main", endedAt: NOW - MINUTE }),
+    ]), { prompts: 7, tools: 81, turns: 6, tokens: 552_000, costUsd: 4.1 });
+    const facts = islandFacts(project);
+    assert.deepEqual(facts.day, { sessions: 2, prompts: 7, tools: 81, turns: 6, tokens: 552_000, costUsd: 4.1, needsYou: 1 });
+    assert.deepEqual([facts.key, facts.name, facts.themeId], ["c:/loja", "loja-online", "cafe"]);
+  });
+
+  it("lists who is on the island, the most urgent first and then by name", () => {
+    const facts = islandFacts(busyProjects()["c:/orquestra"]);
+    assert.deepEqual(facts.team.map(({ name, status }) => [name, status]), [
+      ["Davi", "reviewing"], ["Heitor", "working"], ["Eva", "idle"], ["Nina", "idle"],
+    ]);
+    assert.deepEqual(Object.keys(facts.team[0]), ["key", "name", "label", "status", "kind"]);
+  });
+
+  it("zeroes the day of a project the collector has not counted yet", () => {
+    const facts = islandFacts(projectOf("c:/vazio", "vazio", []));
+    assert.deepEqual(facts.day, { sessions: 0, prompts: 0, tools: 0, turns: 0, tokens: 0, costUsd: 0, needsYou: 0 });
+    assert.deepEqual(facts.team, []);
+  });
+});
+
+describe("island under a point", () => {
+  it("finds the project whose island rug is under the point, and nothing on a free island or off the islands", () => {
+    const layout = layoutHeadquarters(busyProjects());
+    const taken = layout.islands.find((island) => island.projectKey === "c:/jogo");
+    const free = layout.islands.find((island) => !island.projectKey);
+    const middleOf = ({ x, z, w, d }) => ({ x: x + w / 2, z: z + d / 2 });
+    assert.equal(projectAtPoint(layout, middleOf(taken.rug)), "c:/jogo");
+    assert.equal(projectAtPoint(layout, middleOf(free.rug)), null);
+    assert.equal(projectAtPoint(layout, { x: -50, z: -50 }), null);
   });
 });
 
@@ -393,9 +450,17 @@ describe("request alert placement", () => {
     assert.deepEqual(alertPlacement({ viewportWidth: 1920, left: capsule, right: rect(1500, 16, 404, 52) }), { isLowered: false, left: (1920 - ALERT_WIDTH) / 2, width: ALERT_WIDTH });
   });
 
-  it("slides away from wide accounts, keeping a gap to both neighbors", () => {
+  it("narrows around the center rather than sliding away from wide accounts, as in the mock-up at 1440 pixels", () => {
     const placement = alertPlacement({ viewportWidth: 1440, left: capsule, right: rect(975, 16, 449, 52) });
-    assert.deepEqual(placement, { isLowered: false, left: 975 - PANEL_GAP - ALERT_WIDTH, width: ALERT_WIDTH });
+    const halfWidth = 975 - PANEL_GAP - 720;
+    assert.deepEqual(placement, { isLowered: false, left: 720 - halfWidth, width: 2 * halfWidth });
+  });
+
+  it("slides away from wide accounts when staying centered would leave it too narrow, keeping a gap to both neighbors", () => {
+    const placement = alertPlacement({ viewportWidth: 1280, left: capsule, right: rect(860, 16, 404, 52) });
+    assert.deepEqual(placement, { isLowered: false, left: 284 + PANEL_GAP, width: 860 - PANEL_GAP - (284 + PANEL_GAP) });
+    const roomy = alertPlacement({ viewportWidth: 1600, left: capsule, right: rect(1000, 16, 584, 52) });
+    assert.deepEqual(roomy, { isLowered: false, left: 1000 - PANEL_GAP - ALERT_WIDTH, width: ALERT_WIDTH });
   });
 
   it("narrows down to fit the gap, and drops under the top row when even that is too tight", () => {
