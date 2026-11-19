@@ -1,12 +1,14 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { mkdtemp, readdir, readFile, rm, writeFile } from "node:fs/promises";
+import { mkdtemp, readdir, readFile, rm, stat, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { createOfficeStateFile as createPersistence } from "../src/office/infra/office-state-file.js";
 
 const STATE_FILE = "office.json";
 const SAVE_DELAY_MS = 2_000;
+const PERMISSION_BITS = 0o777;
+const OWNER_ONLY_FILE = 0o600;
 const SAVED_STATE = { projects: { "/home/dev/loja": { key: "/home/dev/loja", name: "loja", agents: {} } }, sessions: { s1: "/home/dev/loja" } };
 
 async function withDataDir(run) {
@@ -23,6 +25,12 @@ test("saving creates the data folder when it does not exist yet", () => withData
   const dataDir = join(dir, "nested", "data");
   createPersistence(dataDir).saveNow(SAVED_STATE);
   assert.deepEqual(JSON.parse(await readFile(join(dataDir, STATE_FILE), "utf8")), SAVED_STATE);
+}));
+
+// Windows keeps no owner-only bit in the file mode, so only POSIX systems can show it.
+test("the state file can be read and written only by its owner", { skip: process.platform === "win32" }, () => withDataDir(async (dir) => {
+  createPersistence(dir).saveNow(SAVED_STATE);
+  assert.equal((await stat(join(dir, STATE_FILE))).mode & PERMISSION_BITS, OWNER_ONLY_FILE);
 }));
 
 test("with nothing saved yet the state loads as null", () => withDataDir(async (dir) => {
