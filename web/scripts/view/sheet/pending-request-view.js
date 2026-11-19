@@ -4,7 +4,7 @@ import { toolSummaryText } from "../../domain/terminal/tool-summary-text.js";
 import { isPlanRequest, planOfRequest } from "../../domain/work-sheet/plan-request.js";
 import { esc } from "../shared/escape-html.js";
 import { clockTime } from "../shared/format.js";
-import { renderPlanMarkdown } from "../shared/plan-markdown.js";
+import { renderPlanContent } from "../shared/plan-content.js";
 import { shownQuestion } from "../shared/shown-question.js";
 
 const FAILED_DECISION_ALERT = `<p class="pending-error" role="alert" hidden></p>`;
@@ -49,16 +49,10 @@ function questionCard(request, agentName) {
     </div>`;
 }
 
-function planContent(plan) {
-  if (!plan) return `<p class="muted">${PLAN_APPROVAL_TEXT.missing}</p>`;
-  const cut = plan.isTruncated ? `<p class="plan-cut">${PLAN_APPROVAL_TEXT.truncated}</p>` : "";
-  return `${renderPlanMarkdown(plan.text)}${cut}`;
-}
-
 // As in the alert, the plan sits apart from the bar that decides it, and approving it has no key.
 function planCard(request, agentName) {
   return `<h3 class="card-title">${esc(fillPhrase(PLAN_APPROVAL_TEXT.title, { name: agentName }))}</h3>
-    <article class="pending-plan md" aria-label="${PLAN_APPROVAL_TEXT.planLabel}" tabindex="0">${planContent(planOfRequest(request))}</article>
+    <article class="pending-plan md" aria-label="${PLAN_APPROVAL_TEXT.planLabel}" tabindex="0">${renderPlanContent(planOfRequest(request))}</article>
     <div class="pending-decision" data-decision-bar data-reason-field="${PLAN_REASON_FIELD}">
     <div class="field"><label for="${PLAN_REASON_FIELD}">${PLAN_APPROVAL_TEXT.reasonLabel}</label><textarea class="textarea" id="${PLAN_REASON_FIELD}" rows="2" maxlength="${REASON_LIMIT}" autocomplete="off" placeholder="${esc(PLAN_APPROVAL_TEXT.reasonPlaceholder)}"></textarea></div>
     <div class="pending-actions">

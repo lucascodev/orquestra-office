@@ -4,6 +4,7 @@ import { decisionForKey } from "../scripts/domain/office/decision-shortcuts.js";
 import { requestIntentText } from "../scripts/domain/office/request-intent-text.js";
 import { isPlanRequest, planOfRequest } from "../scripts/domain/work-sheet/plan-request.js";
 import { renderAlertBody } from "../scripts/view/hud/pending-alert-view.js";
+import { renderPlanContent } from "../scripts/view/shared/plan-content.js";
 import { renderPendingCard } from "../scripts/view/sheet/pending-request-view.js";
 
 process.env.TZ = "UTC";
@@ -94,6 +95,14 @@ describe("plan waiting for approval", () => {
     assert.ok(renderAlertBody(planRequest({ isPlanTruncated: true })).includes("Plano cortado, veja o resto no terminal."));
     assert.ok(!renderAlertBody(planRequest()).includes("Plano cortado"));
     assert.ok(renderAlertBody(planRequest({ plan: undefined })).includes("O plano não chegou à Sede."));
+  });
+
+  it("writes the plan of the alert and of the sheet's card in one place, whole, cut or missing", () => {
+    for (const request of [planRequest(), planRequest({ isPlanTruncated: true }), planRequest({ plan: undefined })]) {
+      const content = renderPlanContent(planOfRequest(request));
+      assert.ok(renderAlertBody(request).includes(`tabindex="0">${content}</article>`));
+      assert.ok(renderPendingCard(request, "Heitor").includes(`tabindex="0">${content}</article>`));
+    }
   });
 
   it("titles the card in the sheet with who planned, escaped", () => {

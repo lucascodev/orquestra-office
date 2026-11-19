@@ -1,5 +1,7 @@
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 import { after, before, describe, it, mock } from "node:test";
+import { WORK_MARKS } from "../scripts/data/work-marks.js";
 import { checklistProgress } from "../scripts/domain/work-sheet/checklist-progress.js";
 import { planStatus } from "../scripts/domain/work-sheet/plan-status.js";
 import { testsOverview } from "../scripts/domain/work-sheet/tests-overview.js";
@@ -137,6 +139,18 @@ describe("tabs of the agent's sheet", () => {
     assert.ok(html.includes('<code class="work-row-text">a/&lt;b&gt;.test.js</code><span class="work-row-end" aria-hidden="true">✕ 2</span><span class="sr-only">: 2 falharam</span>'));
     assert.ok(html.includes("Hoje · 2 rodadas") && html.includes("Arquivos de teste desta sessão · 2"));
     assert.ok(renderTestsTab(null).includes("Nenhum teste rodado nesta sessão ainda."));
+  });
+
+  it("takes the marks of the Testes tab from the shared marks, so the tab, the tag and the legend draw the same ones", () => {
+    const source = readFileSync(new URL("../scripts/view/sheet/tests-tab-view.js", import.meta.url), "utf8");
+    assert.deepEqual(Object.values(WORK_MARKS).filter((mark) => source.includes(mark)), []);
+    const html = renderTestsTab(testsOverview({
+      running: { startedAt: NOW },
+      lastRun: { isOk: false, failed: 1, passed: 2, finishedAt: NOW },
+      runsToday: [{ isOk: false, failed: 1, passed: 2, finishedAt: NOW, label: "npm test" }],
+      files: [{ path: "a.test.js", action: "read", failed: null }],
+    }));
+    for (const mark of [WORK_MARKS.testing, WORK_MARKS["tests-failed"], WORK_MARKS["tests-passed"], WORK_MARKS["no-result"]]) assert.ok(html.includes(mark), mark);
   });
 
   it("writes how long a round took in seconds or minutes", () => {

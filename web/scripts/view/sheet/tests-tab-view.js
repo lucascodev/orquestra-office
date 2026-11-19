@@ -1,14 +1,15 @@
 import {
   TEST_COUNTS, TEST_FILE_ACTIONS, TEST_FILE_RESULTS, TEST_RUN_FALLBACK_LABEL, TEST_RUN_WITHOUT_COUNTS, TEST_VERDICTS, TESTS_TEXT,
 } from "../../data/text/pt-br/work-sheet.js";
+import { WORK_MARKS } from "../../data/work-marks.js";
 import { countPhrase } from "../../domain/text/count-phrase.js";
 import { fillPhrase } from "../../domain/text/fill-phrase.js";
 import { esc } from "../shared/escape-html.js";
 import { clockTime } from "../shared/format.js";
 import { formatTestDuration } from "./work-format.js";
 
-const VERDICT_MARKS = { passed: "✓", failed: "✕" };
-const FILE_RESULT_MARKS = { failing: "✕", passing: "✓", unknown: "—" };
+const VERDICT_MARKS = { passed: WORK_MARKS["tests-passed"], failed: WORK_MARKS["tests-failed"] };
+const FILE_RESULT_MARKS = { failing: WORK_MARKS["tests-failed"], passing: WORK_MARKS["tests-passed"], unknown: WORK_MARKS["no-result"] };
 const COUNT_ORDER = ["passed", "failed", "skipped"];
 const SEPARATOR = " · ";
 
@@ -17,7 +18,7 @@ function runningSection(running) {
   const clock = `<span class="work-clock" data-elapsed-since="${running.startedAt}"></span>`;
   const command = running.command ?? running.framework;
   return `<section class="work-card is-running" aria-label="${TESTS_TEXT.runningLabel}">
-      <div class="work-card-head"><span class="work-mark" aria-hidden="true">⚗</span><b>${TESTS_TEXT.running}</b>${clock}</div>
+      <div class="work-card-head"><span class="work-mark" aria-hidden="true">${WORK_MARKS.testing}</span><b>${TESTS_TEXT.running}</b>${clock}</div>
       ${command ? `<code class="work-command">${esc(command)}</code>` : ""}
       <div class="work-sweep" aria-hidden="true"><span></span></div>
     </section>`;
@@ -59,7 +60,9 @@ function lastRunSection(run) {
 
 function runResult(run) {
   if (!run.hasCounts) return TEST_RUN_WITHOUT_COUNTS[run.verdict];
-  return [run.failed > 0 ? `${run.failed} ✕` : "", run.passed === null ? "" : `${run.passed} ✓`].filter(Boolean).join(SEPARATOR);
+  const failed = run.failed > 0 ? `${run.failed} ${VERDICT_MARKS.failed}` : "";
+  const passed = run.passed === null ? "" : `${run.passed} ${VERDICT_MARKS.passed}`;
+  return [failed, passed].filter(Boolean).join(SEPARATOR);
 }
 
 // The marks read badly aloud, so a screen reader gets the round in words.
