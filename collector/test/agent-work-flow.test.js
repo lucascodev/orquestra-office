@@ -284,6 +284,28 @@ test("an agent with no plan has none through planOf", () => {
   assert.equal(office.store.planOf("claude:nobody"), null);
 });
 
+// Worst case in UTF-16 units, every text made of emoji (two units each): checklist 50 x 400 x 2 = 80 000, failures
+// 10 x 900 x 2 = 18 000, files 30 x 300 x 2 = 18 000, runs of the day 20 x 60 x 2 = 2 400, plus field names and numbers.
+const AGENT_SIZE_LIMIT = 128 * 1024;
+const WIDE = "😀";
+
+test("an agent with every list full and every text at its limit stays under 128 KB serialized", () => {
+  const huge = (length) => WIDE.repeat(length);
+  const failures = Array.from({ length: 15 }, () => ({ name: huge(600), location: `${ROOT}/${huge(600)}:1`, message: huge(600) }));
+  const office = officeWith(() => ({ framework: "jest", passed: 1, failed: 15, skipped: 0, failures }));
+  const todos = Array.from({ length: 60 }, (_, index) => ({ id: `${index}`.padEnd(40, "x"), content: huge(400), status: "in_progress", activeForm: huge(400) }));
+  office.send("PostToolUse", { tool_name: "TodoWrite", tool_use_id: "w1", tool_input: { todos } });
+  office.send("PreToolUse", { tool_name: "ExitPlanMode", tool_use_id: "p1", tool_input: { plan: huge(30_000) } });
+  for (let index = 0; index < 35; index += 1) {
+    office.send("PostToolUse", { tool_name: "Write", tool_use_id: `f${index}`, tool_input: { file_path: `${ROOT}/test/${index}${huge(500)}` } });
+  }
+  for (let index = 0; index < 25; index += 1) {
+    office.send("PreToolUse", bash(`npx jest ${huge(400)}`, `b${index}`));
+    office.send("PostToolUse", { ...bash(`npx jest ${huge(400)}`, `b${index}`), ...output("x") });
+  }
+  assert.ok(JSON.stringify(office.agent()).length <= AGENT_SIZE_LIMIT, `${JSON.stringify(office.agent()).length}`);
+});
+
 test("work inside a subagent goes to the subagent", () => {
   const office = officeWith();
   office.send("PreToolUse", { ...bash("pytest"), agent_id: "a1", agent_type: "Explore" });
