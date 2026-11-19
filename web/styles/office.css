@@ -176,3 +176,17 @@ button:disabled { cursor: not-allowed; }
 .dialog-body { display: flex; flex-direction: column; gap: var(--space-5); padding: 0 var(--space-6); }
 .dialog-foot { display: flex; justify-content: flex-end; gap: var(--space-4); padding: 14px var(--space-6) var(--space-6); }
 .name-tag.reserved { padding: 1px 6px; background: var(--bg-surface); border-style: dashed; border-color: var(--border-control); box-shadow: none; color: var(--muted); font-weight: 400; font-size: 10px; cursor: default; pointer-events: auto; overflow: hidden; text-overflow: ellipsis; }
+
+.notices:empty { display: none; }
+.notice { margin: 0; padding: var(--space-4) var(--space-6); background: var(--bg-surface); border-bottom: 1px solid var(--warning); color: var(--text); font-size: 12px; }
+.notice code, .pairing-needed code { padding: 0 4px; border-radius: var(--radius-sm); background: var(--bg-hover); }
+.mode[data-mode="unpaired"]::before { background: var(--warning); }
+.command { margin: 0; padding: var(--space-4) var(--space-5); border-radius: var(--radius-md); background: var(--bg-raised); border: 1px solid var(--border-strong); user-select: all; }
+.devices { display: grid; gap: var(--space-3); margin: 0; padding: 0; list-style: none; }
+.device { display: flex; align-items: center; justify-content: space-between; gap: var(--space-4); padding: var(--space-3) 0; border-bottom: 1px solid var(--border); }
+.device-id { display: grid; gap: var(--space-1); min-width: 0; }
+.device-id .mono { font-size: 11px; overflow-wrap: anywhere; }
+.pairing-code { display: grid; gap: var(--space-4); justify-items: center; text-align: center; }
+.qr { width: min(240px, 70vw); height: auto; border-radius: var(--radius-sm); }
+.pairing-link { font-size: 11px; overflow-wrap: anywhere; user-select: all; }
+.device-name { display: flex; align-items: center; gap: var(--space-3); flex-wrap: wrap; }

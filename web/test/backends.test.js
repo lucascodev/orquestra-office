@@ -5,7 +5,8 @@ import { createDemoBackend } from "../scripts/infra/backends/demo-backend.js";
 import { createLiveBackend } from "../scripts/infra/backends/live-backend.js";
 
 const BACKEND_METHODS = [
-  "closeProject", "decide", "interruptSession", "loadHistory", "openSession", "sendMessage", "setTemplate", "start", "stopSession", "watchTerminal",
+  "closeProject", "decide", "interruptSession", "listDevices", "loadHistory", "openSession", "pairDevice", "revokeDevice", "sendMessage", "setTemplate",
+  "start", "stopSession", "watchTerminal",
 ];
 const LIVE_SESSION = { id: "run-1", sessionId: "a1", cwd: "c:/demo", status: "working" };
 const LIVE_AGENT = "claude:a1";
@@ -87,7 +88,10 @@ describe("data source", () => {
     const states = [];
     const { backend } = fakeBackend({ connects: true, sessions: [LIVE_SESSION, { ...LIVE_SESSION, id: "run-2", sessionId: "z9", status: "ended" }] });
     await createDataSource((state) => states.push(state)).start([backend]);
-    assert.deepEqual(states, [{ mode: "fake", projects: {}, pending: [], outbox: {}, usage: null, accounts: null, timeline: null, generatedAt: null, runner: { isAvailable: true, liveAgents: { [LIVE_AGENT]: "working" } } }]);
+    assert.deepEqual(states, [{
+      mode: "fake", projects: {}, pending: [], outbox: {}, usage: null, accounts: null, timeline: null, generatedAt: null, security: null,
+      runner: { isAvailable: true, liveAgents: { [LIVE_AGENT]: "working" } },
+    }]);
   });
 });
 
@@ -127,19 +131,170 @@ describe("demo backend", () => {
   });
 });
 
+const RUNNER_NONCE = "AAECAwQFBgcICQoLDA0ODw";
+const RUNNER_TICKET = "kAQ744p9HcBF8JvI2Tx0JiekFQsGFuWcAw2gPsykN_M";
+const RUNNER_TOKEN = "runner-token";
+const HOUR_MS = 3_600_000;
+
+// The runner and the collector as the page sees them: a challenge, a ticket for it and a token that unlocks the runner.
+function runnerAndOffice(requests, { tokenStatus = () => 200 } = {}) {
+  return async (url, init = {}) => {
+    const body = init.body ? JSON.parse(init.body) : null;
+    requests.push([url, init.method ?? "GET", body, init.headers?.Authorization ?? null]);
+    if (url.endsWith("/auth/challenge")) return jsonResponse(200, { nonce: RUNNER_NONCE });
+    if (url === "/api/runner-ticket") return jsonResponse(200, { ticket: RUNNER_TICKET });
+    if (url.endsWith("/auth/session")) return jsonResponse(200, { token: RUNNER_TOKEN, expiresAt: Date.now() + HOUR_MS });
+    return jsonResponse(url.startsWith("http://127.0.0.1:8421") ? tokenStatus(init.headers?.Authorization) : 200, {});
+  };
+}
+
 describe("live backend", () => {
-  it("sends a message for a live session to the runner and any other to the office queue", async (context) => {
+  it("sends a message for a live session to the runner, with a token bought by the office's ticket, and any other to the office queue", async (context) => {
     const requests = [];
-    context.mock.method(globalThis, "fetch", async (url, init) => {
-      requests.push([url, init.method, JSON.parse(init.body)]);
-      return { ok: true };
-    });
+    context.mock.method(globalThis, "fetch", runnerAndOffice(requests));
     const backend = createLiveBackend();
+
     assert.equal(await backend.sendMessage(LIVE_AGENT, "oi", LIVE_SESSION), true);
     assert.equal(await backend.sendMessage(QUEUED_AGENT, "olá", null), true);
-    assert.deepEqual(requests, [
-      [RUNNER_MESSAGES, "POST", { text: "oi" }],
-      [OFFICE_MESSAGES, "POST", { key: QUEUED_AGENT, text: "olá" }],
+
+    const messages = requests.filter(([url]) => url === RUNNER_MESSAGES || url === OFFICE_MESSAGES);
+    assert.deepEqual(messages, [
+      [RUNNER_MESSAGES, "POST", { text: "oi" }, `Bearer ${RUNNER_TOKEN}`],
+      [OFFICE_MESSAGES, "POST", { key: QUEUED_AGENT, text: "olá" }, null],
     ]);
+    assert.ok(requests.some(([url, , body]) => url === "/api/runner-ticket" && body.nonce === RUNNER_NONCE));
+    assert.ok(requests.some(([url, , body]) => url.endsWith("/auth/session") && body.ticket === RUNNER_TICKET));
+  });
+
+  it("buys a new runner token once when the runner forgot the old one", async (context) => {
+    const requests = [];
+    let refusals = 1;
+    context.mock.method(globalThis, "fetch", runnerAndOffice(requests, { tokenStatus: () => (refusals-- > 0 ? 401 : 200) }));
+
+    assert.equal(await createLiveBackend().interruptSession(LIVE_SESSION), true);
+    assert.equal(requests.filter(([url]) => url.endsWith("/interrupt")).length, 2);
+  });
+});
+
+
+const PAIRING_CODE = "AAECAwQFBgcICQoLDA0ODw";
+const jsonResponse = (status, body) => ({ ok: status >= 200 && status < 300, status, json: async () => body });
+
+// Node has no EventSource without a flag; the page only needs one that can fail and be closed.
+function fakeEventSources(context) {
+  const streams = [];
+  globalThis.EventSource = class {
+    constructor(url) { this.url = url; this.isClosed = false; streams.push(this); }
+    addEventListener() {}
+    close() { this.isClosed = true; }
+  };
+  context.after(() => { delete globalThis.EventSource; });
+  return streams;
+}
+
+describe("live backend pairing", () => {
+  it("shows the unpaired page instead of falling back to the demo when the collector answers 401", async (context) => {
+    context.mock.method(globalThis, "fetch", async () => jsonResponse(401, { error: "unpaired", isSecretMissing: true }));
+    const states = [];
+
+    const isStarted = await createLiveBackend().start((state) => states.push(state));
+
+    assert.equal(isStarted, true);
+    assert.deepEqual(states.map((state) => state.mode), ["unpaired"]);
+    assert.equal(states[0].office.security.isSecretMissing, true);
+  });
+
+  it("still gives way to the demo when there is no collector at all", async (context) => {
+    context.mock.method(globalThis, "fetch", async () => { throw new TypeError("fetch failed"); });
+
+    assert.equal(await createLiveBackend().start(() => {}), false);
+  });
+
+  it("redeems the code from the address before loading the office", async (context) => {
+    const requests = [];
+    context.mock.method(globalThis, "fetch", async (url, init = {}) => {
+      requests.push([url, init.method ?? "GET", init.body ? JSON.parse(init.body) : null]);
+      return url === "/api/state" ? jsonResponse(401, { error: "unpaired" }) : jsonResponse(204, null);
+    });
+
+    await createLiveBackend({ pairingCode: PAIRING_CODE, deviceLabel: "Chrome no Windows" }).start(() => {});
+
+    assert.deepEqual(requests.slice(0, 2), [
+      ["/api/pairings/redeem", "POST", { code: PAIRING_CODE, label: "Chrome no Windows" }],
+      ["/api/state", "GET", null],
+    ]);
+  });
+
+  it("when the stream breaks, asks the state whether the browser was unpaired and shows it", async (context) => {
+    context.mock.timers.enable({ apis: ["setInterval"] });
+    const streams = fakeEventSources(context);
+    let isPaired = true;
+    context.mock.method(globalThis, "fetch", async (url) => {
+      if (url === "/api/state") return isPaired ? jsonResponse(200, { projects: {} }) : jsonResponse(401, { error: "unpaired" });
+      return jsonResponse(503, {});
+    });
+    const states = [];
+    await createLiveBackend().start((state) => states.push(state));
+    isPaired = false;
+
+    streams[0].onerror();
+    await new Promise((resolve) => setImmediate(resolve));
+
+    assert.deepEqual(states.map((state) => state.mode).slice(-2), ["offline", "unpaired"]);
+    assert.equal(streams[0].isClosed, true);
+  });
+
+  it("when the stream breaks with the collector away, stays offline instead of calling itself unpaired", async (context) => {
+    context.mock.timers.enable({ apis: ["setInterval"] });
+    const streams = fakeEventSources(context);
+    let isUp = true;
+    context.mock.method(globalThis, "fetch", async (url) => {
+      if (!isUp) throw new TypeError("fetch failed");
+      return url === "/api/state" ? jsonResponse(200, { projects: {} }) : jsonResponse(503, {});
+    });
+    const states = [];
+    await createLiveBackend().start((state) => states.push(state));
+    isUp = false;
+
+    streams[0].onerror();
+    await new Promise((resolve) => setImmediate(resolve));
+
+    assert.equal(states.at(-1).mode, "offline");
+  });
+
+  it("lists, pairs and revokes devices through the office API", async (context) => {
+    const requests = [];
+    context.mock.method(globalThis, "fetch", async (url, init = {}) => {
+      requests.push([url, init.method ?? "GET"]);
+      if (url === "/api/devices") return jsonResponse(200, { devices: [{ id: "d1" }] });
+      return jsonResponse(url === "/api/pairings" ? 200 : 204, { code: PAIRING_CODE, expiresAt: NOW, urls: [] });
+    });
+    const backend = createLiveBackend();
+
+    assert.deepEqual(await backend.listDevices(), [{ id: "d1" }]);
+    assert.equal((await backend.pairDevice()).code, PAIRING_CODE);
+    assert.equal(await backend.revokeDevice("d 1"), true);
+    assert.deepEqual(requests, [["/api/devices", "GET"], ["/api/pairings", "POST"], ["/api/devices/d%201/revoke", "POST"]]);
+  });
+});
+
+describe("demo backend pairing", () => {
+  beforeEach(() => mock.timers.enable({ apis: ["setInterval", "Date"], now: NOW }));
+  afterEach(() => mock.timers.reset());
+
+  it("shows example devices and a pairing code without a single request to the API", async (context) => {
+    const fetchCalls = context.mock.method(globalThis, "fetch", async () => { throw new Error("the demo must not call the API"); });
+    const backend = createDemoBackend();
+    await backend.start(() => {});
+
+    const devices = await backend.listDevices();
+    const issued = await backend.pairDevice();
+    const wasRevoked = await backend.revokeDevice(devices[1].id);
+
+    assert.equal(devices.length, 2);
+    assert.match(issued.urls[0], /#pair=/);
+    assert.equal(wasRevoked, true);
+    assert.equal((await backend.listDevices()).length, 1);
+    assert.equal(fetchCalls.mock.callCount(), 0);
   });
 });

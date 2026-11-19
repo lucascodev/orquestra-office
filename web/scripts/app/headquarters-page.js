@@ -18,6 +18,8 @@ import { renderConnection } from "../view/hud/connection-view.js";
 import { renderDayTimeline } from "../view/hud/day-timeline-view.js";
 import { requestsButtonLabel } from "../view/hud/pending-alert-view.js";
 import { renderLegend } from "../view/hud/legend-view.js";
+import { renderUnpaired } from "../view/office/pairing-view.js";
+import { renderSecurityNotice } from "../view/office/security-notice-view.js";
 import { createAgentDrawer } from "./agent-drawer.js";
 import { createCommandPalette } from "./command-palette.js";
 import { createMinimap } from "./minimap.js";
@@ -27,6 +29,7 @@ import { createPendingAlert } from "./pending-alert.js";
 const CENSUS_REFRESH_MS = 2_000;
 const ANNOUNCE_DELAY_MS = 100;
 const LOWERED_ALERT_GAP_PX = 8;
+const NOTICE_GAP_PX = 8;
 const DAY_REFRESH_MS = 30_000;
 const FOCUS_KEYS = ["project", "area", "frame"];
 const DOCKED_PANELS = {
@@ -43,9 +46,12 @@ const PHONE_DOCKED_PANELS = {
 const PHONE_QUERY = "(max-width: 719px)";
 const FLOATING_PANELS = ".hq-panel, .hq-alert, .hq-sheet-panel";
 const EMPTY_STATE = {
-  mode: "connecting", projects: {}, pending: [], outbox: {}, usage: null, accounts: null, timeline: null, generatedAt: null,
+  mode: "connecting", projects: {}, pending: [], outbox: {}, usage: null, accounts: null, timeline: null, generatedAt: null, security: null,
   runner: { isAvailable: false, liveAgents: {} },
 };
+const UNPAIRED_MODE = "unpaired";
+const LIVE_MODE = "live";
+const MODES_WITH_DEVICES = new Set([LIVE_MODE, "demo"]);
 
 const NO_MAP = { element: null, followedKey: () => null, follow: () => {}, stopFollowing: () => {}, tagOf: () => null };
 const WHOLE_ROOM = { kind: "whole", id: "whole" };
@@ -70,9 +76,11 @@ function roomOfButton(button) {
 }
 
 // The floating panels around the full-window map: they read the state and tell the map where it is free to frame.
-export function createHeadquartersPage({ hud, headquarters, source, newSessionDialog }) {
+export function createHeadquartersPage({ hud, headquarters, source, newSessionDialog, devicesDialog, isOnThisMachine }) {
   const slot = (name) => hud.querySelector(`[data-slot="${name}"]`);
   const rooms = slot("rooms");
+  const notice = slot("notice");
+  const devicesButton = hud.querySelector("[data-open-devices]");
   const newSessionButton = hud.querySelector("[data-new-session]");
   const runnerOff = hud.querySelector("[data-runner-off]");
   const requestsButton = hud.querySelector("[data-requests]");
@@ -117,6 +125,20 @@ export function createHeadquartersPage({ hud, headquarters, source, newSessionDi
     setHtml(slot("day"), renderDayTimeline(dayTimeline(state.timeline, { now, dayStart: startOfDay(now) })));
   }
 
+  // Not paired, the page says how to pair; paired and live, it warns about old hooks or a missing secret.
+  function noticeHtml() {
+    if (state.mode === UNPAIRED_MODE) return renderUnpaired({ isOnThisMachine, isSecretMissing: state.security?.isSecretMissing === true });
+    return state.mode === LIVE_MODE ? renderSecurityNotice(state.security) : "";
+  }
+
+  function renderNotice() {
+    const html = noticeHtml();
+    setHtml(notice, html);
+    notice.hidden = html === "";
+    notice.classList.toggle("is-blocking", state.mode === UNPAIRED_MODE);
+    placeNotice();
+  }
+
   function renderRequestsButton() {
     const count = state.pending.length;
     requestsButton.querySelector("[data-requests-count]").textContent = String(count);
@@ -126,6 +148,8 @@ export function createHeadquartersPage({ hud, headquarters, source, newSessionDi
 
   function render() {
     setHtml(slot("connection"), renderConnection(state.mode));
+    devicesButton.hidden = !MODES_WITH_DEVICES.has(state.mode);
+    renderNotice();
     renderRequestsButton();
     setHtml(slot("accounts"), renderAccounts(accountUsage(state)));
     newSessionButton.hidden = !state.runner.isAvailable;
@@ -344,8 +368,17 @@ export function createHeadquartersPage({ hud, headquarters, source, newSessionDi
       : { top: "", left: `${placement.left}px`, width: `${placement.width}px`, translate: "none" });
   }
 
+  // Both live at the top centre; under a request the notice moves below it instead of hiding behind it.
+  function placeNotice() {
+    const alertElement = slot("alert");
+    const isUnderAlert = !notice.hidden && !alertElement.hidden && !phoneQuery.matches && state.mode !== UNPAIRED_MODE;
+    const alertBottom = alertElement.getBoundingClientRect().bottom - hud.getBoundingClientRect().top;
+    notice.style.top = isUnderAlert ? `${alertBottom + NOTICE_GAP_PX}px` : "";
+  }
+
   function fitMapBetweenPanels() {
     placeAlert();
+    placeNotice();
     if (!headquarters) return;
     const stage = headquarters.element.getBoundingClientRect();
     const panels = phoneQuery.matches ? PHONE_DOCKED_PANELS : DOCKED_PANELS;
@@ -372,6 +405,7 @@ export function createHeadquartersPage({ hud, headquarters, source, newSessionDi
     if (button) CAMERA_ACTIONS[button.dataset.camera]?.();
   });
   newSessionButton.addEventListener("click", () => newSessionDialog.show(suggestedFolder()));
+  devicesButton.addEventListener("click", () => devicesDialog.show());
   hud.querySelector("[data-open-search]").addEventListener("click", palette.open);
   const mobileSheet = createMobileSheet({ hud, phoneQuery, onChange: () => fitMapBetweenPanels() });
   requestsButton.addEventListener("click", () => {

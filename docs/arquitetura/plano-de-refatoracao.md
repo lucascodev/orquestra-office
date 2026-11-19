@@ -600,15 +600,19 @@ find hooks -name '*.mjs' -print0 | xargs -0 -n1 node --check
 
 ```powershell
 docker compose up -d --build
-(Invoke-WebRequest http://127.0.0.1:8420/api/state -UseBasicParsing).StatusCode
+curl.exe -s -o NUL -w "%{http_code}`n" http://127.0.0.1:8420/
+curl.exe -s -o NUL -w "%{http_code}`n" http://127.0.0.1:8420/api/state
 ```
 
 ```bash
 docker compose up -d --build
+curl -s -o /dev/null -w "%{http_code}\n" http://127.0.0.1:8420/
 curl -s -o /dev/null -w "%{http_code}\n" http://127.0.0.1:8420/api/state
 ```
 
-Esperado: `200`.
+Esperado: `200` e `401`. Desde a fase S, todo `/api/*` exige um navegador pareado (antes dela, eram `200` e `200`), e o `docker compose up` precisa do segredo em `~/.orquestra-office/secret`, que o instalador cria.
+
+**V-Auth (desde a fase S)**: os três comandos da seção 6.1 do ADR 0002. Esperado: `401`, `401` e `{}200`.
 
 **V-Browser (manual)**
 
@@ -704,6 +708,10 @@ Situação: a limpeza já foi feita. Desde o commit `1937d1e`, o collector não 
 - A fase 4 não compartilha arquivo com nenhuma outra da refatoração; pode trocar de posição na fila, mas continua sozinha enquanto escreve. Ela precisa terminar antes da fase 6, porque a 6 mexe em `hooks/office-statusline.mjs`.
 - Somente leitura em paralelo: a revisão de cada fase (1.10, 2.5, 3.17, 4.4) roda junto com o primeiro passo da fase seguinte, porque lê arquivos que a fase seguinte não toca. O desenho detalhado de cada fase posterior (6.1, 7.1) também é somente leitura e pode começar enquanto a fase anterior termina.
 - Dependências de ordem: 2.2 precisa de 1.2 (`shared/`). 3.1 importa caminhos do collector, então vem depois da fase 1. 3.11 importa `control/domain/decision-answer.js` (passo 1.5).
+
+### 10.9 Fase S: autenticação de hooks, painel e executor
+
+Decidida no ADR 0002 (`docs/adr/0002-autenticacao-hooks-e-painel.md`), com o plano na seção 6 dele: passos S.0 a S.13, numa branch própria, em paralelo à fase 5 e antes do passo 6.6 da Sede, que grava `--account` nos mesmos comandos. Resultado: nenhum hook do escritório é `http`; a atividade vai por `curl` em segundo plano com um token lido de arquivo; as três decisões passam por `hooks/office-decision.mjs`, com pedido e resposta assinados por HMAC; todo `/api/*` exige um aparelho pareado; o executor exige um token obtido com um ticket que o coletor assina. Verificações novas: V-Auth e a nova expectativa do V-Docker.
 
 ## 11. Fases posteriores (fora da refatoração)
 
@@ -833,6 +841,8 @@ Durante a transição, a sala única continua sendo a visão padrão e o campus 
 | Runner importa só `collector/src/shared/`, então o caminho relativo vale dentro do pacote | 2.2, 2.4 |
 | Instaladores puros com `isRemoving`, `officeUrl` e `hooksDir` como parâmetro | 4.1 |
 | Hooks dependem só de `./lib/`, copiáveis como pasta | 4.2 |
+| `createOffice({ secretFile })` e `createRunner({ secretFile })`; o segredo em `~/.orquestra-office/secret` (a CLI cria se faltar, com `hooks/lib/office-secret.mjs`) | S.3, S.11 |
+| Abrir o escritório já pareado: `hooks/lib/pairing-link.mjs` pede o código com pedido assinado; na CLI, coletor e comando estão no mesmo processo e podem pedir o código direto | S.8, S.10 |
 
 **Onde mora a composição da CLI.** Numa pasta nova na raiz, que é a única que conhece os três pacotes:
 
@@ -1000,4 +1010,4 @@ Achados MINOR das revisões que não bloquearam a fase. Na revisão final da bra
 | 3 | `three/scene/name-tags.js`, `three/scene/camera-framing.js` | Resolvida: a Sede monta tudo em coordenadas do mundo, `camera-framing.js` saiu com a sala no passo 6.33 e as placas perderam o parâmetro da origem da sala. |
 | 3 | `domain/office/decision-body.js` | `answers[question.question] = answer` perde a resposta de uma pergunta com o texto `__proto__`. Correção: `Object.fromEntries`. |
 | 3 | `web/test/architecture.test.js` (`exportsIn`) | Lê o texto bruto, então um `// export const x` conta como export. |
-| 4 | hooks e coletor | Autenticação entre hooks e coletor (quem responde em `127.0.0.1:8420` decide permissões) e pareamento no modo LAN. Pedem ADR aprovado pelo usuário antes da fase 7. |
+| 4 | hooks e coletor | Resolvida pelo ADR 0002 (fase S, seção 10.9): autenticação entre hooks e coletor, pareamento também em `localhost` e no modo LAN, e token do executor. |

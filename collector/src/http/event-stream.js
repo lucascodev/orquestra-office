@@ -6,7 +6,7 @@ const MAX_VIEWERS = 20;
 const MAX_BUFFERED_BYTES = 1024 * 1024;
 
 export function createEventStream({ snapshot, sources }) {
-  const clients = new Set();
+  const clients = new Map();
   let timer = null;
 
   const frame = () => `event: state\ndata: ${JSON.stringify(snapshot())}\n\n`;
@@ -24,7 +24,7 @@ export function createEventStream({ snapshot, sources }) {
     if (wasBehind && res.writableLength > MAX_BUFFERED_BYTES) drop(res);
   }
 
-  const broadcast = (data) => clients.forEach((res) => send(res, data));
+  const broadcast = (data) => clients.forEach((deviceId, res) => send(res, data));
 
   const push = () => {
     timer = null;
@@ -38,13 +38,19 @@ export function createEventStream({ snapshot, sources }) {
 
   setInterval(() => broadcast(": ping\n\n"), HEARTBEAT_MS).unref();
 
-  function subscribe(req, res) {
+  function subscribe(req, res, deviceId = null) {
     if (clients.size >= MAX_VIEWERS) return sendJson(res, 503, { error: "too many viewers" });
     res.writeHead(200, { "Content-Type": "text/event-stream", "Cache-Control": "no-store", Connection: "keep-alive" });
-    clients.add(res);
+    clients.set(res, deviceId);
     req.on("close", () => clients.delete(res));
     send(res, frame());
   }
 
-  return { subscribe, viewerCount: () => clients.size };
+  // A device that leaves the list (revoked, idle or dropped by a new secret) loses its open page at once,
+  // not when the page next reconnects, so it stops counting as a viewer too.
+  function keepDevices(deviceIds) {
+    clients.forEach((owner, res) => { if (!deviceIds.has(owner)) drop(res); });
+  }
+
+  return { subscribe, keepDevices, viewerCount: () => clients.size };
 }

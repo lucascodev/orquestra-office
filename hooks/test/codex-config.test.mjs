@@ -3,13 +3,27 @@ import { test } from "node:test";
 import { applyNotify, configLines, configText, officeNotifyEntries, officeNotifyLine } from "../lib/codex-config.mjs";
 
 const OFFICE_URL = "http://127.0.0.1:8420";
-const INSTALL = { isRemoving: false, officeUrl: OFFICE_URL };
+const MACHINE = { curlPath: "/usr/bin/curl", nullDevice: "/dev/null", activityHeaderFile: "/home/me/.orquestra-office/activity.header" };
+const INSTALL = { isRemoving: false, officeUrl: OFFICE_URL, ...MACHINE };
 const REMOVE = { ...INSTALL, isRemoving: true };
-const OFFICE_NOTIFY = officeNotifyLine(OFFICE_URL);
+const OFFICE_NOTIFY = officeNotifyLine(INSTALL);
+const NOTIFY_BEFORE_TOKEN = 'notify = ["curl", "-s", "--noproxy", "*", "-m", "3", "-X", "POST", "-H", "Content-Type: application/json", "http://127.0.0.1:8420/events/codex", "--data-raw"]';
 const NOTIFY_BEFORE_NOPROXY = 'notify = ["curl", "-s", "-m", "3", "-X", "POST", "-H", "Content-Type: application/json", "http://127.0.0.1:8420/events/codex", "--data-raw"]';
 
-test("the notify posts the Codex turn straight to the office with curl, past any proxy and with a short timeout", () => {
-  assert.equal(OFFICE_NOTIFY, 'notify = ["curl", "-s", "--noproxy", "*", "-m", "3", "-X", "POST", "-H", "Content-Type: application/json", "http://127.0.0.1:8420/events/codex", "--data-raw"]');
+test("the notify posts the Codex turn with the system curl, past any proxy, with the token from the header file and the answer thrown away", () => {
+  assert.equal(OFFICE_NOTIFY, 'notify = ["/usr/bin/curl", "-s", "--noproxy", "*", "-m", "3", "-o", "/dev/null", "-H", "@/home/me/.orquestra-office/activity.header", "-X", "POST", "-H", "Content-Type: application/json", "http://127.0.0.1:8420/events/codex", "--data-raw"]');
+});
+
+test("the notify from before the token is replaced by the one with the token", () => {
+  assert.deepEqual(applyNotify([NOTIFY_BEFORE_TOKEN, "model = 1"], INSTALL), { lines: [OFFICE_NOTIFY, "model = 1"] });
+  assert.deepEqual(applyNotify([NOTIFY_BEFORE_TOKEN], { ...INSTALL, recorded: { notify: [] } }), { lines: [OFFICE_NOTIFY] });
+});
+
+test("without the manifest, a token-era notify from another curl or folder is still the office one", () => {
+  const elsewhere = officeNotifyLine({ ...INSTALL, curlPath: "C:/Windows/System32/curl.exe", activityHeaderFile: "C:/Users/ana/.orquestra-office/activity.header" });
+
+  assert.deepEqual(applyNotify([elsewhere], INSTALL), { lines: [OFFICE_NOTIFY] });
+  assert.ok(applyNotify([elsewhere], { ...INSTALL, recorded: { notify: [] } }).foreignNotifyLine);
 });
 
 test("refuses a notify at the root that belongs to someone else, on install and on remove", () => {
@@ -57,7 +71,7 @@ test("a notify recorded in the manifest is replaced even when it points at anoth
   const oldInstall = { ...INSTALL, officeUrl: "http://localhost:9999" };
   const { lines: once } = applyNotify(['model = "o3"'], oldInstall);
 
-  assert.ok(applyNotify(once, INSTALL).foreignNotifyLine);
+  assert.ok(applyNotify(once, { ...INSTALL, recorded: { notify: [] } }).foreignNotifyLine);
   assert.deepEqual(applyNotify(once, { ...INSTALL, recorded: officeNotifyEntries(oldInstall) }), { lines: [OFFICE_NOTIFY, 'model = "o3"'] });
 });
 

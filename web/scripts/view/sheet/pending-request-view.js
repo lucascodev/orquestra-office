@@ -1,6 +1,7 @@
 import { toolSummaryText } from "../../domain/terminal/tool-summary-text.js";
 import { esc } from "../shared/escape-html.js";
 import { clockTime } from "../shared/format.js";
+import { shownQuestion } from "../shared/shown-question.js";
 
 const FAILED_DECISION_ALERT = `<p class="pending-error" role="alert" hidden></p>`;
 
@@ -21,7 +22,7 @@ function questionBlock(item, index) {
   const options = item.options.map((option) => `<button type="button" class="choice" aria-pressed="false" data-option="${esc(option.label)}">
       <b>${esc(option.label)}</b>${option.description ? `<span>${esc(option.description)}</span>` : ""}</button>`).join("");
   return `<fieldset class="question" data-question="${esc(item.question)}" data-multi="${item.multiSelect}">
-    <legend>${item.header ? `<span class="badge">${esc(item.header)}</span>` : ""}<span>${esc(item.question)}</span></legend>
+    <legend>${item.header ? `<span class="badge">${esc(item.header)}</span>` : ""}<span>${esc(shownQuestion(item.question))}</span></legend>
     <div class="choices">${options}</div>
     <div class="field"><label for="other-${index}">Outra resposta</label><input class="input" id="other-${index}" type="text" maxlength="1000" autocomplete="off"></div>
   </fieldset>`;

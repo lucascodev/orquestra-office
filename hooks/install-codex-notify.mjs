@@ -3,9 +3,12 @@ import { homedir } from "node:os";
 import { join } from "node:path";
 import { applyNotify, configLines, configText, officeNotifyEntries } from "./lib/codex-config.mjs";
 import { commitConfig } from "./lib/config-commit.mjs";
+import { findCurl, nullDeviceOf } from "./lib/curl.mjs";
 import { envValue } from "./lib/env-value.mjs";
 import { manifestSection, withManifestSection } from "./lib/install-manifest.mjs";
 import { manifestPath, readManifestFile, writeManifestFile } from "./lib/manifest-file.mjs";
+import { officeFilesOf } from "./lib/office-home.mjs";
+import { prepareOfficeSecret } from "./lib/office-secret-setup.mjs";
 import { ALLOW_REMOTE_FLAG, installerOfficeUrl } from "./lib/office-url.mjs";
 
 const MANIFEST_SECTION = "codex";
@@ -19,6 +22,9 @@ const isRemoving = process.argv.includes("--remove");
 const officeUrlResult = installerOfficeUrl(process.env, { allowRemote: process.argv.includes(ALLOW_REMOTE_FLAG) });
 if (officeUrlResult.problem) fail(`OFFICE_URL was refused: ${officeUrlResult.problem}`);
 const officeUrl = officeUrlResult.origin;
+const officeFiles = officeFilesOf(homedir());
+const curlPath = isRemoving ? null : findCurl({ platform: process.platform, systemRoot: process.env.SystemRoot, exists: existsSync });
+if (!isRemoving && !curlPath) fail("Could not install: curl was not found (Windows 10 1803 or newer ships it in System32; on macOS it is /usr/bin/curl)");
 const configDir = envValue(process.env, "CODEX_HOME") ?? join(homedir(), ".codex");
 const configPath = join(configDir, "config.toml");
 
@@ -45,7 +51,14 @@ if (isRemoving && !existsSync(configPath)) {
   process.exit(0);
 }
 const originalText = existsSync(configPath) ? readFileSync(configPath, "utf8") : null;
-const options = { isRemoving, officeUrl, recorded: manifestSection(manifest, MANIFEST_SECTION) };
+const options = {
+  isRemoving,
+  officeUrl,
+  recorded: manifestSection(manifest, MANIFEST_SECTION),
+  curlPath,
+  nullDevice: nullDeviceOf(process.platform),
+  activityHeaderFile: officeFiles.activityHeaderFile,
+};
 const result = applyNotify(originalText === null ? [] : configLines(originalText), options);
 
 if (result.foreignNotifyLine !== undefined) {
@@ -53,6 +66,7 @@ if (result.foreignNotifyLine !== undefined) {
   process.exit(1);
 }
 
+if (!isRemoving) prepareOfficeSecret({ officeFiles, rotate: false, fail });
 const { isUnchanged, hasChangedMeanwhile, backupPath, pruneError } = commitOrFail({ path: configPath, originalText, nextText: configText(result.lines) });
 if (hasChangedMeanwhile) fail(`${configPath} was saved by another program while the installer ran. Run the installer again`);
 writeManifestFile(configDir, withManifestSection(manifest, MANIFEST_SECTION, isRemoving ? null : officeNotifyEntries(options)));

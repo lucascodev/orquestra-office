@@ -4,8 +4,11 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { test } from "node:test";
 import { fakeHome } from "./support/fake-home.mjs";
+import { startFakeOffice } from "./support/fake-office.mjs";
 import { makeUnwritable, READ_ONLY_SKIP } from "./support/read-only.mjs";
-import { HOOKS_DIR, runHookScript, runScript } from "./support/run-hook-script.mjs";
+import { BASE_ENV, HOOKS_DIR, runHookScript, runScript } from "./support/run-hook-script.mjs";
+
+const THROWAWAY_HOME = BASE_ENV.HOME;
 
 const INSTALLER = "install-claude-hooks.mjs";
 const DEFAULT_OFFICE_URL = "http://127.0.0.1:8420";
@@ -31,23 +34,32 @@ test("installs hooks and status line pointing at this hooks folder and the defau
 
   assert.equal(result.code, 0);
   const settings = readSettings(dir);
-  assert.equal(settings.statusLine.command, `node "${join(HOOKS_DIR, "office-statusline.mjs")}"`);
-  assert.equal(settings.hooks.SessionStart[0].hooks[0].command, `node "${join(HOOKS_DIR, "office-session-start.mjs")}"`);
-  assert.equal(settings.hooks.Stop[0].hooks[0].url, `${DEFAULT_OFFICE_URL}/hooks/claude/stop`);
+  assert.equal(settings.statusLine.command, `node "${join(HOOKS_DIR, "office-statusline.mjs")}" --office-url "${DEFAULT_OFFICE_URL}"`);
+  assert.equal(settings.hooks.SessionStart[0].hooks[0].command, `node "${join(HOOKS_DIR, "office-session-start.mjs")}" --office-url "${DEFAULT_OFFICE_URL}"`);
+  assert.equal(settings.hooks.Stop[0].hooks[0].command, `node "${join(HOOKS_DIR, "office-decision.mjs")}" --office-url "${DEFAULT_OFFICE_URL}" --secret-file "${join(THROWAWAY_HOME, ".orquestra-office", "secret")}"`);
+  assert.deepEqual(httpHookUrls(settings), []);
   assert.match(result.stdout, new RegExp(`show up at ${DEFAULT_OFFICE_URL}\\.`));
   assert.deepEqual(backupsIn(dir), []);
 });
 
-const httpHookUrls = (settings) => Object.values(settings.hooks).flat().flatMap((group) => group.hooks).filter((hook) => hook.type === "http").map((hook) => hook.url);
+const OFFICE_URL_ARGUMENT = / --office-url "([^"]+)"/;
+const officeHooksOf = (settings) => Object.values(settings.hooks).flat().flatMap((group) => group.hooks);
+// Every address an install writes: the last curl argument of the activity hooks and the --office-url of the node scripts.
+const officeUrlsIn = (settings) => [...officeHooksOf(settings), settings.statusLine].flatMap((hook) => {
+  if (Array.isArray(hook?.args)) return [hook.args.at(-1)];
+  const scriptUrl = OFFICE_URL_ARGUMENT.exec(hook?.command ?? "")?.[1];
+  return scriptUrl ? [`${scriptUrl}/`] : [];
+});
+const httpHookUrls = (settings) => officeHooksOf(settings).filter((hook) => hook.type === "http").map((hook) => hook.url);
 
-test("uses OFFICE_URL from the environment, normalized to its origin, in every http hook", async (t) => {
+test("uses OFFICE_URL from the environment, normalized to its origin and with localhost as 127.0.0.1, in every office hook", async (t) => {
   const dir = configDir(t);
 
   await install(dir, { OFFICE_URL: "http://LOCALHOST:1234/" });
 
-  const urls = httpHookUrls(readSettings(dir));
+  const urls = officeUrlsIn(readSettings(dir));
   assert.ok(urls.length > 0);
-  assert.ok(urls.every((url) => url.startsWith("http://localhost:1234/")));
+  assert.ok(urls.every((url) => url.startsWith("http://127.0.0.1:1234/")));
 });
 
 for (const officeUrl of ["http://evil.example", "https://evil.example", "http://127.0.0.1:8420/x", "http://user:pw@127.0.0.1:8420"]) {
@@ -71,7 +83,7 @@ test("--allow-remote-office accepts a remote https office and still refuses a re
   assert.equal(refused.code, 1);
   assert.match(refused.stderr, /needs https:\/\//);
   assert.equal(accepted.code, 0);
-  assert.ok(httpHookUrls(readSettings(dir)).every((url) => url.startsWith("https://office.example.com/")));
+  assert.ok(officeUrlsIn(readSettings(dir)).every((url) => url.startsWith("https://office.example.com/")));
 });
 
 test("an empty OFFICE_URL counts as unset", async (t) => {
@@ -80,7 +92,7 @@ test("an empty OFFICE_URL counts as unset", async (t) => {
   const result = await install(dir, { OFFICE_URL: "" });
 
   assert.equal(result.code, 0);
-  assert.ok(httpHookUrls(readSettings(dir)).every((url) => url.startsWith(`${DEFAULT_OFFICE_URL}/`)));
+  assert.ok(officeUrlsIn(readSettings(dir)).every((url) => url.startsWith(`${DEFAULT_OFFICE_URL}/`)));
 });
 
 test("an empty CLAUDE_CONFIG_DIR counts as unset: settings go to ~/.claude, not to the current folder", async (t) => {
@@ -211,12 +223,13 @@ test("records what it wrote in orquestra-office.json and leaves an empty record 
   await install(dir);
 
   const { claude } = JSON.parse(readFileSync(join(dir, MANIFEST), "utf8"));
-  assert.deepEqual(new Set(claude.urls), new Set(httpHookUrls(readSettings(dir))));
-  assert.deepEqual(claude.commands, [readSettings(dir).hooks.SessionStart[0].hooks[0].command, readSettings(dir).statusLine.command]);
+  const settings = readSettings(dir);
+  assert.deepEqual(claude.commands, [settings.hooks.SessionStart[0].hooks[0].command, settings.hooks.Stop[0].hooks[0].command, settings.statusLine.command]);
+  assert.deepEqual(claude.execs, [{ command: settings.hooks.PostToolUse[0].hooks[0].command, args: settings.hooks.PostToolUse[0].hooks[0].args }]);
 
   await install(dir, {}, ["--remove"]);
 
-  assert.deepEqual(JSON.parse(readFileSync(join(dir, MANIFEST), "utf8")), { claude: { urls: [], commands: [] } });
+  assert.deepEqual(JSON.parse(readFileSync(join(dir, MANIFEST), "utf8")), { claude: { urls: [], commands: [], execs: [] } });
 });
 
 test("a third-party status line that shares the office file name survives install, --remove and a new install", async (t) => {
@@ -231,6 +244,20 @@ test("a third-party status line that shares the office file name survives instal
   assert.equal(result.code, 0);
   assert.deepEqual(readSettings(dir).statusLine, thirdPartyStatusline);
   assert.match(result.stdout, /You already have a statusLine, so it was left alone\./);
+});
+
+test("a curl exec hook of the user's that posts to the office address survives install, --remove and a new install", async (t) => {
+  const dir = configDir(t);
+  await install(dir);
+  await install(dir, {}, ["--remove"]);
+  const mine = { hooks: [{ type: "command", command: "/usr/bin/curl", args: ["-s", "--data-binary", "@-", `${DEFAULT_OFFICE_URL}/events/claude`] }] };
+  writeFileSync(join(dir, "settings.json"), JSON.stringify({ ...readSettings(dir), hooks: { PostToolUse: [mine] } }));
+
+  const result = await install(dir);
+
+  assert.equal(result.code, 0);
+  assert.deepEqual(readSettings(dir).hooks.PostToolUse[0], mine);
+  assert.equal(readSettings(dir).hooks.PostToolUse.length, 2);
 });
 
 test("third-party hooks and status line that only look like the office survive install and --remove", async (t) => {
@@ -289,8 +316,8 @@ test("an install from another folder, made before the manifest existed, is repla
   await install(dir);
 
   const settings = readSettings(dir);
-  assert.equal(settings.statusLine.command, `node "${join(HOOKS_DIR, "office-statusline.mjs")}"`);
-  assert.deepEqual(settings.hooks.SessionStart.flatMap((group) => group.hooks).map((hook) => hook.command), [`node "${join(HOOKS_DIR, "office-session-start.mjs")}"`]);
+  assert.equal(settings.statusLine.command, `node "${join(HOOKS_DIR, "office-statusline.mjs")}" --office-url "${DEFAULT_OFFICE_URL}"`);
+  assert.deepEqual(settings.hooks.SessionStart.flatMap((group) => group.hooks).map((hook) => hook.command), [`node "${join(HOOKS_DIR, "office-session-start.mjs")}" --office-url "${DEFAULT_OFFICE_URL}"`]);
   assert.equal(settings.hooks.Stop.length, 1);
 });
 
@@ -301,7 +328,7 @@ test("reinstalling with another OFFICE_URL replaces the previous install through
   await install(dir);
 
   const settings = readSettings(dir);
-  assert.ok(httpHookUrls(settings).every((url) => url.startsWith(`${DEFAULT_OFFICE_URL}/`)));
+  assert.ok(officeUrlsIn(settings).every((url) => url.startsWith(`${DEFAULT_OFFICE_URL}/`)));
   assert.equal(settings.hooks.Stop.length, 1);
 });
 
@@ -371,4 +398,100 @@ test("creates the config folder when it does not exist yet", async (t) => {
 
   assert.equal(result.code, 0);
   assert.ok(existsSync(join(dir, "settings.json")));
+});
+
+const SECRET_LINE = /^[\w-]{43}\n$/;
+const secretIn = (home) => readFileSync(join(home, ".orquestra-office", "secret"), "utf8");
+const headerIn = (home) => readFileSync(join(home, ".orquestra-office", "activity.header"), "utf8");
+
+test("creates the office secret and the activity header in ~/.orquestra-office and points the hooks at them", async (t) => {
+  const { home, env } = fakeHome(t);
+  const dir = configDir(t);
+
+  const result = await install(dir, env);
+
+  assert.equal(result.code, 0);
+  assert.match(secretIn(home), SECRET_LINE);
+  assert.match(headerIn(home), /^Authorization: Bearer [\w-]{43}\n$/);
+  assert.match(result.stdout, /Office secret created in /);
+  const settings = readSettings(dir);
+  assert.ok(settings.hooks.PostToolUse[0].hooks[0].args.includes(`@${join(home, ".orquestra-office", "activity.header")}`));
+  assert.ok(settings.hooks.PermissionRequest[0].hooks[0].command.endsWith(`--secret-file "${join(home, ".orquestra-office", "secret")}"`));
+});
+
+test("installing again keeps the secret, and --rotate-secret replaces it along with the header", async (t) => {
+  const { home, env } = fakeHome(t);
+  const dir = configDir(t);
+  await install(dir, env);
+  const first = { secret: secretIn(home), header: headerIn(home) };
+
+  const again = await install(dir, env);
+  assert.equal(secretIn(home), first.secret);
+  assert.doesNotMatch(again.stdout, /Office secret/);
+
+  const rotated = await install(dir, env, ["--rotate-secret"]);
+  assert.equal(rotated.code, 0);
+  assert.match(rotated.stdout, /Office secret rotated in .+docker compose restart office/);
+  assert.notEqual(secretIn(home), first.secret);
+  assert.notEqual(headerIn(home), first.header);
+});
+
+test("activity hooks run the absolute path of the system curl", async (t) => {
+  const dir = configDir(t);
+
+  await install(dir);
+
+  const { command } = readSettings(dir).hooks.PostToolUse[0].hooks[0];
+  const expected = process.platform === "win32" ? join(BASE_ENV.SystemRoot, "System32", "curl.exe") : /^\/.+\/curl$/;
+  if (typeof expected === "string") assert.equal(command.toLowerCase(), expected.toLowerCase());
+  else assert.match(command, expected);
+  assert.ok(existsSync(command));
+});
+
+test("says when it migrated the office hooks from http to command", async (t) => {
+  const dir = configDir(t);
+  writeFileSync(join(dir, "settings.json"), JSON.stringify({
+    hooks: { Stop: [{ hooks: [{ type: "http", url: `${DEFAULT_OFFICE_URL}/hooks/claude/stop`, timeout: 3, onFailure: "continue" }] }] },
+  }));
+
+  const migrated = await install(dir);
+  const again = await install(dir);
+
+  assert.match(migrated.stdout, /migrated from http to command hooks/);
+  assert.deepEqual(httpHookUrls(readSettings(dir)), []);
+  assert.doesNotMatch(again.stdout, /migrated/);
+});
+
+test("--remove leaves the office secret in place", async (t) => {
+  const { home, env } = fakeHome(t);
+  const dir = configDir(t);
+  await install(dir, env);
+  const secret = secretIn(home);
+
+  await install(dir, env, ["--remove"]);
+
+  assert.equal(secretIn(home), secret);
+});
+
+
+test("refuses to install when the home folder has characters a shell would run", async (t) => {
+  const home = join(configDir(t), "odd$(touch pwned)");
+  const dir = configDir(t);
+
+  const result = await install(dir, { HOME: home, USERPROFILE: home });
+
+  assert.equal(result.code, 1);
+  assert.match(result.stderr, /office secret file .+not safe in a shell command/);
+  assert.deepEqual(readdirSync(dir), []);
+});
+
+test("run from a script, it opens no browser and asks the collector nothing, and points at the opener instead", async (t) => {
+  const office = await startFakeOffice(t);
+  const dir = configDir(t);
+
+  const result = await install(dir, { OFFICE_URL: office.url });
+
+  assert.equal(result.code, 0);
+  assert.match(result.stdout, /Open the office already paired with: node hooks\/open-office\.mjs/);
+  assert.deepEqual(office.requests, []);
 });

@@ -15,6 +15,7 @@
       <span class="hq-brand-mark" aria-hidden="true"><i></i><i></i><i></i><i></i></span>
       <h1 class="hq-brand">Orquestra Office</h1>
       <span class="hq-connection" role="status" data-slot="connection"></span>
+      <button class="btn btn-sm btn-ghost" type="button" data-open-devices hidden>Aparelhos</button>
       <button type="button" class="hq-requests-button" aria-disabled="true" aria-label="Pedidos: nenhum esperando você" data-requests>Pedidos <b data-requests-count>0</b></button>
     </header>
     <button type="button" class="hq-search-button hq-panel" aria-haspopup="dialog" aria-keyshortcuts="Control+K Meta+K" data-open-search>
@@ -35,6 +36,7 @@
         <p class="sr-only" role="status" data-search-count></p>
       </div>
     </dialog>
+    <section class="hq-notice hq-panel" aria-label="Aviso do escritório" data-slot="notice" hidden></section>
     <section class="hq-alert" aria-label="Precisa de você" aria-describedby="hq-alert-keys" tabindex="-1" data-slot="alert" hidden>
       <div class="hq-alert-head" data-part="head"></div>
       <div data-part="body"></div>
@@ -91,6 +93,19 @@
       <button class="btn btn-primary" type="submit">Abrir sessão</button>
     </div>
   </form>
+</dialog>
+<dialog class="dialog" id="devices" aria-labelledby="devices-title">
+  <div class="dialog-form">
+    <h2 class="dialog-title" id="devices-title">Aparelhos pareados</h2>
+    <div class="dialog-body">
+      <div data-devices></div>
+      <div data-pairing-code hidden></div>
+    </div>
+    <div class="dialog-foot">
+      <button class="btn btn-secondary" type="button" data-close>Fechar</button>
+      <button class="btn btn-primary" type="button" data-pair>Parear aparelho</button>
+    </div>
+  </div>
 </dialog>
 <script type="module" src="scripts/app/main.js"></script>
 </body>

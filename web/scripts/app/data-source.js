@@ -10,7 +10,7 @@ export function createDataSource(onState) {
     sessions = runner.sessions;
     onState({
       mode, projects: { ...office.projects }, pending: office.pending ?? [], outbox: office.outbox ?? {}, usage: office.usage ?? null,
-      accounts: office.accounts ?? null, timeline: office.timeline ?? null, generatedAt: office.generatedAt ?? null,
+      accounts: office.accounts ?? null, timeline: office.timeline ?? null, generatedAt: office.generatedAt ?? null, security: office.security ?? null,
       runner: { isAvailable: runner.isAvailable, liveAgents: liveAgentsOf(runner.sessions) },
     });
   }
@@ -47,5 +47,8 @@ export function createDataSource(onState) {
     watchTerminal,
     interruptSession: onLiveSession((session) => backend.interruptSession(session)),
     stopSession: onLiveSession((session) => backend.stopSession(session)),
+    listDevices: async () => backend.listDevices(),
+    pairDevice: async () => backend.pairDevice(),
+    revokeDevice: async (id) => backend.revokeDevice(id),
   };
 }

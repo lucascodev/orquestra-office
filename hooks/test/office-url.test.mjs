@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { DEFAULT_OFFICE_URL, installerOfficeUrl, officeUrlFrom, parseOfficeUrl } from "../lib/office-url.mjs";
+import { DEFAULT_OFFICE_URL, installerOfficeUrl, officeUrlFromArguments, parseOfficeUrl } from "../lib/office-url.mjs";
 
 const REFUSED_ANYWHERE = {
   "not a url": /not a URL/,
@@ -15,13 +15,19 @@ const REMOTE_HTTPS = "https://office.example.com:9443";
 
 test("defaults to the office on this machine", () => {
   assert.equal(DEFAULT_OFFICE_URL, "http://127.0.0.1:8420");
-  assert.equal(officeUrlFrom({}), DEFAULT_OFFICE_URL);
+  assert.equal(officeUrlFromArguments([]), DEFAULT_OFFICE_URL);
 });
 
 test("accepts a loopback address and returns its normalized origin", () => {
   assert.deepEqual(parseOfficeUrl("http://127.0.0.1:8420/"), { origin: "http://127.0.0.1:8420" });
-  assert.deepEqual(parseOfficeUrl("HTTP://LOCALHOST:1234"), { origin: "http://localhost:1234" });
   assert.deepEqual(parseOfficeUrl("https://[::1]:8420"), { origin: "https://[::1]:8420" });
+});
+
+// On Windows localhost resolves to ::1 first, where another process could be listening and receive the tokens and the code.
+test("localhost becomes 127.0.0.1, the address the collector listens on", () => {
+  assert.deepEqual(parseOfficeUrl("HTTP://LOCALHOST:1234"), { origin: "http://127.0.0.1:1234" });
+  assert.deepEqual(parseOfficeUrl("http://localhost"), { origin: "http://127.0.0.1" });
+  assert.deepEqual(parseOfficeUrl("https://localhost:8420", { allowRemote: true }), { origin: "https://127.0.0.1:8420" });
 });
 
 test("refuses what is not a bare http or https origin, even with the remote flag", () => {
@@ -29,6 +35,17 @@ test("refuses what is not a bare http or https origin, even with the remote flag
     assert.match(parseOfficeUrl(raw).problem, problem, raw);
     assert.match(parseOfficeUrl(raw, { allowRemote: true }).problem, problem, raw);
   }
+});
+
+// The URL parser keeps these in a host name, and the origin goes inside a shell command written to settings.json.
+const SHELL_ACTIVE_HOSTS = ["https://a$(id).example", "https://a`id`.example", 'https://a"b.example', "https://a;b.example", "https://a&b.example", "https://a!b.example", "https://a'b.example"];
+
+test("an origin with a character a shell would act on is refused, wherever it points", () => {
+  for (const raw of SHELL_ACTIVE_HOSTS) {
+    assert.match(parseOfficeUrl(raw, { allowRemote: true }).problem ?? "", /only letters, digits/, raw);
+  }
+  assert.deepEqual(parseOfficeUrl("https://xn--ao-siap.example:9443", { allowRemote: true }), { origin: "https://xn--ao-siap.example:9443" });
+  assert.deepEqual(parseOfficeUrl("https://ação.example", { allowRemote: true }), { origin: "https://xn--ao-siap.example" });
 });
 
 test("a remote address needs the explicit flag and https", () => {
@@ -42,16 +59,21 @@ test("the installer treats an empty OFFICE_URL as unset and reports a bad one", 
   assert.deepEqual(installerOfficeUrl({}), { origin: DEFAULT_OFFICE_URL });
   assert.deepEqual(installerOfficeUrl({ OFFICE_URL: "" }), { origin: DEFAULT_OFFICE_URL });
   assert.deepEqual(installerOfficeUrl({ OFFICE_URL: "  " }), { origin: DEFAULT_OFFICE_URL });
-  assert.deepEqual(installerOfficeUrl({ OFFICE_URL: "http://localhost:1234" }), { origin: "http://localhost:1234" });
+  assert.deepEqual(installerOfficeUrl({ OFFICE_URL: "http://localhost:1234" }), { origin: "http://127.0.0.1:1234" });
   assert.match(installerOfficeUrl({ OFFICE_URL: "http://evil.example" }).problem, /--allow-remote-office/);
   assert.deepEqual(installerOfficeUrl({ OFFICE_URL: REMOTE_HTTPS }, { allowRemote: true }), { origin: REMOTE_HTTPS });
 });
 
-test("a hook uses a loopback OFFICE_URL, the default when it is blank, and nothing when it is refused", () => {
-  assert.equal(officeUrlFrom({ OFFICE_URL: "http://localhost:1234/" }), "http://localhost:1234");
-  assert.equal(officeUrlFrom({ OFFICE_URL: "" }), DEFAULT_OFFICE_URL);
-  assert.equal(officeUrlFrom({ OFFICE_URL: "   " }), DEFAULT_OFFICE_URL);
-  for (const raw of ["http://evil.example", REMOTE_HTTPS, ...Object.keys(REFUSED_ANYWHERE)]) {
-    assert.equal(officeUrlFrom({ OFFICE_URL: raw }), null, raw);
+test("a hook takes the --office-url the installer wrote, the default without one, and nothing when it is refused", () => {
+  assert.equal(officeUrlFromArguments(["--office-url", "http://127.0.0.1:1234/"]), "http://127.0.0.1:1234");
+  assert.equal(officeUrlFromArguments(["--office-url", REMOTE_HTTPS]), REMOTE_HTTPS);
+  assert.equal(officeUrlFromArguments([]), DEFAULT_OFFICE_URL);
+  for (const raw of ["", "   ", "http://evil.example", ...Object.keys(REFUSED_ANYWHERE)]) {
+    assert.equal(officeUrlFromArguments(["--office-url", raw]), null, raw);
   }
+  assert.equal(officeUrlFromArguments(["--office-url"]), null);
+});
+
+test("a localhost --office-url written by an earlier install is read as 127.0.0.1, with no reinstall", () => {
+  assert.equal(officeUrlFromArguments(["--office-url", "http://localhost:1234"]), "http://127.0.0.1:1234");
 });

@@ -5,11 +5,21 @@ import { tmpdir } from "node:os";
 import { delimiter, join, resolve } from "node:path";
 import { test } from "node:test";
 import { fileURLToPath, pathToFileURL } from "node:url";
+import { fakeHome } from "./support/fake-home.mjs";
 import { startFakeOffice } from "./support/fake-office.mjs";
 import { requestedUrls, runHookScript, runRecordingFetch } from "./support/run-hook-script.mjs";
 
 const SCRIPT = "office-session-start.mjs";
 const UNREACHABLE_OFFICE = "http://127.0.0.1:1";
+const DEFAULT_REPORT = "http://127.0.0.1:8420/events/claude";
+
+const at = (officeUrl) => ["--office-url", officeUrl];
+
+// The antivirus scans a freshly copied executable on its first run, which can outlast the hook's git timeout.
+function copyNodeAs(target) {
+  copyFileSync(process.execPath, target);
+  execFileSync(target, ["-e", "0"]);
+}
 
 function projectWithTeam(t, { isGitRepository }) {
   const root = realpathSync.native(mkdtempSync(join(tmpdir(), "office-session-")));
@@ -27,7 +37,7 @@ test("reports the session with the repository root and the team's role names, pr
   const root = projectWithTeam(t, { isGitRepository: true });
   const payload = { session_id: "s1", hook_event_name: "SessionStart", cwd: join(root, "src") };
 
-  const result = await runHookScript(SCRIPT, { env: { OFFICE_URL: office.url }, input: JSON.stringify(payload) });
+  const result = await runHookScript(SCRIPT, { args: at(office.url), input: JSON.stringify(payload) });
 
   assert.equal(result.code, 0);
   assert.equal(result.stdout, "");
@@ -35,6 +45,7 @@ test("reports the session with the repository root and the team's role names, pr
   const [request] = office.requests;
   assert.equal(request.url, "/events/claude");
   assert.equal(request.contentType, "application/json");
+  assert.equal(request.authorization, "Bearer dI1HY_vzPeHro_qQK3S9fh-cVNpGcLIH77tBN1IPe7I");
   const sent = JSON.parse(request.body);
   assert.equal(sent.session_id, "s1");
   assert.equal(resolve(sent.office.repoRoot), root);
@@ -46,7 +57,7 @@ test("outside a git repository reads the team from cwd and sends an empty repoRo
   const office = await startFakeOffice(t);
   const root = projectWithTeam(t, { isGitRepository: false });
 
-  await runHookScript(SCRIPT, { env: { OFFICE_URL: office.url }, input: JSON.stringify({ session_id: "s2", cwd: root }), cwd: root });
+  await runHookScript(SCRIPT, { args: at(office.url), input: JSON.stringify({ session_id: "s2", cwd: root }), cwd: root });
 
   const sent = JSON.parse(office.requests[0].body);
   assert.equal(sent.office.repoRoot, "");
@@ -54,7 +65,7 @@ test("outside a git repository reads the team from cwd and sends an empty repoRo
 });
 
 test("exits 0 silently when the office is down", async () => {
-  const result = await runHookScript(SCRIPT, { env: { OFFICE_URL: UNREACHABLE_OFFICE }, input: JSON.stringify({ session_id: "x", cwd: tmpdir() }) });
+  const result = await runHookScript(SCRIPT, { args: at(UNREACHABLE_OFFICE), input: JSON.stringify({ session_id: "x", cwd: tmpdir() }) });
 
   assert.equal(result.code, 0);
   assert.equal(result.stdout, "");
@@ -64,7 +75,7 @@ test("exits 0 silently when the office is down", async () => {
 test("exits 0 silently and reports nothing for input that is not JSON", async (t) => {
   const office = await startFakeOffice(t);
 
-  const result = await runHookScript(SCRIPT, { env: { OFFICE_URL: office.url }, input: "not json" });
+  const result = await runHookScript(SCRIPT, { args: at(office.url), input: "not json" });
 
   assert.equal(result.code, 0);
   assert.equal(result.stdout, "");
@@ -79,12 +90,13 @@ test("never runs a git.exe or git.cmd planted in the opened repository", { skip:
   t.after(() => rmSync(repository, { recursive: true, force: true }));
   const marker = join(repository, "planted-git-ran");
   const preload = join(repository, "mark.cjs");
-  copyFileSync(process.execPath, join(repository, "git.exe"));
+  copyNodeAs(join(repository, "git.exe"));
   writeFileSync(join(repository, "git.cmd"), `@echo ran > "${marker}"\r\n`);
   writeFileSync(preload, MARK_WHEN_RUN_AS_GIT(marker));
 
   const result = await runHookScript(SCRIPT, {
-    env: { OFFICE_URL: UNREACHABLE_OFFICE, NODE_OPTIONS: `--require "${preload.replaceAll("\\", "/")}"` },
+    args: at(UNREACHABLE_OFFICE),
+    env: { NODE_OPTIONS: `--require "${preload.replaceAll("\\", "/")}"` },
     input: JSON.stringify({ session_id: "x", cwd: repository }),
   });
 
@@ -99,9 +111,9 @@ function gitOnPath(t) {
   t.after(() => rmSync(dir, { recursive: true, force: true }));
   const marker = join(dir, "fake-git-ran");
   const preload = join(dir, "mark.cjs");
-  copyFileSync(process.execPath, join(dir, "git.exe"));
+  copyNodeAs(join(dir, "git.exe"));
   writeFileSync(preload, MARK_WHEN_RUN_AS_GIT(marker));
-  const env = { OFFICE_URL: UNREACHABLE_OFFICE, PATH: `${dir}${delimiter}${process.env.PATH}`, NODE_OPTIONS: `--require "${preload.replaceAll("\\", "/")}"` };
+  const env = { PATH: `${dir}${delimiter}${process.env.PATH}`, NODE_OPTIONS: `--require "${preload.replaceAll("\\", "/")}"` };
   return { marker, env };
 }
 
@@ -110,34 +122,31 @@ test("with libuv 1.47 on Windows the hook never looks git up", { skip: process.p
   const current = gitOnPath(t);
   const old = gitOnPath(t);
 
-  await runHookScript(SCRIPT, { env: current.env, input });
-  const result = await runHookScript(SCRIPT, { env: old.env, input, nodeArgs: ["--import", OLD_LIBUV] });
+  await runHookScript(SCRIPT, { env: current.env, args: at(UNREACHABLE_OFFICE), input });
+  const result = await runHookScript(SCRIPT, { env: old.env, args: at(UNREACHABLE_OFFICE), input, nodeArgs: ["--import", OLD_LIBUV] });
 
   assert.equal(existsSync(current.marker), true, "the git on PATH should run with the current libuv, or this test proves nothing");
   assert.equal(result.code, 0);
   assert.equal(existsSync(old.marker), false);
 });
 
-const BLANK_OFFICE_URLS = ["", "   "];
-const REFUSED_OFFICE_URLS = ["http://evil.example", "https://evil.example", "http://user:pw@127.0.0.1:8420", "http://127.0.0.1:8420/x", "not a url"];
+const REFUSED_OFFICE_URLS = ["", "   ", "http://evil.example", "http://user:pw@127.0.0.1:8420", "http://127.0.0.1:8420/x", "not a url", "https://a$(id).example"];
 
-test("without OFFICE_URL reports to the default office", async (t) => {
+test("without --office-url reports to the default office", async (t) => {
   const urls = await requestedUrls(t, SCRIPT, { input: JSON.stringify({ session_id: "x", cwd: tmpdir() }) });
 
-  assert.deepEqual(urls, ["http://127.0.0.1:8420/events/claude"]);
+  assert.deepEqual(urls, [DEFAULT_REPORT]);
 });
 
-for (const officeUrl of BLANK_OFFICE_URLS) {
-  test(`an OFFICE_URL of "${officeUrl}" counts as unset and reports to the default office`, async (t) => {
-    const urls = await requestedUrls(t, SCRIPT, { env: { OFFICE_URL: officeUrl }, input: JSON.stringify({ session_id: "x", cwd: tmpdir() }) });
+test("OFFICE_URL in the environment, which a project's settings can set, is never followed", async (t) => {
+  const urls = await requestedUrls(t, SCRIPT, { env: { OFFICE_URL: "http://localhost:1234" }, input: JSON.stringify({ session_id: "x", cwd: tmpdir() }) });
 
-    assert.deepEqual(urls, ["http://127.0.0.1:8420/events/claude"]);
-  });
-}
+  assert.deepEqual(urls, [DEFAULT_REPORT]);
+});
 
 for (const officeUrl of REFUSED_OFFICE_URLS) {
-  test(`a refused OFFICE_URL "${officeUrl}" turns the hook off: no report, no output, exit 0`, async (t) => {
-    const result = await runRecordingFetch(t, SCRIPT, { env: { OFFICE_URL: officeUrl }, input: JSON.stringify({ session_id: "x", cwd: tmpdir() }) });
+  test(`a refused --office-url "${officeUrl}" turns the hook off: no report, no output, exit 0`, async (t) => {
+    const result = await runRecordingFetch(t, SCRIPT, { args: at(officeUrl), input: JSON.stringify({ session_id: "x", cwd: tmpdir() }) });
 
     assert.deepEqual(result.urls, []);
     assert.equal(result.stdout, "");
@@ -146,8 +155,19 @@ for (const officeUrl of REFUSED_OFFICE_URLS) {
   });
 }
 
-test("reports to OFFICE_URL when it is a loopback origin", async (t) => {
-  const urls = await requestedUrls(t, SCRIPT, { env: { OFFICE_URL: "http://localhost:1234/" }, input: JSON.stringify({ session_id: "x", cwd: tmpdir() }) });
+test("reports to the --office-url the installer wrote, normalized to its origin and with localhost as 127.0.0.1", async (t) => {
+  const urls = await requestedUrls(t, SCRIPT, { args: at("http://localhost:1234/"), input: JSON.stringify({ session_id: "x", cwd: tmpdir() }) });
 
-  assert.deepEqual(urls, ["http://localhost:1234/events/claude"]);
+  assert.deepEqual(urls, ["http://127.0.0.1:1234/events/claude"]);
+});
+
+test("without the office secret it reports nothing and prints nothing", async (t) => {
+  const office = await startFakeOffice(t);
+  const { env } = fakeHome(t);
+
+  const result = await runHookScript(SCRIPT, { env, args: at(office.url), input: JSON.stringify({ session_id: "x", cwd: tmpdir() }) });
+
+  assert.equal(result.code, 0);
+  assert.equal(result.stdout, "");
+  assert.deepEqual(office.requests, []);
 });

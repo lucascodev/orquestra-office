@@ -9,15 +9,19 @@ export function createHostPolicy(extraHosts = []) {
   return { allows: (req) => allowed.has(hostNameOf(req)) };
 }
 
-// Browsers always send Origin on cross-site POSTs, so a page from another site cannot drive the office controls.
-export function isSameOrigin(req) {
-  const origin = req.headers.origin;
-  if (!origin) return true;
+const originMatchesHost = (origin, host) => {
   try {
-    return new URL(origin).host === req.headers.host;
+    return new URL(origin).host === host;
   } catch {
     return false;
   }
+};
+
+// Browsers send Origin on every POST, their own page's included, so a POST without one does not come from the office page:
+// curl, a script or the agent itself. Those are refused even with a cookie.
+export function isSameOrigin(req) {
+  const origin = req.headers.origin;
+  return typeof origin === "string" && originMatchesHost(origin, req.headers.host);
 }
 
 // A GET needs no preflight, so fetch metadata is what keeps another page from reading the office or counting as a viewer.
@@ -25,7 +29,7 @@ export function isSameOrigin(req) {
 // Browsers send no fetch metadata over plain HTTP on the LAN, so there the Origin, when present, decides.
 export function isFromAnotherPage(req) {
   const site = req.headers["sec-fetch-site"];
-  if (site === undefined) return !isSameOrigin(req);
+  if (site === undefined) return req.headers.origin !== undefined && !originMatchesHost(req.headers.origin, req.headers.host);
   return !OWN_FETCH_SITES.has(site);
 }
 

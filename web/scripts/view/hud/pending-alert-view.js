@@ -1,6 +1,7 @@
 import { toolSummaryText } from "../../domain/terminal/tool-summary-text.js";
 import { esc } from "../shared/escape-html.js";
 import { formatCountdown } from "../shared/format.js";
+import { shownQuestion } from "../shared/shown-question.js";
 
 const COMMAND_TOOL = "Bash";
 const QUESTION = "question";
@@ -69,7 +70,7 @@ function questionBody(request) {
   const [first, ...others] = request.questions ?? [];
   const more = others.length > 0 ? ` <span class="hq-muted">e mais ${others.length}</span>` : "";
   return `<div class="hq-alert-body" data-pending="${esc(request.id)}">
-      <div class="hq-alert-row"><p class="hq-alert-what">${esc(first?.question ?? toolSummaryText(request))}${more}</p>
+      <div class="hq-alert-row"><p class="hq-alert-what">${esc(first ? shownQuestion(first.question) : toolSummaryText(request))}${more}</p>
         <button class="btn btn-sm btn-primary" type="button" data-open-agent="${esc(request.agentKey)}">Abrir a ficha e responder</button>
       </div>
       <p class="pending-error" role="alert" hidden></p>

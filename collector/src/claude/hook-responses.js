@@ -1,17 +1,12 @@
-const DEFAULT_DENY_MESSAGE = "Recusado pelo usuário no escritório.";
-const MESSAGE_HEADER = "Mensagem do usuário, enviada pelo escritório enquanto você trabalhava:";
+// The minimal contract with hooks/office-decision.mjs: the script, not the collector, writes what Claude Code reads.
+export const NO_PERMISSION_DECISION = Object.freeze({ decision: null });
+export const NO_ANSWERS = Object.freeze({ answers: null });
 
-export const NO_DECISION = Object.freeze({});
-
-export function permissionResponse(behavior, message) {
-  const decision = behavior === "allow" ? { behavior: "allow" } : { behavior: "deny", message: message || DEFAULT_DENY_MESSAGE };
-  return { hookSpecificOutput: { hookEventName: "PermissionRequest", decision } };
+export function permissionDecisionOf(answer) {
+  if (!answer) return NO_PERMISSION_DECISION;
+  return { decision: answer.behavior === "allow" ? { behavior: "allow" } : { behavior: "deny", message: answer.message ?? "" } };
 }
 
-export function questionResponse(questions, answers) {
-  return { hookSpecificOutput: { hookEventName: "PreToolUse", permissionDecision: "allow", updatedInput: { questions, answers } } };
-}
+export const answersOf = (answer) => (answer ? { answers: answer.answers } : NO_ANSWERS);
 
-export function continueWithMessages(messages) {
-  return { decision: "block", reason: `${MESSAGE_HEADER}\n\n${messages.join("\n\n")}` };
-}
+export const queuedMessagesOf = (messages) => ({ messages });

@@ -5,6 +5,7 @@ const CONNECTIONS = {
   connecting: { tone: "pending", text: "conectando" },
   live: { tone: "live", text: "ao vivo" },
   offline: { tone: "off", text: "sem conexão com o coletor" },
+  unpaired: { tone: "off", text: "navegador não pareado", detail: "Este navegador ainda não pode ver nem decidir nada no escritório." },
   demo: { tone: "demo", text: "demonstração", detail: "Dados de exemplo: nada aqui vem de agentes reais." },
 };
 

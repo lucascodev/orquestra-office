@@ -154,6 +154,14 @@
 .hq-alert kbd { margin-left: var(--space-2); color: inherit; opacity: 0.7; font: 10px var(--font-mono); }
 .hq-alert .pending-error { margin: 0; color: var(--danger); font-size: 12px; }
 
+/* Pairing and old-hooks notices: under the top row, and in the middle of the map while this browser is not paired. */
+.hq-notice { position: absolute; left: 50%; top: calc(var(--hq-gap) * 2 + var(--hq-capsule-height)); translate: -50% 0; width: min(560px, calc(100vw - var(--hq-gap) * 2)); box-sizing: border-box; padding: 10px var(--space-5); border-color: var(--warning-edge); font-size: 12px; }
+.hq-notice[hidden] { display: none; }
+.hq-notice.is-blocking { top: 50%; translate: -50% -50%; padding: 0; }
+.hq-notice .notice { padding: 0; border: 0; background: none; }
+.hq-notice .empty-state { padding: var(--space-8); }
+.hq-notice .command { white-space: pre-wrap; overflow-wrap: anywhere; }
+
 /* The agent's drawer, on the right as in the mock-up; the grip on its left edge drags the width and a double click resets it. */
 .hq-hud { --hq-drawer-top: 80px; }
 .hq-drawer { position: absolute; z-index: 3; right: var(--hq-gap); top: var(--hq-drawer-top); bottom: var(--hq-gap); width: min(var(--panel-width), calc(100vw - var(--hq-gap) * 2)); box-sizing: border-box; display: flex; background: var(--bg-floating-strong); box-shadow: var(--shadow-dialog); }

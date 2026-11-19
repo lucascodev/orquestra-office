@@ -5,6 +5,9 @@ import { after, before, describe, it, mock } from "node:test";
 import { fileURLToPath } from "node:url";
 import { agentMark, originOf } from "../scripts/view/office/agent-badges.js";
 import { describeStatus } from "../scripts/view/office/status-display.js";
+import { renderDevices } from "../scripts/view/office/devices-view.js";
+import { renderPairingCode, renderUnpaired } from "../scripts/view/office/pairing-view.js";
+import { renderSecurityNotice } from "../scripts/view/office/security-notice-view.js";
 import { renderDrawerIdentity, renderDrawerShell, renderDrawerStatus } from "../scripts/view/sheet/agent-sheet-view.js";
 import { accountUsage } from "../scripts/domain/office/account-usage.js";
 import { dayTimeline } from "../scripts/domain/office/day-timeline.js";
@@ -86,6 +89,14 @@ describe("pending request card", () => {
 
   it("asks each question with its options and a free answer field", () => {
     assertMatchesRecording("pending-card-question", renderPendingCard(question, "Duda <dev>"));
+  });
+
+  it("clips a long question on screen but keeps its whole text as the answer key", () => {
+    const longText = "q".repeat(600);
+    const html = renderPendingCard({ ...question, questions: [{ ...question.questions[0], question: longText }] }, "Duda");
+
+    assert.ok(html.includes(`data-question="${longText}"`));
+    assert.ok(html.includes(`<span>${"q".repeat(500)}…</span>`));
   });
 });
 
@@ -335,5 +346,56 @@ describe("headquarters request alert", () => {
     assert.equal(arrivalsText([{ requester: vitor, intent: "quer rodar um comando" }, { requester: null, intent: "tem uma pergunta" }]), "2 pedidos novos. Vitor, em loja <online>, quer rodar um comando.");
     assert.equal(warningText(vitor), "Faltam 30 segundos para o pedido de Vitor voltar ao terminal.");
     assert.deepEqual([0, 1, 3].map(requestsButtonLabel), ["Pedidos: nenhum esperando você", "Pedidos: 1 esperando você", "Pedidos: 3 esperando você"]);
+  });
+
+  it("clips a long question on screen", () => {
+    const html = renderAlertBody({ ...question, questions: [{ ...question.questions[0], question: "q".repeat(600) }] });
+
+    assert.ok(html.includes(`${"q".repeat(500)}…`));
+    assert.ok(!html.includes("q".repeat(501)));
+  });
+});
+
+const PAIRING_LINK_LOCAL = "http://127.0.0.1:8420/#pair=AAECAwQFBgcICQoLDA0ODw";
+const PAIRING_LINK_NETWORK = "http://192.168.0.50:8420/#pair=AAECAwQFBgcICQoLDA0ODw";
+const QR_SVG = /<svg class="qr" viewBox="0 0 (\d+) \1" role="img" aria-label="[^"]+" shape-rendering="crispEdges">[\s\S]*?<\/svg>/;
+
+describe("pairing", () => {
+  it("tells a browser on this machine which command opens the office already paired", () => {
+    assertMatchesRecording("unpaired-local", renderUnpaired({ isOnThisMachine: true, isSecretMissing: false }));
+  });
+
+  it("tells a device on the network to pair from the computer, and says when the secret is missing", () => {
+    assertMatchesRecording("unpaired-network", renderUnpaired({ isOnThisMachine: false, isSecretMissing: true }));
+  });
+
+  it("says in the Sede's capsule that this browser is not paired", () => {
+    assert.match(renderConnection("unpaired"), /data-tone="off".*navegador não pareado/);
+  });
+
+  it("shows the QR and the link of the network address, with when the code stops working", () => {
+    const html = renderPairingCode({ code: "AAECAwQFBgcICQoLDA0ODw", expiresAt: NOW + 2 * MINUTE, urls: [PAIRING_LINK_LOCAL, PAIRING_LINK_NETWORK] });
+
+    assert.match(html, QR_SVG);
+    assertMatchesRecording("pairing-code", html.replace(QR_SVG, "<svg/>"));
+  });
+
+  it("says so when no code could be issued", () => {
+    assert.match(renderPairingCode(null), /Não deu para gerar um código agora/);
+  });
+
+  it("lists the paired devices, marks this one and escapes what the devices sent", () => {
+    const devices = [
+      { id: "d1", label: "Chrome no Windows", host: "localhost:8420", createdAt: NOW - DAY, lastSeenAt: NOW, isCurrent: true },
+      { id: "d<2>", label: "<b>Phone</b>", host: "192.168.0.50:8420", createdAt: NOW - DAY, lastSeenAt: NOW - 2 * HOUR, isCurrent: false },
+    ];
+    assertMatchesRecording("devices", renderDevices(devices));
+  });
+
+  it("warns about old hooks and a missing secret, and says nothing otherwise", () => {
+    assert.match(renderSecurityNotice({ legacyHooksSeenAt: NOW, isSecretMissing: false }), /hooks de uma versão antiga/);
+    assert.match(renderSecurityNotice({ legacyHooksSeenAt: NOW, isSecretMissing: true }), /não achou o segredo/);
+    assert.equal(renderSecurityNotice({ legacyHooksSeenAt: null, isSecretMissing: false }), "");
+    assert.equal(renderSecurityNotice(null), "");
   });
 });

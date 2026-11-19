@@ -1,5 +1,6 @@
 import { ownValueOf } from "../../domain/shared/own-value.js";
 import { demoDay } from "../demo/demo-day.js";
+import { demoDevices, demoPairingCode } from "../demo/demo-devices.js";
 import { createDemoAsker } from "../demo/demo-requests.js";
 import { demoStressState } from "../demo/demo-stress.js";
 import { demoHistory, demoTerminal } from "../demo/demo-terminal.js";
@@ -14,6 +15,7 @@ export function createDemoBackend({ scene = null, keepsAsking = false } = {}) {
   let world = null;
   let notify = () => {};
   let terminalChange = null;
+  let devices = demoDevices(Date.now());
 
   const publish = () => notify({ mode: "demo", office: world, runner: world.runner });
 
@@ -65,6 +67,13 @@ export function createDemoBackend({ scene = null, keepsAsking = false } = {}) {
     return () => { terminalChange = null; };
   }
 
+  async function revokeDevice(id) {
+    const remaining = devices.filter((device) => device.id !== id);
+    const wasRevoked = remaining.length < devices.length;
+    devices = remaining;
+    return wasRevoked;
+  }
+
   return {
     start,
     setTemplate,
@@ -76,5 +85,8 @@ export function createDemoBackend({ scene = null, keepsAsking = false } = {}) {
     watchTerminal,
     interruptSession: async () => false,
     stopSession: async () => false,
+    listDevices: async () => devices.map((device) => ({ ...device })),
+    pairDevice: async () => demoPairingCode(Date.now()),
+    revokeDevice,
   };
 }

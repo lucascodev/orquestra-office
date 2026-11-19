@@ -5,10 +5,15 @@ import { join } from "node:path";
 import { test } from "node:test";
 import { fakeHome } from "./support/fake-home.mjs";
 import { makeUnwritable, READ_ONLY_SKIP } from "./support/read-only.mjs";
-import { runHookScript } from "./support/run-hook-script.mjs";
+import { officeNotifyLine } from "../lib/codex-config.mjs";
+import { BASE_ENV, runHookScript } from "./support/run-hook-script.mjs";
 
 const INSTALLER = "install-codex-notify.mjs";
-const OFFICE_NOTIFY = 'notify = ["curl", "-s", "--noproxy", "*", "-m", "3", "-X", "POST", "-H", "Content-Type: application/json", "http://127.0.0.1:8420/events/codex", "--data-raw"]';
+const SYSTEM_CURL = process.platform === "win32" ? join(BASE_ENV.SystemRoot, "System32", "curl.exe") : ["/usr/bin/curl", "/bin/curl", "/usr/local/bin/curl", "/opt/homebrew/bin/curl"].find(existsSync);
+const notifyAt = (officeUrl, home = BASE_ENV.HOME) => officeNotifyLine({
+  officeUrl, curlPath: SYSTEM_CURL, nullDevice: process.platform === "win32" ? "NUL" : "/dev/null", activityHeaderFile: join(home, ".orquestra-office", "activity.header"),
+});
+const OFFICE_NOTIFY = notifyAt("http://127.0.0.1:8420");
 const NOTIFY_BEFORE_NOPROXY = 'notify = ["curl", "-s", "-m", "3", "-X", "POST", "-H", "Content-Type: application/json", "http://127.0.0.1:8420/events/codex", "--data-raw"]';
 const MANIFEST = "orquestra-office.json";
 
@@ -35,12 +40,12 @@ test("creates config.toml with the office notify when there is none", async (t) 
   assert.deepEqual(backupsIn(dir), []);
 });
 
-test("uses OFFICE_URL from the environment, normalized to its origin, in the notify command", async (t) => {
+test("uses OFFICE_URL from the environment, normalized to its origin and with localhost as 127.0.0.1, in the notify command", async (t) => {
   const dir = codexHome(t);
 
   await install(dir, { OFFICE_URL: "http://LOCALHOST:1234/" });
 
-  assert.match(readConfig(dir), /"http:\/\/localhost:1234\/events\/codex"/);
+  assert.match(readConfig(dir), /"http:\/\/127\.0\.0\.1:1234\/events\/codex"/);
 });
 
 test("refuses a remote OFFICE_URL, exits 1 and writes nothing", async (t) => {
@@ -233,4 +238,16 @@ test("--remove without a config creates nothing and says there was nothing to re
   assert.equal(result.code, 0);
   assert.match(result.stdout, /Nothing to remove: .*config\.toml does not exist\./);
   assert.deepEqual(readdirSync(parent), []);
+});
+
+test("creates the office secret and points the notify at the activity header next to it", async (t) => {
+  const { home, env } = fakeHome(t);
+  const dir = codexHome(t);
+
+  const result = await install(dir, env);
+
+  assert.equal(result.code, 0);
+  assert.match(readFileSync(join(home, ".orquestra-office", "secret"), "utf8"), /^[\w-]{43}\n$/);
+  assert.match(readFileSync(join(home, ".orquestra-office", "activity.header"), "utf8"), /^Authorization: Bearer [\w-]{43}\n$/);
+  assert.equal(readConfig(dir), `${notifyAt("http://127.0.0.1:8420", home)}\n`);
 });

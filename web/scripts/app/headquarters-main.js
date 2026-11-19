@@ -1,12 +1,16 @@
+import { deviceLabelOf } from "../domain/office/device-label.js";
 import { agentKeyOfSession } from "../domain/office/live-sessions.js";
+import { isLoopbackHost } from "../domain/office/loopback-host.js";
 import { createDemoBackend } from "../infra/backends/demo-backend.js";
 import { createLiveBackend } from "../infra/backends/live-backend.js";
 import { createHeadquartersRenderer } from "../three/scene/headquarters-renderer.js";
 import { describeStatus } from "../view/office/status-display.js";
 import { createDataSource } from "./data-source.js";
+import { createDevicesDialog } from "./devices-dialog.js";
 import { createFrameMeter } from "./frame-meter.js";
 import { createHeadquartersPage } from "./headquarters-page.js";
 import { createNewSessionDialog } from "./new-session-dialog.js";
+import { reloadOnPairingLink, takePairingCode } from "./pairing-code.js";
 
 const MODE_PARAM = "modo";
 const DEMO_MODE = "demo";
@@ -15,6 +19,8 @@ const MEASURE_PARAM = "medir";
 const MEASURE_ON = "1";
 const NO_WEBGL = "Este navegador não conseguiu abrir a cena 3D da Sede.";
 
+const pairingCode = takePairingCode();
+reloadOnPairingLink();
 const params = new URLSearchParams(window.location.search);
 
 const office = document.getElementById("office");
@@ -38,7 +44,9 @@ const newSessionDialog = createNewSessionDialog({
   control: source,
   onOpened: (session) => page.awaitAgent(agentKeyOfSession(session)),
 });
-const page = createHeadquartersPage({ hud, headquarters, source, newSessionDialog });
+const devicesDialog = createDevicesDialog({ dialog: document.getElementById("devices"), control: source });
+const page = createHeadquartersPage({ hud, headquarters, source, newSessionDialog, devicesDialog, isOnThisMachine: isLoopbackHost(window.location.hostname) });
 
 const demo = () => createDemoBackend({ scene: params.get(SCENE_PARAM), keepsAsking: true });
-source.start(params.get(MODE_PARAM) === DEMO_MODE ? [demo()] : [createLiveBackend(), demo()]);
+const live = () => createLiveBackend({ pairingCode, deviceLabel: deviceLabelOf(navigator.userAgent) });
+source.start(params.get(MODE_PARAM) === DEMO_MODE ? [demo()] : [live(), demo()]);

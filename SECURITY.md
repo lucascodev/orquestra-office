@@ -61,12 +61,24 @@ Quem está no modelo:
 
 ### Situação na `main`
 
-- O coletor escuta só em `127.0.0.1` por padrão, e o `compose.yaml` publica a porta só nesse endereço.
-- O coletor confere `Host` contra DNS rebinding, recusa leitura e ação vindas de outro site (`Sec-Fetch-Site` e `Origin`), impede que outra página enquadre o escritório (`frame-ancestors`), limita o tamanho do corpo e o número de espectadores.
-- Os hooks só aceitam um `OFFICE_URL` desta máquina. Endereço remoto exige `--allow-remote-office` e `https://`.
-- Os instaladores gravam de forma atômica, mexem só no que o escritório gravou e recusam uma pasta com caractere que o shell interpreta.
+A fase S do ADR 0002 está na `main`.
 
-O ADR 0002 registra, na seção 1.3, os limites que continuam na `main`: os hooks de decisão são do tipo `http`, então quem responder em `127.0.0.1:8420` decide por eles, e o modo LAN não tem senha. A correção (hooks `command` com assinatura HMAC, pareamento por cookie e token do executor) está decidida nesse ADR e ainda não entrou na `main`. Relatos sobre esses achados ajudam quando trazem um caminho que o ADR não descreve.
+- **Segredo.** O instalador cria `~/.orquestra-office/secret`, legível só pelo dono no macOS e no Linux, e nunca o sobrescreve sem `--rotate-secret`. O coletor lê o mesmo arquivo, montado como `secret` do Compose no Docker. Girar o segredo invalida os aparelhos pareados, os tokens do executor e os hooks com a chave antiga.
+- **Hooks.** Nenhum hook do escritório é do tipo `http`. A atividade vai pelo `curl` do sistema, sem shell, com um token de portador lido de um arquivo, que só vale nas rotas de atividade. Permissão, pergunta e fim do turno passam por `hooks/office-decision.mjs`, que assina o pedido com HMAC-SHA256 e só aceita resposta assinada com a mesma chave e ligada ao nonce do pedido. Sem essa resposta, o pedido vai para o terminal. O script nunca devolve `updatedPermissions`, `additionalContext` nem `interrupt`, e só devolve `updatedInput` para `AskUserQuestion`, montado com as perguntas que ele mesmo recebeu.
+- **Hooks antigos.** Um pedido sem token ou sem assinatura recebe `200 {}`, não registra, segura nem entrega nada, e acende na página o aviso de hooks de uma versão antiga. Token ou assinatura errados recebem `401`.
+- **Painel.** Todo `/api/*` exige o cookie de um aparelho pareado (`HttpOnly`, `SameSite=Strict`, `Path=/api`), também em `127.0.0.1`. O primeiro navegador é pareado por `node hooks/open-office.mjs`, que pede um desafio de uso único (30 segundos) e um código de uso único (2 minutos) com pedidos assinados. Os outros aparelhos são pareados por QR ou link de uso único, gerado num aparelho já pareado. O disco guarda só o hash do cookie, e só uma página pareada conta como espectador e segura pedidos.
+- **Executor.** Todo pedido, menos `/health`, exige um token de 12 horas, que a página obtém trocando um desafio de uso único assinado pelo coletor.
+- **Coletor.** Escuta só em `127.0.0.1` por padrão, e o `compose.yaml` publica a porta só nesse endereço. Confere `Host` contra DNS rebinding, recusa leitura e ação vindas de outro site (`Sec-Fetch-Site` e `Origin`) e ação sem `Origin`, impede que outra página enquadre o escritório (`frame-ancestors`), limita o tamanho do corpo e o número de espectadores.
+- **Endereço.** Os hooks só aceitam um endereço desta máquina, e `localhost` vira `127.0.0.1`. O endereço fica gravado no comando de cada hook; nenhum deles lê `OFFICE_URL` durante a sessão. Endereço remoto exige `--allow-remote-office` e `https://`.
+- **Instaladores.** Gravam de forma atômica, mexem só no que o escritório gravou e recusam uma pasta com caractere que o shell interpreta.
+
+Limites conhecidos, registrados no ADR 0002:
+
+- O coletor lembra os nonces só enquanto está de pé. Quem capturou um pedido assinado de `Stop`, permissão ou pergunta, ocupando a porta com o coletor parado, consegue repeti-lo depois: esvazia a fila de mensagens daquela sessão ou cria um pedido pendente falso, sem decidir nada em sessão nenhuma. O bootstrap do pareamento não tem esse problema, porque exige um desafio de uso único.
+- No modo LAN, que é HTTP, quem escuta a rede consegue copiar o cookie de um aparelho pareado.
+- Cookies não separam portas: outro servidor em `127.0.0.1` recebe o cookie em `/api`. É código local, fora do escopo abaixo.
+
+Relatos sobre esses limites ajudam quando trazem um caminho que o ADR não descreve.
 
 ## Fora do escopo
 

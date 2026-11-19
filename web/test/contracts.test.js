@@ -130,9 +130,12 @@ describe("decisions sent from the office", () => {
     ["answering every question", question, "answer", { questions: bothAnswered }, { answers: { "Qual motor?": "Rapier", "Qual cena?": "a do porto" } }],
   ];
 
+  // The collector's answer only leaves it as JSON, and its answers object has no prototype, so a question named __proto__ keeps its answer.
+  const asSentToTheHook = (answer) => JSON.parse(JSON.stringify(answer));
+
   for (const [what, request, action, fields, expected] of accepted) {
     it(`are accepted by the collector when ${what}`, () => {
-      assert.deepEqual(decisionAnswerOf(request, buildDecision(action, fields)), expected);
+      assert.deepEqual(asSentToTheHook(decisionAnswerOf(request, buildDecision(action, fields))), expected);
     });
   }
 

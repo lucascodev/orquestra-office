@@ -1,13 +1,17 @@
-import { officeApi } from "../office-api.js";
+import { officeApi, UnpairedError } from "../office-api.js";
 import { runnerClient } from "../runner-client.js";
 
 const RUNNER_POLL_MS = 4_000;
+const EMPTY_OFFICE = Object.freeze({ projects: {} });
 
-export function createLiveBackend() {
+// pairingCode comes from the #pair= fragment the opener or a QR code put in the address; it is redeemed before anything else.
+export function createLiveBackend({ pairingCode = null, deviceLabel = "" } = {}) {
   let mode = "connecting";
-  let office = { projects: {} };
+  let office = EMPTY_OFFICE;
   let runner = { isAvailable: false, sessions: [] };
   let notify = () => {};
+  let stopWatching = () => {};
+  let runnerTimer = null;
 
   const publish = () => notify({ mode, office, runner });
 
@@ -19,22 +23,43 @@ export function createLiveBackend() {
     publish();
   }
 
+  function showUnpaired(error) {
+    stopWatching();
+    clearInterval(runnerTimer);
+    mode = "unpaired";
+    office = { ...EMPTY_OFFICE, security: { legacyHooksSeenAt: null, isSecretMissing: error.isSecretMissing } };
+    runner = { isAvailable: false, sessions: [] };
+    publish();
+  }
+
+  // The stream cannot tell a revoked device from a dropped connection, so a failure asks the state which one it was.
+  async function recheckPairing() {
+    try {
+      await officeApi.loadState();
+    } catch (error) {
+      if (error instanceof UnpairedError) showUnpaired(error);
+    }
+  }
+
   function listen() {
     mode = "live";
-    officeApi.watchState({
+    stopWatching = officeApi.watchState({
       onState: (state) => { office = state; mode = "live"; publish(); },
-      onError: () => { mode = "offline"; publish(); },
+      onError: () => { mode = "offline"; publish(); recheckPairing(); },
     });
     refreshRunner();
-    setInterval(refreshRunner, RUNNER_POLL_MS);
+    runnerTimer = setInterval(refreshRunner, RUNNER_POLL_MS);
   }
 
   async function start(onChange) {
     notify = onChange;
     try {
+      if (pairingCode) await officeApi.redeemPairing(pairingCode, deviceLabel);
       office = await officeApi.loadState();
-    } catch {
-      return false;
+    } catch (error) {
+      if (!(error instanceof UnpairedError)) return false;
+      showUnpaired(error);
+      return true;
     }
     publish();
     listen();
@@ -62,5 +87,8 @@ export function createLiveBackend() {
     watchTerminal: (agent, session, handlers) => runnerClient.watch(session.id, handlers),
     interruptSession: (session) => runnerClient.interrupt(session.id),
     stopSession: (session) => runnerClient.stop(session.id),
+    listDevices: () => officeApi.listDevices(),
+    pairDevice: () => officeApi.pairDevice(),
+    revokeDevice: (id) => officeApi.revokeDevice(id),
   };
 }

@@ -11,7 +11,7 @@ function permissionAnswer(body) {
 
 function questionAnswer(request, body) {
   const given = body.answers && typeof body.answers === "object" ? body.answers : {};
-  const answers = {};
+  const answers = Object.create(null);
   for (const { question } of request.questions) {
     const value = typeof given[question] === "string" ? given[question].trim().slice(0, ANSWER_LIMIT) : "";
     if (!value) return INVALID_ANSWER;
