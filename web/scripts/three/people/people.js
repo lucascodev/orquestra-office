@@ -46,34 +46,39 @@ function buildLeg(parent, side, look) {
   return { hip, knee };
 }
 
+function asFineDetail(part) {
+  part.userData.isFineDetail = true;
+  return part;
+}
+
 function buildHead(parent, look) {
   const head = group(parent, 0, 0.46, 0);
-  box(head, [0.1, 0.05, 0.1], [-0.05, -0.02, -0.05], look.skin);
+  asFineDetail(box(head, [0.1, 0.05, 0.1], [-0.05, -0.02, -0.05], look.skin));
   box(head, [0.36, 0.32, 0.34], [-0.18, 0.02, -0.17], look.skin);
   box(head, [0.4, 0.11, 0.38], [-0.2, 0.3, -0.19], look.hair);
   box(head, [0.4, look.long ? 0.46 : 0.26, 0.09], [-0.2, look.long ? -0.12 : 0.06, -0.21], look.hair);
-  box(head, [0.05, 0.2, 0.2], [-0.2, 0.12, -0.14], look.hair);
-  box(head, [0.05, 0.2, 0.2], [0.15, 0.12, -0.14], look.hair);
-  const eyes = [-0.1, 0.05].map((x) => box(head, [0.05, EYE_HEIGHT, 0.012], [x, 0.13, 0.17], DARK));
+  asFineDetail(box(head, [0.05, 0.2, 0.2], [-0.2, 0.12, -0.14], look.hair));
+  asFineDetail(box(head, [0.05, 0.2, 0.2], [0.15, 0.12, -0.14], look.hair));
+  const eyes = [-0.1, 0.05].map((x) => asFineDetail(box(head, [0.05, EYE_HEIGHT, 0.012], [x, 0.13, 0.17], DARK)));
   return { head, eyes };
 }
 
 function buildProps(hand) {
-  const mug = group(hand);
+  const mug = asFineDetail(group(hand));
   cyl(mug, 0.05, 0.11, [0, -0.4, 0.07], "#ffffff");
-  const paper = group(hand);
+  const paper = asFineDetail(group(hand));
   box(paper, [0.34, 0.26, 0.015], [-0.44, -0.46, 0.05], "#ffffff");
-  const can = group(hand);
+  const can = asFineDetail(group(hand));
   box(can, [0.14, 0.16, 0.14], [-0.07, -0.5, 0.0], "#4f9d7a");
   box(can, [0.04, 0.04, 0.18], [-0.02, -0.42, 0.14], "#4f9d7a");
-  const paddle = group(hand);
+  const paddle = asFineDetail(group(hand));
   box(paddle, [0.04, 0.1, 0.04], [-0.02, -0.46, 0.03], PADDLE_HANDLE);
   box(paddle, [0.2, 0.2, 0.03], [-0.1, -0.66, 0.03], PADDLE_RED);
   return { mug, paper, can, paddle };
 }
 
 function buildBall(parent) {
-  const ball = group(parent);
+  const ball = asFineDetail(group(parent));
   box(ball, [BALL_SIZE, BALL_SIZE, BALL_SIZE], [-BALL_SIZE / 2, -BALL_SIZE / 2, -BALL_SIZE / 2], BALL_WHITE, { shadow: false });
   ball.visible = false;
   return ball;

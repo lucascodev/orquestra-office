@@ -3,11 +3,16 @@ import { describe, it } from "node:test";
 import { AGENT_ACTIONS } from "../scripts/data/text/pt-br/agent-actions.js";
 import { TERMINAL_NOTES } from "../scripts/data/text/pt-br/terminal-notes.js";
 import { TOOL_SUMMARIES } from "../scripts/data/text/pt-br/tool-summaries.js";
+import { createFreeTimeClock } from "../scripts/domain/behavior/free-time-clock.js";
+import { placeAgents } from "../scripts/domain/behavior/room-places.js";
+import { layoutHeadquarters } from "../scripts/domain/headquarters/headquarters-layout.js";
+import { headquartersSpots } from "../scripts/domain/headquarters/headquarters-spots.js";
 import { agentActionText, logEntryText } from "../scripts/domain/office/agent-action-text.js";
 import { terminalEntryText } from "../scripts/domain/terminal/terminal-entry-text.js";
 import { describeToolEntry } from "../scripts/domain/terminal/terminal-format.js";
 import { toolSummaryText } from "../scripts/domain/terminal/tool-summary-text.js";
 import { createDemoAsker } from "../scripts/infra/demo/demo-requests.js";
+import { demoStressState } from "../scripts/infra/demo/demo-stress.js";
 import { demoHistory } from "../scripts/infra/demo/demo-terminal.js";
 import { demoState, resolveDemoRequest, tickDemo } from "../scripts/infra/demo/demo-world.js";
 
@@ -76,6 +81,33 @@ describe("the demonstration", () => {
     assert.ok(Object.hasOwn(TERMINAL_NOTES, error.textId));
     assert.equal(terminalEntryText(error), "Bash falhou");
     assert.equal(terminalEntryText(entries.at(-1)), "editando server.js");
+  });
+});
+
+describe("the stress scene", () => {
+  const STRESS_PROJECTS = 12;
+  const STRESS_AGENTS = 60;
+
+  it("fills the headquarters with as many projects and agents as it is designed for", () => {
+    const state = demoStressState();
+    const agents = agentsOf(state);
+    assert.equal(Object.keys(state.projects).length, STRESS_PROJECTS);
+    assert.equal(agents.length, STRESS_AGENTS);
+    assert.equal(new Set(agents.map((agent) => agent.key)).size, STRESS_AGENTS);
+    assert.ok(agents.some((agent) => agent.kind === "subagent"));
+    for (const agent of agents) assert.ok(Object.hasOwn(AGENT_ACTIONS, agent.actionId), `${agent.key}: ${agent.actionId}`);
+  });
+
+  it("gives every project its own island and everybody somewhere to be, at a desk or on free time", () => {
+    const state = demoStressState();
+    const agents = agentsOf(state);
+    const layout = layoutHeadquarters(state.projects);
+    const ownedIslands = layout.islands.filter((island) => island.projectKey);
+    assert.equal(new Set(ownedIslands.map((island) => island.projectKey)).size, STRESS_PROJECTS);
+    const places = placeAgents({ agents, now: Date.now(), spots: headquartersSpots(layout), freeSince: createFreeTimeClock()(agents) });
+    const stops = agents.map((agent) => places.get(agent.key)?.stop).filter(Boolean);
+    assert.equal(stops.length, STRESS_AGENTS);
+    assert.ok(stops.some((stop) => stop.isDesk) && stops.some((stop) => !stop.isDesk));
   });
 });
 

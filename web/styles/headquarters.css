@@ -24,6 +24,7 @@
 .name-tag[data-detail="dot"]:is(:hover, :focus-visible) > span { display: grid; }
 .name-tag[data-detail="name"]:is(:hover, :focus-visible) small { display: block; }
 .name-tag.is-figurant[data-detail="dot"] { display: none; }
+.hq-tags .thought.is-compact { --thought-lift: 18px; padding: 0 5px 1px; font-size: 10px; line-height: 1.1; }
 .hq-labels[data-detail="compact"] :is(.area-label.is-area, .area-label.is-free-island, .area-label-detail, .name-tag.reserved) { display: none; }
 .hq-labels[data-detail="compact"] .area-label { padding: 0 4px; font-size: 9px; opacity: 0.85; }
 

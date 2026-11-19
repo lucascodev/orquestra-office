@@ -4,6 +4,7 @@ import { createLiveBackend } from "../infra/backends/live-backend.js";
 import { createHeadquartersRenderer } from "../three/scene/headquarters-renderer.js";
 import { describeStatus } from "../view/office/status-display.js";
 import { createDataSource } from "./data-source.js";
+import { createFrameMeter } from "./frame-meter.js";
 import { createHeadquartersPage } from "./headquarters-page.js";
 import { createNewSessionDialog } from "./new-session-dialog.js";
 
@@ -24,13 +25,6 @@ function addStylesheet() {
   document.head.append(link);
 }
 
-function createMeter(host) {
-  const meter = document.createElement("output");
-  meter.className = "hq-meter";
-  host.append(meter);
-  return ({ calls, triangles }) => { meter.textContent = `chamadas de desenho ${calls} · triângulos ${triangles}`; };
-}
-
 // The map stays out of the live region of the old page: every name tag that changed would be read aloud.
 function mountShell(office) {
   office.removeAttribute("aria-live");
@@ -43,8 +37,9 @@ addStylesheet();
 document.body.classList.add("is-headquarters");
 const office = document.getElementById("office");
 const hud = mountShell(office);
-const showStats = params.get(MEASURE_PARAM) === MEASURE_ON ? createMeter(office) : () => {};
-const headquarters = createHeadquartersRenderer({ onFrame: showStats, describeStatus, onPick: (key) => headquarters.follow(key) });
+const isMeasuring = params.get(MEASURE_PARAM) === MEASURE_ON;
+const showStats = isMeasuring ? createFrameMeter(office) : () => {};
+const headquarters = createHeadquartersRenderer({ onFrame: showStats, describeStatus, isMeasuring, onPick: (key) => headquarters.follow(key) });
 if (headquarters) office.prepend(headquarters.element);
 else office.textContent = NO_WEBGL;
 

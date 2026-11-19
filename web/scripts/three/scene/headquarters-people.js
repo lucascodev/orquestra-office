@@ -4,8 +4,10 @@ import { planMovement } from "../../domain/behavior/movement-plan.js";
 import { placeAgents } from "../../domain/behavior/room-places.js";
 import { createConversationTracker } from "../../domain/conversations/conversation-tracker.js";
 import { areaOfPoint } from "../../domain/headquarters/area-of-point.js";
+import { bubbleDetail, figureDetail } from "../../domain/headquarters/figure-detail.js";
 import { tagDetail } from "../../domain/headquarters/label-detail.js";
 import { group } from "../kit.js";
+import { createCrowd } from "../people/crowd.js";
 import { createPerson, isWalking, placeAt, removePerson, setReaction, standAt, stepPerson, walkTo } from "../people/people.js";
 import { createNameTag, headPositionOf } from "./name-tags.js";
 import { createThoughtBubble } from "./thought-bubble.js";
@@ -16,6 +18,9 @@ const RECEPTIONIST_KEY = "headquarters:receptionist";
 const RECEPTIONIST_REACTION = "typing";
 const RECEPTIONIST_TAG = "recepção";
 const FIGURANT_STATUS = "idle";
+const NEAR_FIGURES = "near";
+const HIDDEN_BUBBLE = "hidden";
+const COMPACT_BUBBLE = "compact";
 
 function createFigurantTag(text) {
   const tag = document.createElement("span");
@@ -40,7 +45,9 @@ export function createHeadquartersPeople({ scene, tagLayer, onPick, describeStat
   const lastSeen = new Map();
   const freeTimeClock = createFreeTimeClock();
   const followConversations = createConversationTracker();
+  const crowd = createCrowd(root);
   const receptionist = createReceptionist(root);
+  crowd.join(RECEPTIONIST_KEY, receptionist.root);
   const receptionistTag = createFigurantTag(RECEPTIONIST_TAG);
   tagLayer.append(receptionistTag);
   let agents = [];
@@ -56,6 +63,7 @@ export function createHeadquartersPeople({ scene, tagLayer, onPick, describeStat
     const wasAtDesk = Boolean(person.stop?.isDesk) && !isWalking(person);
     lastSeen.set(key, { x: person.root.position.x, z: person.root.position.z, wasAtDesk });
     removePerson(person);
+    crowd.leave(key);
     tag.element.remove();
     bubble.element.remove();
     people.delete(key);
@@ -65,6 +73,7 @@ export function createHeadquartersPeople({ scene, tagLayer, onPick, describeStat
   function meet(agent) {
     const entry = { person: createPerson(root, agent), tag: createNameTag(agent.key, onPick), bubble: createThoughtBubble() };
     tagLayer.append(entry.tag.element, entry.bubble.element);
+    crowd.join(agent.key, entry.person.root);
     people.set(agent.key, entry);
     label(agent);
   }
@@ -181,7 +190,28 @@ export function createHeadquartersPeople({ scene, tagLayer, onPick, describeStat
     return position;
   }
 
-  // Only people on screen think out loud, and only the three freshest of them. From afar the tags shrink to their status dot.
+  function showBubbles(thinking, speeches, scale) {
+    const shown = freshestThoughts(thinking);
+    const thoughts = new Map(thinking);
+    for (const [key, { bubble }] of people) {
+      const speech = speeches.get(key);
+      const thought = shown.has(key) ? thoughts.get(key) : null;
+      const said = speech ?? thought;
+      const detail = said ? bubbleDetail({ scale, isSpeech: Boolean(speech), isFollowed: key === followedKey }) : HIDDEN_BUBBLE;
+      if (detail === HIDDEN_BUBBLE) bubble.hide();
+      else bubble.show(said.text, said.left, said.top, { isSpeech: Boolean(speech), isCompact: detail === COMPACT_BUBBLE });
+    }
+  }
+
+  function drawFigures(scale) {
+    const isNear = figureDetail(scale) === NEAR_FIGURES;
+    receptionist.emote.mute(!isNear);
+    for (const { person } of people.values()) person.emote.mute(!isNear);
+    crowd.draw({ hasFineParts: isNear, castsShadow: isNear });
+  }
+
+  // Only people on screen think out loud, and only the three freshest of them. From afar the tags shrink to their status dot,
+  // thoughts give way to the dots and the figures lose their small parts and shadows.
   function follow(camera, seconds, scale) {
     pinTag(receptionistTag, receptionist, camera);
     showDetail(receptionistTag, tagDetail({ scale, status: FIGURANT_STATUS, isFollowed: false }));
@@ -199,15 +229,8 @@ export function createHeadquartersPeople({ scene, tagLayer, onPick, describeStat
       const thought = isMotionReduced ? null : currentThought(person, byKey.get(key), seconds);
       if (thought) thinking.push([key, { ...thought, left, top }]);
     }
-    const shown = freshestThoughts(thinking);
-    const thoughts = new Map(thinking);
-    for (const [key, { bubble }] of people) {
-      const speech = speeches.get(key);
-      const thought = thoughts.get(key);
-      if (speech) bubble.show(speech.text, speech.left, speech.top, { isSpeech: true });
-      else if (shown.has(key)) bubble.show(thought.text, thought.left, thought.top);
-      else bubble.hide();
-    }
+    showBubbles(thinking, speeches, scale);
+    drawFigures(scale);
   }
 
   function highlight(nextFollowedKey) {

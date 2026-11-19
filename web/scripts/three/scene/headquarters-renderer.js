@@ -11,6 +11,7 @@ import { buildIsland } from "../furniture/island.js";
 import { monumentSign } from "../furniture/monument-sign.js";
 import { buildYard } from "../furniture/yard.js";
 import { THREE } from "../kit.js";
+import { FIGURE_LAYER, isShown } from "../people/crowd.js";
 import { createAreaLabels } from "./area-labels.js";
 import { attachCameraInput } from "./camera-input.js";
 import { createCameraRig } from "./camera-rig.js";
@@ -56,7 +57,8 @@ const islandPiece = (island) => batchStatic(buildIsland(new THREE.Group(), islan
 
 // The building, the common rooms and the yard as one static piece, one piece per island that is rebuilt alone when its project,
 // theme, occupants or screens change, and the people on top, who live through every rebuild.
-export function createHeadquartersRenderer({ onFrame = () => {}, onPick = () => {}, describeStatus = (status) => status } = {}) {
+// While measuring, each frame waits for the GPU to finish, so the time read is the whole frame and not only the commands sent.
+export function createHeadquartersRenderer({ onFrame = () => {}, onPick = () => {}, describeStatus = (status) => status, isMeasuring = false } = {}) {
   const stage = document.createElement("div");
   stage.className = "hq-stage";
   const canvas = document.createElement("canvas");
@@ -93,6 +95,7 @@ export function createHeadquartersRenderer({ onFrame = () => {}, onPick = () => 
   const people = createHeadquartersPeople({ scene, tagLayer, onPick, describeStatus, isMotionReduced });
   const labels = createAreaLabels(labelLayer);
   const raycaster = new THREE.Raycaster();
+  raycaster.layers.enable(FIGURE_LAYER);
   let layout = null;
   let site = null;
   let siteKey = "";
@@ -218,6 +221,7 @@ export function createHeadquartersRenderer({ onFrame = () => {}, onPick = () => 
   function tick(now) {
     requestAnimationFrame(tick);
     if (!layout || !canvas.isConnected || document.hidden) return;
+    const workStart = performance.now();
     stepPeople(now);
     keepFollowing();
     if (rig.step(now)) isDirty = true;
@@ -227,13 +231,14 @@ export function createHeadquartersRenderer({ onFrame = () => {}, onPick = () => 
     people.follow(rig.camera, now / 1000, scale);
     labels.place(rig.camera, areaLabelDetail(scale));
     renderer.render(scene, rig.camera);
-    onFrame({ calls: renderer.info.render.calls, triangles: renderer.info.render.triangles });
+    if (isMeasuring) renderer.getContext().finish();
+    onFrame({ calls: renderer.info.render.calls, triangles: renderer.info.render.triangles, scale, at: now, workMs: performance.now() - workStart });
   }
 
   function agentAt({ x, y }) {
     const { width, height } = rig.viewport();
     raycaster.setFromCamera(new THREE.Vector2((x / width) * 2 - 1, -(y / height) * 2 + 1), rig.camera);
-    const hit = raycaster.intersectObjects(people.bodies(), true)[0];
+    const hit = raycaster.intersectObjects(people.bodies(), true).find(({ object }) => isShown(object));
     for (let node = hit?.object; node; node = node.parent) if (node.userData.agentKey) return node.userData.agentKey;
     return null;
   }

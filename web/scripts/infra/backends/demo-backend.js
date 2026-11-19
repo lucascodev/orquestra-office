@@ -1,13 +1,14 @@
 import { ownValueOf } from "../../domain/shared/own-value.js";
 import { demoDay } from "../demo/demo-day.js";
 import { createDemoAsker } from "../demo/demo-requests.js";
+import { demoStressState } from "../demo/demo-stress.js";
 import { demoHistory, demoTerminal } from "../demo/demo-terminal.js";
 import { demoThemesState } from "../demo/demo-themes.js";
 import { demoState, queueDemoMessage, resolveDemoRequest, tickDemo } from "../demo/demo-world.js";
 
 const DEMO_TICK_MS = 4_000;
 const DEMO_ONLY = "Na prévia com dados de exemplo não dá para abrir sessões.";
-const SCENES = { temas: demoThemesState };
+const SCENES = { temas: demoThemesState, estresse: demoStressState };
 
 export function createDemoBackend({ scene = null, keepsAsking = false } = {}) {
   let world = null;
