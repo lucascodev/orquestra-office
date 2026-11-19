@@ -51,7 +51,7 @@ describe("landing pages", () => {
   });
 
   it("keeps the Portuguese and English pages with the same tags, attributes and references", () => {
-    const [portuguese, english] = PAGES.map((page) => skeletonOf(readPage(page)));
+    const [portuguese, english] = PAGES.map((page) => skeletonOf(readPage(page), { pageUrl: page.url, siteUrl: PUBLISHED_BASE }));
     assert.deepEqual(english, portuguese);
   });
 
