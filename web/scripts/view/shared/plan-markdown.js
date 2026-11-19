@@ -8,16 +8,16 @@ const UNCHECKED = "☐ ";
 
 // A plan sits next to the buttons that approve it, so its markdown gets far less than the terminal's: no raw HTML, no forms,
 // no styles, no images, no ids, names or data attributes, and links only to the web or to mail, with the address in view.
-const PLAN_PURIFY = {
-  ALLOWED_TAGS: [
+export const PLAN_PURIFY = Object.freeze({
+  ALLOWED_TAGS: Object.freeze([
     "p", "h1", "h2", "h3", "h4", "h5", "h6", "ul", "ol", "li", "strong", "em", "del", "code", "pre", "blockquote", "a", "hr", "br",
     "table", "thead", "tbody", "tr", "th", "td", "span", "div",
-  ],
-  ALLOWED_ATTR: ["href", "title", "class"],
+  ]),
+  ALLOWED_ATTR: Object.freeze(["href", "title", "class"]),
   ALLOW_DATA_ATTR: false,
-  FORBID_TAGS: ["style", "img", "form", "button", "input", "textarea", "select", "label", "dialog", "details"],
+  FORBID_TAGS: Object.freeze(["style", "img", "form", "button", "input", "textarea", "select", "label", "dialog", "details"]),
   ALLOWED_URI_REGEXP: SAFE_LINK,
-};
+});
 
 function linkOf({ href, title, tokens }) {
   const text = this.parser.parseInline(tokens);

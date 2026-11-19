@@ -6,7 +6,7 @@ import { checklistProgress } from "../scripts/domain/work-sheet/checklist-progre
 import { planStatus } from "../scripts/domain/work-sheet/plan-status.js";
 import { testsOverview } from "../scripts/domain/work-sheet/tests-overview.js";
 import { workTabs } from "../scripts/domain/work-sheet/work-tabs.js";
-import { planMarkdownHtml, renderPlanMarkdown } from "../scripts/view/shared/plan-markdown.js";
+import { PLAN_PURIFY, planMarkdownHtml, renderPlanMarkdown } from "../scripts/view/shared/plan-markdown.js";
 import { renderDrawerShell, renderDrawerStatus } from "../scripts/view/sheet/agent-sheet-view.js";
 import { renderChecklistTab } from "../scripts/view/sheet/checklist-tab-view.js";
 import { renderPlanTab } from "../scripts/view/sheet/plan-tab-view.js";
@@ -66,6 +66,20 @@ describe("plan markdown", () => {
     const html = planMarkdownHtml("- [x] feito\n- [ ] aberto");
     assert.ok(!html.includes("<input"));
     assert.ok(html.includes("☑ feito") && html.includes("☐ aberto"));
+  });
+
+  // Node has no DOM, so DOMPurify never runs here and every other plan test goes through the plain-text fallback. The profile
+  // the browser gets is checked as data instead, and the hostile plan was run in a real browser (see the merge notes).
+  it("hands the sanitizer a profile with no form, image, style or script element and no attribute but links and classes", () => {
+    const forbiddenTags = ["button", "input", "textarea", "select", "option", "form", "label", "img", "picture", "svg", "math", "style",
+      "script", "iframe", "frame", "object", "embed", "link", "meta", "base", "dialog", "details", "summary", "video", "audio", "source"];
+    assert.deepEqual(forbiddenTags.filter((tag) => PLAN_PURIFY.ALLOWED_TAGS.includes(tag)), []);
+    for (const tag of ["style", "img", "form", "button", "input", "textarea", "select", "label", "dialog", "details"]) assert.ok(PLAN_PURIFY.FORBID_TAGS.includes(tag), tag);
+    assert.deepEqual([...PLAN_PURIFY.ALLOWED_ATTR].sort(), ["class", "href", "title"]);
+    assert.equal(PLAN_PURIFY.ALLOW_DATA_ATTR, false);
+    assert.ok(Object.isFrozen(PLAN_PURIFY) && Object.isFrozen(PLAN_PURIFY.ALLOWED_TAGS) && Object.isFrozen(PLAN_PURIFY.ALLOWED_ATTR));
+    const links = ["https://a.example", "http://a.example", "mailto:a@b.c", "javascript:alert(1)", "JaVaScRiPt:x", "data:text/html,x", "vbscript:x", "/local", "file:///c:/x"];
+    assert.deepEqual(links.filter((link) => PLAN_PURIFY.ALLOWED_URI_REGEXP.test(link)), ["https://a.example", "http://a.example", "mailto:a@b.c"]);
   });
 
   it("falls back to plain escaped text where the sanitizer cannot run", () => {
