@@ -25,7 +25,9 @@ export const REACTIONS = {
   copying: reaction("copying", null, "paper"),
   drawing: reaction("drawing"),
   meeting: reaction("discussing", "talk"),
-  resting: reaction("dozing", "zzz"),
+  resting: { ...reaction("dozing", "zzz"), lowSeatPose: "lounging" },
   watering: reaction("watering", null, "can"),
   stretching: reaction("stretching"),
+  playing: { ...reaction("playing", null, "paddle"), hasRally: true },
+  gaming: reaction("gaming"),
 };

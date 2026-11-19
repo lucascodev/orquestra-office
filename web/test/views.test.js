@@ -10,6 +10,14 @@ import { renderTabs } from "../scripts/view/office/tabs-view.js";
 import { renderTeam } from "../scripts/view/office/team-view.js";
 import { renderUsage } from "../scripts/view/office/usage-view.js";
 import { renderAgentFacts, renderAgentIdentity, renderSheetShell } from "../scripts/view/sheet/agent-sheet-view.js";
+import { accountUsage } from "../scripts/domain/office/account-usage.js";
+import { dayTimeline } from "../scripts/domain/office/day-timeline.js";
+import { renderAccounts } from "../scripts/view/hud/accounts-view.js";
+import { renderAreaList } from "../scripts/view/hud/area-list-view.js";
+import { renderConnection } from "../scripts/view/hud/connection-view.js";
+import { renderDayTimeline } from "../scripts/view/hud/day-timeline-view.js";
+import { renderLegend } from "../scripts/view/hud/legend-view.js";
+import { arrivalsText, arrivalText, countdownText, renderAlertBody, renderAlertHead, warningText } from "../scripts/view/hud/pending-alert-view.js";
 import { renderPendingCard, renderPendingStrip } from "../scripts/view/sheet/pending-request-view.js";
 
 // ago(), clockTime() and resetTime() print in the machine's time zone; the recorded pages are in UTC.
@@ -226,3 +234,117 @@ describe("views fed with fields instead of ready-made text", () => {
   });
 });
 
+
+describe("headquarters connection", () => {
+  it("says whether the page is live, in the demo, connecting or cut off", () => {
+    assertMatchesRecording("hq-connection-live", renderConnection("live"));
+    assertMatchesRecording("hq-connection-demo", renderConnection("demo"));
+    assert.equal(renderConnection("toString"), renderConnection("connecting"));
+    assert.ok(renderConnection("offline").includes("sem conexão com o coletor"));
+  });
+});
+
+describe("headquarters room list", () => {
+  const census = {
+    total: 8,
+    projects: [
+      { key: "c:/loja", name: "loja <online>", themeId: "cafe", total: 2, byStatus: [{ status: "needs_you", count: 1 }, { status: "break", count: 1 }] },
+      { key: "c:/orquestra", name: "orquestra-office", themeId: "startup", total: 4, byStatus: [{ status: "working", count: 3 }, { status: "idle", count: 1 }] },
+      { key: "c:/vazio", name: "vazio", themeId: "unknown", total: 0, byStatus: [] },
+    ],
+    areas: [{ id: "meeting", name: "Sala de reuniões", count: 0 }, { id: "pantry", name: "Copa", count: 2 }],
+  };
+
+  it("lists the whole building, each project with its most urgent status spelled out, and the common rooms", () => {
+    assertMatchesRecording("hq-room-list", renderAreaList(census));
+  });
+
+  it("says no project is open yet", () => {
+    assertMatchesRecording("hq-room-list-empty", renderAreaList({ total: 0, projects: [], areas: census.areas }));
+  });
+});
+
+describe("headquarters legend", () => {
+  it("explains every status color in words", () => {
+    assertMatchesRecording("hq-legend", renderLegend());
+  });
+});
+
+describe("headquarters accounts", () => {
+  const reading = (fiveHour, sevenDay) => ({
+    fiveHour: { usedPercentage: fiveHour, resetsAt: NOW + 2 * HOUR }, sevenDay: { usedPercentage: sevenDay, resetsAt: NOW + 70 * HOUR },
+  });
+
+  it("shows a ring per account with each window as a meter, flagging the high ones", () => {
+    const accounts = {
+      b: { id: "b", label: "Trabalho", rateLimits: reading(12, 41), updatedAt: NOW },
+      a: { id: "a", label: "Pessoal <casa>", rateLimits: reading(37, 84), updatedAt: NOW },
+      c: { id: "c", label: "nova", rateLimits: null, updatedAt: NOW },
+    };
+    assertMatchesRecording("hq-accounts", renderAccounts(accountUsage({ accounts })));
+  });
+
+  it("says there is no reading yet instead of inventing one", () => {
+    assertMatchesRecording("hq-accounts-empty", renderAccounts(accountUsage({ accounts: null, usage: null })));
+  });
+});
+
+describe("headquarters day", () => {
+  const slotAt = (hour, extra) => ({
+    start: Date.UTC(2026, 10, 18, hour), workingMs: 0, workingAgentMs: 0, needsYouMs: 0, needsYouAgentMs: 0, needsYouCount: 0, costUsd: 0, ...extra,
+  });
+
+  it("sums the day, draws a bar per hour with the marks and the current time, and keeps a table for screen readers", () => {
+    const timeline = {
+      slotMs: HOUR,
+      slots: [
+        slotAt(9, { workingMs: 40 * MINUTE, workingAgentMs: HOUR, costUsd: 2.5 }),
+        slotAt(11, { workingMs: HOUR, workingAgentMs: 2 * HOUR, needsYouMs: 4 * MINUTE, needsYouAgentMs: 4 * MINUTE, needsYouCount: 1, costUsd: 4.25 }),
+      ],
+      open: { since: NOW - 10 * MINUTE, working: 1, needsYou: 0 },
+    };
+    assertMatchesRecording("hq-day", renderDayTimeline(dayTimeline(timeline, { now: NOW, dayStart: Date.UTC(2026, 10, 18) })));
+  });
+
+  it("says the collector does not send the day yet", () => {
+    assertMatchesRecording("hq-day-empty", renderDayTimeline(null));
+  });
+});
+
+describe("headquarters request alert", () => {
+  const vitor = { name: "Vitor", projectName: "loja <online>" };
+
+  it("says who asks, where, what for, and which of the waiting requests this is, with arrows between them", () => {
+    assertMatchesRecording("hq-alert-head", renderAlertHead({ requester: vitor, intent: "quer rodar um comando", position: 1, total: 3, previousId: null, nextId: "b" }));
+  });
+
+  it("leaves out the arrows for a single request and names an agent that is gone", () => {
+    assertMatchesRecording("hq-alert-head-single", renderAlertHead({ requester: null, intent: "tem uma pergunta", position: 1, total: 1, previousId: null, nextId: null }));
+  });
+
+  it("shows the command with allow and deny and their keys, and the error to fill when sending fails", () => {
+    assertMatchesRecording("hq-alert-command", renderAlertBody(withFields(permission, { summaryId: "run-command", subject: "Aplicar as migrações <db>" }), vitor));
+  });
+
+  it("shows what a tool without a command wants", () => {
+    const edit = { ...permission, id: "req-edit", toolName: "Edit", detail: "", summaryId: "edit-file", subject: "people.js" };
+    assertMatchesRecording("hq-alert-tool", renderAlertBody(edit, vitor));
+  });
+
+  it("offers to answer a question in a panel with the same card as the room", () => {
+    assertMatchesRecording("hq-alert-question", renderAlertBody(question, { name: "Duda <dev>", projectName: "jogo" }));
+  });
+
+  it("counts down in minutes and seconds, and says when the request is going back", () => {
+    assert.deepEqual([112_000, 59_001, 0, -5, null].map(countdownText), [
+      "volta ao terminal em 1:52", "volta ao terminal em 1:00", "voltando ao terminal", "voltando ao terminal", "sem prazo para voltar ao terminal",
+    ]);
+  });
+
+  it("announces who asks, in a sentence a screen reader can say", () => {
+    assert.equal(arrivalText(vitor, "quer rodar um comando"), "Vitor, em loja <online>, quer rodar um comando.");
+    assert.equal(arrivalText(null, "tem uma pergunta"), "Um agente tem uma pergunta.");
+    assert.equal(arrivalsText([{ requester: vitor, intent: "quer rodar um comando" }, { requester: null, intent: "tem uma pergunta" }]), "2 pedidos novos. Vitor, em loja <online>, quer rodar um comando.");
+    assert.equal(warningText(vitor), "Faltam 30 segundos para o pedido de Vitor voltar ao terminal.");
+  });
+});

@@ -8,8 +8,7 @@ function firstFreeIndex(preferred, taken) {
 }
 
 // Ordered by key, not by start time: start times change while the office is open and would shuffle names between colleagues.
-function namesFor(agents) {
-  const taken = new Set();
+function namesFor(agents, taken = new Set()) {
   const names = new Map();
   for (const agent of [...agents].sort((a, b) => a.key.localeCompare(b.key))) {
     const index = firstFreeIndex(hashOf(agent.key) % FIRST_NAMES.length, taken);
@@ -23,4 +22,18 @@ export function withAgentNames(project) {
   const names = namesFor(Object.values(project.agents));
   const agents = Object.fromEntries(Object.entries(project.agents).map(([key, agent]) => [key, { ...agent, name: names.get(agent.key) }]));
   return { ...project, agents };
+}
+
+const withNames = (project, names) => ({
+  ...project,
+  agents: Object.fromEntries(Object.entries(project.agents).map(([key, agent]) => [key, { ...agent, name: names.get(agent.key) ?? agent.name }])),
+});
+
+// In the headquarters names are unique in the whole building; a name the agent already brings is kept and stays taken.
+export function withBuildingAgentNames(projects) {
+  const agents = Object.values(projects).flatMap((project) => Object.values(project.agents));
+  const named = agents.filter((agent) => agent.name);
+  const taken = new Set(named.map((agent) => FIRST_NAMES.indexOf(agent.name)).filter((index) => index >= 0));
+  const names = namesFor(agents.filter((agent) => !agent.name), taken);
+  return Object.fromEntries(Object.entries(projects).map(([key, project]) => [key, withNames(project, names)]));
 }

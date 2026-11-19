@@ -56,5 +56,9 @@ export function createEmote(parent) {
       drawEmote(canvas, name, frame);
       texture.needsUpdate = true;
     },
+    dispose() {
+      texture.dispose();
+      sprite.material.dispose();
+    },
   };
 }

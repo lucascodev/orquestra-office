@@ -92,7 +92,7 @@ export function createRoomRenderer({ onPick, describeStatus }) {
     }
     tagLayer.style.setProperty("--tag-max-width", nameTagMaxWidth(camera));
     const bubbles = [...thoughts.values()].map((bubble) => bubble.element);
-    tagLayer.replaceChildren(...room.nameplates.map((nameplate) => createNameplate(nameplate, camera)), ...[...tags.values()].map((tag) => tag.element), ...bubbles);
+    tagLayer.replaceChildren(...room.nameplates.map((nameplate) => createNameplate(nameplate, camera, room.root)), ...[...tags.values()].map((tag) => tag.element), ...bubbles);
   }
 
   function currentThought(person, seconds) {

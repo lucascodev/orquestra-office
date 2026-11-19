@@ -7,6 +7,7 @@ import { agentActionText, logEntryText } from "../scripts/domain/office/agent-ac
 import { terminalEntryText } from "../scripts/domain/terminal/terminal-entry-text.js";
 import { describeToolEntry } from "../scripts/domain/terminal/terminal-format.js";
 import { toolSummaryText } from "../scripts/domain/terminal/tool-summary-text.js";
+import { createDemoAsker } from "../scripts/infra/demo/demo-requests.js";
 import { demoHistory } from "../scripts/infra/demo/demo-terminal.js";
 import { demoState, resolveDemoRequest, tickDemo } from "../scripts/infra/demo/demo-world.js";
 
@@ -75,5 +76,32 @@ describe("the demonstration", () => {
     assert.ok(Object.hasOwn(TERMINAL_NOTES, error.textId));
     assert.equal(terminalEntryText(error), "Bash falhou");
     assert.equal(terminalEntryText(entries.at(-1)), "editando server.js");
+  });
+});
+
+describe("demo requests in the headquarters", () => {
+  const TICK_MS = 4_000;
+
+  it("asks again a few ticks after a request is decided, with a new id and the agent waiting for you", () => {
+    const state = demoState();
+    const start = state.pending[0].createdAt;
+    const askAgain = createDemoAsker(state.pending);
+    resolveDemoRequest(state, "demo-permission", { behavior: "allow" });
+    for (let tick = 1; tick <= 2; tick += 1) askAgain(state, start + tick * TICK_MS);
+    assert.deepEqual(state.pending.map((request) => request.id), ["demo-question"]);
+    askAgain(state, start + 3 * TICK_MS);
+    const asked = state.pending.find((request) => request.agentKey === "claude:c1");
+    assert.equal(asked.id, "demo-permission-1");
+    assert.equal(asked.expiresAt, start + 3 * TICK_MS + 2 * 60_000);
+    const agent = state.projects["c:/projetos/loja-online"].agents["claude:c1"];
+    assert.deepEqual([agent.status, agent.actionId, agent.subject], ["needs_you", "permission-requested", "Bash"]);
+  });
+
+  it("sends an expired request back to the terminal before asking again", () => {
+    const state = demoState();
+    const askAgain = createDemoAsker(state.pending);
+    const afterDeadline = Math.max(...state.pending.map((request) => request.expiresAt)) + 1;
+    askAgain(state, afterDeadline);
+    assert.deepEqual(state.pending, []);
   });
 });

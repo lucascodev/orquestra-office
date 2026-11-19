@@ -4,6 +4,8 @@ import {
 } from "./room-dimensions.js";
 
 const COFFEE_SPOTS = 3;
+const ROOM_AREA = "room";
+const ROOM_ACTIVITIES = ["coffee", "water", "window", "books", "filing", "copier", "board", "meeting", "sofa", "plant"];
 const FACING_CAMERA = 0;
 const FACING_WALL = Math.PI;
 const FACING_RIGHT = Math.PI / 2;
@@ -65,9 +67,10 @@ function plantStops({ zones }) {
 function freeTimeSpots(layout) {
   const { zones } = layout;
   const wall = zones.wallItems.flatMap((item) => WALL_SPOTS[item.name]?.(item, zones.lanes.topLaneZ) ?? []);
-  const spots = {};
-  for (const [activity, stop] of [...wall, ...meetingStops(layout), ...loungeStops(layout), ...plantStops(layout)]) {
-    spots[activity] = [...(spots[activity] ?? []), stop];
+  const spots = new Map();
+  for (const [activityId, stop] of [...wall, ...meetingStops(layout), ...loungeStops(layout), ...plantStops(layout)]) {
+    const listed = spots.get(activityId) ?? [];
+    spots.set(activityId, [...listed, { id: `${activityId}:${listed.length}`, activityId, areaId: ROOM_AREA, ...stop }]);
   }
   return spots;
 }
@@ -89,5 +92,5 @@ export function besideDeskStop(desk, side) {
 }
 
 export function roomSpots(layout) {
-  return { desks: seatStops(layout), freeTime: freeTimeSpots(layout), exit: exitStop(layout) };
+  return { desks: seatStops(layout), freeTime: freeTimeSpots(layout), exit: exitStop(layout), activities: ROOM_ACTIVITIES };
 }

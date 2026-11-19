@@ -10,6 +10,8 @@
   --accent: #e8956b; --focus: #f0a27c;
   --success: #6cc08b; --warning: #e6c35c; --danger: #f07a7a; --info: #7fb4e8;
   --warning-bg: rgb(230 195 92 / 0.08); --warning-border: rgb(230 195 92 / 0.45);
+  --bg-floating: rgb(17 17 20 / 0.92); --bg-floating-strong: rgb(17 17 20 / 0.96);
+  --warning-surface: rgb(29 26 18 / 0.95); --warning-edge: rgb(230 195 92 / 0.6);
 
   --a-claude: #e8956b; --a-codex: #7fb4e8; --a-shell: #8e8e98;
   --balloon-paper: #ffffff; --balloon-ink: #1b1f2b;

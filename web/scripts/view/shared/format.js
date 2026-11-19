@@ -28,3 +28,20 @@ export function formatTokens(count = 0) {
 }
 
 export const formatCost = (usd = 0) => `US$ ${usd.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+
+const MINUTE_MS = 60_000;
+const MINUTES_IN_HOUR = 60;
+const SECONDS_IN_MINUTE = 60;
+
+export function formatDuration(ms = 0) {
+  const minutes = Math.floor(ms / MINUTE_MS);
+  if (minutes < MINUTES_IN_HOUR) return `${minutes} min`;
+  return `${Math.floor(minutes / MINUTES_IN_HOUR)} h ${String(minutes % MINUTES_IN_HOUR).padStart(2, "0")}`;
+}
+
+export function formatCountdown(ms) {
+  const seconds = Math.ceil(Math.max(0, ms) / 1000);
+  return `${Math.floor(seconds / SECONDS_IN_MINUTE)}:${String(seconds % SECONDS_IN_MINUTE).padStart(2, "0")}`;
+}
+
+export const hourLabel = (hour) => `${String(hour).padStart(2, "0")}h`;

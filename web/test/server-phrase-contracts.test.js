@@ -14,6 +14,7 @@ import { SESSION_ENTRY } from "../../runner/src/sessions/session-entry-ids.js";
 import { createSession } from "../../runner/src/sessions/session.js";
 import { AGENT_ACTIONS } from "../scripts/data/text/pt-br/agent-actions.js";
 import { TERMINAL_NOTES } from "../scripts/data/text/pt-br/terminal-notes.js";
+import { REQUEST_INTENTS } from "../scripts/data/text/pt-br/request-intents.js";
 import { TOOL_SUMMARIES } from "../scripts/data/text/pt-br/tool-summaries.js";
 import { agentActionText, logEntryText } from "../scripts/domain/office/agent-action-text.js";
 import { terminalEntryText } from "../scripts/domain/terminal/terminal-entry-text.js";
@@ -190,6 +191,7 @@ const DEMO_ONLY_ACTION_IDS = ["no-task"];
 const PHRASE_SETS = [
   { name: "agent actions", catalog: AGENT_ACTIONS, publishedIds: Object.values(AGENT_ACTION), demoOnlyIds: DEMO_ONLY_ACTION_IDS },
   { name: "tool summaries", catalog: TOOL_SUMMARIES, publishedIds: Object.values(TOOL_SUMMARY), demoOnlyIds: [] },
+  { name: "request intents", catalog: REQUEST_INTENTS, publishedIds: Object.values(TOOL_SUMMARY), demoOnlyIds: [] },
   { name: "terminal notes", catalog: TERMINAL_NOTES, publishedIds: [...Object.values(ENTRY_TEXT), ...Object.values(SESSION_ENTRY)], demoOnlyIds: [] },
 ];
 

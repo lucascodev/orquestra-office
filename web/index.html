@@ -40,6 +40,34 @@
     </div>
   </form>
 </dialog>
+<template id="headquarters-shell">
+  <div class="hq-hud">
+    <header class="hq-capsule hq-panel">
+      <span class="hq-brand-mark" aria-hidden="true"><i></i><i></i><i></i><i></i></span>
+      <h1 class="hq-brand">Orquestra Office</h1>
+      <span class="hq-connection" role="status" data-slot="connection"></span>
+    </header>
+    <section class="hq-alert" aria-label="Precisa de você" aria-describedby="hq-alert-keys" tabindex="-1" data-slot="alert" hidden>
+      <div class="hq-alert-head" data-part="head"></div>
+      <div data-part="body"></div>
+      <p class="sr-only" id="hq-alert-keys">Com o foco neste aviso, A permite e N nega o pedido.</p>
+    </section>
+    <section class="hq-accounts hq-panel" aria-label="Contas e uso do plano">
+      <div data-slot="accounts"></div>
+      <button class="btn btn-sm btn-primary" type="button" data-new-session hidden>Nova sessão</button>
+      <span class="badge" data-runner-off title="Rode node runner/src/main.js nesta máquina para abrir sessões pela Sede." hidden>executor desligado</span>
+    </section>
+    <nav class="hq-rooms hq-panel" aria-label="Salas" data-slot="rooms"></nav>
+    <section class="hq-legend hq-panel" aria-labelledby="hq-legend-title" data-slot="legend"></section>
+    <section class="hq-day hq-panel" aria-label="Hoje" data-slot="day"></section>
+    <div class="hq-camera hq-panel" role="group" aria-label="Câmera">
+      <button class="hq-camera-button" type="button" data-camera="in" aria-label="Aproximar" title="Aproximar (+)">+</button>
+      <button class="hq-camera-button" type="button" data-camera="out" aria-label="Afastar" title="Afastar (-)">−</button>
+      <button class="hq-camera-button" type="button" data-camera="whole" aria-label="Enquadrar a Sede inteira" title="Enquadrar a Sede inteira (0)">⤢</button>
+    </div>
+    <p class="sr-only" aria-live="polite" data-slot="announcer"></p>
+  </div>
+</template>
 <script type="module" src="scripts/app/main.js"></script>
 </body>
 </html>

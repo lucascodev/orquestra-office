@@ -4,11 +4,11 @@ import { join } from "node:path";
 import { describe, it } from "node:test";
 import { fileURLToPath } from "node:url";
 import { THEMES } from "../scripts/data/themes.js";
-import { FREE_TIME } from "../scripts/domain/behavior/agent-reactions.js";
+import { freeTimePreferences } from "../scripts/domain/behavior/agent-reactions.js";
 import { assignPlaces } from "../scripts/domain/behavior/room-places.js";
 import { layoutRoom } from "../scripts/domain/room/room-layout.js";
 import { nearestLaneZ, routeBetween, routeWithin } from "../scripts/domain/room/room-routes.js";
-import { exitStop, seatStop } from "../scripts/domain/room/room-spots.js";
+import { exitStop, roomSpots, seatStop } from "../scripts/domain/room/room-spots.js";
 import { planWall } from "../scripts/domain/room/wall-plan.js";
 
 const ROOM_FIXTURES = fileURLToPath(new URL("./fixtures/rooms/", import.meta.url));
@@ -135,12 +135,11 @@ const FREE_TIME_SPOTS_BY_THEME = {
 };
 
 function freeTimeSpotsOffered(theme) {
-  const activityOfReaction = Object.fromEntries(FREE_TIME.map((activity) => [activity.reaction, activity.id]));
   const idle = Array.from({ length: MORE_PEOPLE_THAN_SPOTS }, (_, i) => agentOf(`claude:f${i}`, { status: "idle", activity: null }));
   const places = [...assignPlaces(idle, null, layoutRoom(emptyProject(), theme), new Map()).values()].filter((place) => place.isFreeTime);
   const counts = {};
   for (const place of places) {
-    const activity = activityOfReaction[place.reaction];
+    const activity = place.stop.activityId;
     counts[activity] = (counts[activity] ?? 0) + 1;
   }
   return Object.fromEntries(Object.entries(counts).sort(([a], [b]) => a.localeCompare(b)));
@@ -152,6 +151,21 @@ describe("free time spots", () => {
       assert.deepEqual(freeTimeSpotsOffered(theme), FREE_TIME_SPOTS_BY_THEME[theme.id]);
     });
   }
+});
+
+const ORDER_BEFORE_THE_HEADQUARTERS = {
+  "claude:a1": ["coffee", "coffee", "board", "sofa", "plant", "window", "water", "books", "copier", "meeting", "filing"],
+  "codex:b1": ["coffee", "sofa", "meeting", "water", "plant", "window", "coffee", "copier", "filing", "board", "books"],
+  "claude:a1:s2": ["coffee", "filing", "books", "copier", "water", "plant", "meeting", "sofa", "board", "window", "coffee"],
+};
+
+describe("free time order in the room", () => {
+  it("gives each agent the same personal order of activities as before the headquarters existed", () => {
+    const { activities } = roomSpots(layoutRoom(emptyProject(), THEMES[0]));
+    for (const [key, order] of Object.entries(ORDER_BEFORE_THE_HEADQUARTERS)) {
+      assert.deepEqual(freeTimePreferences(agentOf(key, { status: "break" }), null, 0, activities), order, key);
+    }
+  });
 });
 
 describe("routes", () => {
