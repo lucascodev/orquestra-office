@@ -713,6 +713,8 @@ Por que essa ordem funciona: o campus muda o contrato do collector (tempo por st
 
 ### 11.1 Fase 6: o escritório como campus (v1 completa)
 
+**Situação em 2026-11-18.** O desenho aprovado trocou o campus por uma Sede em salão aberto (`docs/arquitetura/fase-6-sede.md` e ADR 0002). No passo 6.33 a sala antiga saiu do código: a página da sala, as abas, a lista do time, o renderizador e a mobília da sala, `room-layout`, `room-zones`, `room-routes` e `wall-plan`, as atividades de estante, arquivo e copiadora e os testes e saídas de referência delas. A Sede é a única página; `?vista=sede` continua aceito e não muda nada. Os 7 temas passaram a ser por ilha, escolhidos na ficha da ilha, e o seletor "Escritório" deixou de existir. O texto abaixo fica como registro do plano original.
+
 **Escopo da v1 (tudo entra).**
 
 - Mapa único com o prédio inteiro: cada projeto é uma sala; salas comuns (recepção, copa, lounge, banheiros, reunião) ligadas por corredor; área externa (gramado, árvores, calçada, rua).
@@ -992,10 +994,10 @@ Achados MINOR das revisões que não bloquearam a fase. Na revisão final da bra
 | Fase | Onde | Pendência |
 |---|---|---|
 | 3 | `web/test/support/source-code.js` (`opensRegex`) | Uma barra depois de `)` de `if`/`while`/`for` é lida como divisão, e depois de `++`/`--` como início de regex. Nos dois casos o tokenizador pode esconder o resto da linha. Nenhum arquivo real é afetado. Correção: tratar `++` e `--` como fim de operando e registrar o limite num teste. |
-| 3 | `view/terminal/terminal-entries.js`, `app/agent-panel.js`, `app/office-page.js` | O uso de `ownValueOf` nestes três arquivos está certo, mas falta teste com chave herdada (`toString`). |
-| 3 | `domain/room/room-routes.js` | A mutação que remove `spine: null` em `routeWithin` sobrevive. |
+| 3 | `view/terminal/terminal-entries.js`, `app/agent-panel.js` | O uso de `ownValueOf` nestes arquivos está certo, mas falta teste com chave herdada (`toString`). `app/office-page.js` saiu com a sala no passo 6.33. |
+| 3 | `domain/room/room-routes.js` | Resolvida: o arquivo saiu com a sala no passo 6.33. |
 | 3 | `view/office/status-display.js` | Repete `Object.hasOwn(...) ?` inline; pode usar `ownValueOf`. |
-| 3 | `three/scene/name-tags.js`, `three/scene/camera-framing.js` | Etiquetas, placas e enquadramento usam coordenadas locais da sala. Com origem diferente de zero (Sede), passam a usar a posição no mundo. Entra na fase 6. |
+| 3 | `three/scene/name-tags.js`, `three/scene/camera-framing.js` | Resolvida: a Sede monta tudo em coordenadas do mundo, `camera-framing.js` saiu com a sala no passo 6.33 e as placas perderam o parâmetro da origem da sala. |
 | 3 | `domain/office/decision-body.js` | `answers[question.question] = answer` perde a resposta de uma pergunta com o texto `__proto__`. Correção: `Object.fromEntries`. |
 | 3 | `web/test/architecture.test.js` (`exportsIn`) | Lê o texto bruto, então um `// export const x` conta como export. |
 | 4 | hooks e coletor | Autenticação entre hooks e coletor (quem responde em `127.0.0.1:8420` decide permissões) e pareamento no modo LAN. Pedem ADR aprovado pelo usuário antes da fase 7. |
