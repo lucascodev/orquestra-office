@@ -1,3 +1,4 @@
+import { chainedNotifyCommand, isChainedNotifyCommand, previousNotifyOf } from "./codex-chain.mjs";
 import { DEFAULT_OFFICE_URL } from "./office-url.mjs";
 
 const NOTIFY_MAX_SECONDS = "3";
@@ -21,9 +22,11 @@ export const officeNotifyCommand = ({ officeUrl, curlPath, nullDevice, activityH
   "-X", "POST", "-H", "Content-Type: application/json", `${officeUrl}${OFFICE_NOTIFY_PATH}`, "--data-raw",
 ];
 
-export const officeNotifyLine = (options) => `notify = [${officeNotifyCommand(options).map((part) => JSON.stringify(part)).join(", ")}]`;
+const notifyLineOf = (command) => `notify = [${command.map((part) => JSON.stringify(part)).join(", ")}]`;
 
-export const officeNotifyEntries = (options) => ({ notify: [officeNotifyCommand(options)] });
+export const officeNotifyLine = (options) => notifyLineOf(officeNotifyCommand(options));
+
+export const notifyEntriesOf = (command) => ({ notify: [command] });
 
 export const configLines = (text) => text.split(/\r?\n/);
 
@@ -49,13 +52,17 @@ function isUnrecordedTokenNotify(command, officeUrl) {
   return lastFlag === "--data-raw" && [officeUrl, DEFAULT_OFFICE_URL].some((origin) => url === `${origin}${OFFICE_NOTIFY_PATH}`);
 }
 
-function isOfficeNotify(line, { officeUrl, recorded = {} }) {
+const isStringCommand = (command) => Array.isArray(command) && command.length > 0 && command.every((part) => typeof part === "string");
+
+function notifyCommandOf(line) {
   const [, valueText] = BARE_NOTIFY_VALUE.exec(line) ?? [];
-  const command = valueText === undefined ? null : parseArray(valueText);
-  if (!command) return false;
+  return valueText === undefined ? null : parseArray(valueText);
+}
+
+function isOfficeNotify(command, { officeUrl, recorded = {} }) {
   const known = [...(Array.isArray(recorded.notify) ? recorded.notify : []), ...legacyCommands(officeUrl)];
   if (known.some((candidate) => JSON.stringify(candidate) === JSON.stringify(command))) return true;
-  return !Array.isArray(recorded.notify) && isUnrecordedTokenNotify(command, officeUrl);
+  return !Array.isArray(recorded.notify) && (isUnrecordedTokenNotify(command, officeUrl) || isChainedNotifyCommand(command));
 }
 
 // notify is a root key: the same name inside a [table] is a different setting and stays untouched.
@@ -65,9 +72,15 @@ function rootNotifyIndex(lines) {
   return lines.slice(0, rootEnd).findIndex((line) => ANY_NOTIFY_KEY.test(line));
 }
 
+// Someone else's notify is kept and runs after the office's; only a single-line array of strings can be chained safely.
 export function applyNotify(lines, options) {
   const notifyIndex = rootNotifyIndex(lines);
-  if (notifyIndex !== -1 && !isOfficeNotify(lines[notifyIndex], options)) return { foreignNotifyLine: lines[notifyIndex] };
-  const withoutOfficeNotify = notifyIndex === -1 ? [...lines] : lines.toSpliced(notifyIndex, 1);
-  return { lines: options.isRemoving ? withoutOfficeNotify : [officeNotifyLine(options), ...withoutOfficeNotify] };
+  const current = notifyIndex === -1 ? null : notifyCommandOf(lines[notifyIndex]);
+  const isOffice = current !== null && isOfficeNotify(current, options);
+  if (notifyIndex !== -1 && !isOffice && (options.isRemoving || !isStringCommand(current))) return { foreignNotifyLine: lines[notifyIndex] };
+  const previous = notifyIndex === -1 ? [] : isOffice ? previousNotifyOf(current) : current;
+  const rest = notifyIndex === -1 ? [...lines] : lines.toSpliced(notifyIndex, 1);
+  if (options.isRemoving) return { lines: previous.length > 0 ? [notifyLineOf(previous), ...rest] : rest, previous };
+  const command = previous.length > 0 ? chainedNotifyCommand(options, previous) : officeNotifyCommand(options);
+  return { lines: [notifyLineOf(command), ...rest], command, previous };
 }

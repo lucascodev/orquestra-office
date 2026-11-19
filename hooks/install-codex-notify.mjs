@@ -1,7 +1,9 @@
 import { existsSync, readFileSync } from "node:fs";
 import { homedir } from "node:os";
-import { join } from "node:path";
-import { applyNotify, configLines, configText, officeNotifyEntries } from "./lib/codex-config.mjs";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
+import { CHAIN_SCRIPT_FILE } from "./lib/codex-chain.mjs";
+import { applyNotify, configLines, configText, notifyEntriesOf } from "./lib/codex-config.mjs";
 import { commitConfig } from "./lib/config-commit.mjs";
 import { findCurl, nullDeviceOf } from "./lib/curl.mjs";
 import { envValue } from "./lib/env-value.mjs";
@@ -58,20 +60,24 @@ const options = {
   curlPath,
   nullDevice: nullDeviceOf(process.platform),
   activityHeaderFile: officeFiles.activityHeaderFile,
+  chainScript: join(dirname(fileURLToPath(import.meta.url)), CHAIN_SCRIPT_FILE),
 };
 const result = applyNotify(originalText === null ? [] : configLines(originalText), options);
 
 if (result.foreignNotifyLine !== undefined) {
-  console.error(`${configPath} already has another notify command:\n  ${result.foreignNotifyLine}\nNothing was changed. Codex accepts a single notify command; merge them by hand if you want both.`);
+  console.error(`${configPath} already has another notify command:\n  ${result.foreignNotifyLine}\nNothing was changed. Only a notify written on one line as an array of strings can run after the office's; merge them by hand if you want both.`);
   process.exit(1);
 }
 
 if (!isRemoving) prepareOfficeSecret({ officeFiles, rotate: false, fail });
 const { isUnchanged, hasChangedMeanwhile, backupPath, pruneError } = commitOrFail({ path: configPath, originalText, nextText: configText(result.lines) });
 if (hasChangedMeanwhile) fail(`${configPath} was saved by another program while the installer ran. Run the installer again`);
-writeManifestFile(configDir, withManifestSection(manifest, MANIFEST_SECTION, isRemoving ? null : officeNotifyEntries(options)));
+writeManifestFile(configDir, withManifestSection(manifest, MANIFEST_SECTION, isRemoving ? null : notifyEntriesOf(result.command)));
 if (backupPath) console.log(`Backup: ${backupPath}`);
 if (pruneError) console.warn(`Saved, but could not remove old backup ${pruneError.path ?? ""} (${pruneError.code ?? pruneError.message}).`);
 if (isUnchanged) console.log(`${configPath} is already up to date. Nothing was changed.`);
 else if (isRemoving) console.log(`Office notify removed from ${configPath}.`);
 else console.log(`Office notify installed in ${configPath}. Codex turns will show up at ${officeUrl}.`);
+if (!isUnchanged && result.previous.length > 0) {
+  console.log(isRemoving ? "Your own notify command is back on its own." : `Your own notify command still runs after the office's: ${JSON.stringify(result.previous)}`);
+}

@@ -6,7 +6,7 @@ import { test } from "node:test";
 import { fakeHome } from "./support/fake-home.mjs";
 import { makeUnwritable, READ_ONLY_SKIP } from "./support/read-only.mjs";
 import { officeNotifyLine } from "../lib/codex-config.mjs";
-import { BASE_ENV, runHookScript } from "./support/run-hook-script.mjs";
+import { BASE_ENV, HOOKS_DIR, runHookScript } from "./support/run-hook-script.mjs";
 
 const INSTALLER = "install-codex-notify.mjs";
 const SYSTEM_CURL = process.platform === "win32" ? join(BASE_ENV.SystemRoot, "System32", "curl.exe") : ["/usr/bin/curl", "/bin/curl", "/usr/local/bin/curl", "/opt/homebrew/bin/curl"].find(existsSync);
@@ -147,39 +147,56 @@ test("running again with nothing to change writes nothing and makes no backup", 
   assert.equal(backupsIn(dir).length, 1);
 });
 
-test("refuses a notify that belongs to someone else, exits 1 and changes nothing", async (t) => {
+const CHAIN_SCRIPT = join(HOOKS_DIR, "office-codex-notify.mjs");
+
+test("keeps someone else's notify running after the office's, and gives it back on --remove", async (t) => {
+  const dir = codexHome(t);
+  const original = 'model = "o3"\nnotify = [ "notify-send", "turn-ended" ]\n';
+  writeFileSync(join(dir, "config.toml"), original);
+
+  const installed = await install(dir);
+
+  assert.equal(installed.code, 0);
+  assert.match(installed.stdout, /Your own notify command still runs after the office's: \["notify-send","turn-ended"\]/);
+  const chained = ["node", CHAIN_SCRIPT, "--office-url", "http://127.0.0.1:8420", "--then", "notify-send", "turn-ended"];
+  assert.equal(readConfig(dir), `notify = [${chained.map((part) => JSON.stringify(part)).join(", ")}]\nmodel = "o3"\n`);
+  assert.deepEqual(JSON.parse(readFileSync(join(dir, MANIFEST), "utf8")).codex.notify, [chained]);
+
+  const again = await install(dir);
+
+  assert.match(again.stdout, /already up to date/);
+
+  const removed = await install(dir, {}, ["--remove"]);
+
+  assert.equal(removed.code, 0);
+  assert.match(removed.stdout, /Your own notify command is back on its own\./);
+  assert.equal(readConfig(dir), 'notify = ["notify-send", "turn-ended"]\nmodel = "o3"\n');
+});
+
+test("--remove refuses a notify that belongs to someone else, exits 1 and changes nothing", async (t) => {
   const dir = codexHome(t);
   const original = 'notify = ["notify-send"]\n';
   writeFileSync(join(dir, "config.toml"), original);
 
-  for (const args of [[], ["--remove"]]) {
-    const result = await install(dir, {}, args);
+  const result = await install(dir, {}, ["--remove"]);
 
-    assert.equal(result.code, 1);
-    assert.match(result.stderr, /already has another notify command:\n {2}notify = \["notify-send"\]\nNothing was changed\./);
-  }
+  assert.equal(result.code, 1);
+  assert.match(result.stderr, /already has another notify command:\n {2}notify = \["notify-send"\]\nNothing was changed\./);
   assert.equal(readConfig(dir), original);
   assert.deepEqual(backupsIn(dir), []);
 });
 
-for (const foreignNotify of [
-  'notify = ["sh", "-c", "curl -d @- http://127.0.0.1:8420/events/codex; my-script"]',
-  '"notify" = ["curl", "-s", "--noproxy", "*", "-m", "3", "-X", "POST", "-H", "Content-Type: application/json", "http://127.0.0.1:8420/events/codex", "--data-raw"]',
-]) {
-  test(`keeps a notify that only looks like the office's, on install and on remove: ${foreignNotify.slice(0, 30)}`, async (t) => {
-    const dir = codexHome(t);
-    const original = `model = "o3"\n${foreignNotify}\n`;
-    writeFileSync(join(dir, "config.toml"), original);
+test("refuses a notify that cannot be chained, exits 1 and changes nothing", async (t) => {
+  const dir = codexHome(t);
+  const original = `model = "o3"\n"notify" = ["curl", "-s", "http://127.0.0.1:8420/events/codex", "--data-raw"]\n`;
+  writeFileSync(join(dir, "config.toml"), original);
 
-    for (const args of [[], ["--remove"]]) {
-      const result = await install(dir, {}, args);
+  const result = await install(dir);
 
-      assert.equal(result.code, 1);
-      assert.match(result.stderr, /already has another notify command:/);
-    }
-    assert.equal(readConfig(dir), original);
-  });
-}
+  assert.equal(result.code, 1);
+  assert.match(result.stderr, /already has another notify command:.+\nNothing was changed\. Only a notify written on one line as an array of strings/s);
+  assert.equal(readConfig(dir), original);
+});
 
 test("replaces the notify written before --noproxy existed, without a second notify", async (t) => {
   const dir = codexHome(t);
