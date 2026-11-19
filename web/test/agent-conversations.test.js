@@ -1,14 +1,11 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { THEMES } from "../scripts/data/themes.js";
-import { assignPlaces } from "../scripts/domain/behavior/room-places.js";
 import { createConversationTracker } from "../scripts/domain/conversations/conversation-tracker.js";
 import { conversationMoment, socialCircles, workConversations } from "../scripts/domain/conversations/conversations.js";
 import { placeAgents } from "../scripts/domain/behavior/room-places.js";
 import { areaOfPoint } from "../scripts/domain/headquarters/area-of-point.js";
 import { layoutHeadquarters } from "../scripts/domain/headquarters/headquarters-layout.js";
 import { headquartersSpots } from "../scripts/domain/headquarters/headquarters-spots.js";
-import { layoutRoom } from "../scripts/domain/room/room-layout.js";
 
 const NOW = 1_800_000_000_000;
 const MAIN = "claude:m1";
@@ -22,8 +19,8 @@ const mainAgent = (status = "working") => agentOf(MAIN, status, { name: "Ana" })
 const subAgent = (extra = {}) => agentOf(SUB, "working", { kind: "subagent", parentKey: MAIN, name: "Bia", ...extra });
 
 function placesFor(agents, now = NOW) {
-  const project = { key: "c:/demo", agents: Object.fromEntries(agents.map((agent) => [agent.key, agent])), team: [] };
-  return assignPlaces(agents, now, layoutRoom(project, THEMES[0]), new Map());
+  const project = { key: "c:/demo", name: "demo", template: "startup", createdAt: 0, updatedAt: NOW, agents: Object.fromEntries(agents.map((agent) => [agent.key, agent])), team: [] };
+  return placeAgents({ agents, now, spots: headquartersSpots(layoutHeadquarters({ [project.key]: project })), freeSince: new Map() });
 }
 
 describe("finished subagent", () => {
@@ -156,7 +153,7 @@ describe("conversation tracker", () => {
     assert.equal(roles.get(SUB).isSpeaking, false);
   });
 
-  it("has two idle people chat in today's room, which is one area as a whole", () => {
+  it("has two idle people chat in the area their free time spots are in", () => {
     const agents = [agentOf("claude:a", "idle", { activity: null }), agentOf("claude:b", "idle", { activity: null })];
     const places = placesFor(agents, null);
     const { x, z } = places.get("claude:a").stop;

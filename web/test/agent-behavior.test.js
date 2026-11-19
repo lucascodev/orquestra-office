@@ -1,17 +1,14 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { THEMES } from "../scripts/data/themes.js";
 import { FREE_TIME, freeTimePreferences } from "../scripts/domain/behavior/agent-reactions.js";
 import { temperamentOf } from "../scripts/domain/behavior/agent-temperament.js";
 import { freshestThoughts, thoughtAt } from "../scripts/domain/behavior/agent-thoughts.js";
 import { createFreeTimeClock } from "../scripts/domain/behavior/free-time-clock.js";
 import { planMovement } from "../scripts/domain/behavior/movement-plan.js";
-import { assignPlaces, placeAgents } from "../scripts/domain/behavior/room-places.js";
+import { placeAgents } from "../scripts/domain/behavior/room-places.js";
 import { fidgetAt } from "../scripts/domain/behavior/seated-fidgets.js";
 import { layoutHeadquarters } from "../scripts/domain/headquarters/headquarters-layout.js";
 import { headquartersSpots } from "../scripts/domain/headquarters/headquarters-spots.js";
-import { layoutRoom } from "../scripts/domain/room/room-layout.js";
-import { exitStop } from "../scripts/domain/room/room-spots.js";
 
 const NOW = 1_800_000_000_000;
 const LONG_AGO = NOW - 60 * 60_000;
@@ -22,9 +19,9 @@ function agentWith(status, extra = {}) {
 }
 
 function placeOf(agent, { now = NOW, freeSince = new Map() } = {}) {
-  const project = { key: "c:/demo", agents: { [agent.key]: agent }, team: [] };
-  const layout = layoutRoom(project, THEMES[0]);
-  return { place: assignPlaces([agent], now, layout, freeSince).get(agent.key), layout };
+  const project = { key: "c:/demo", name: "demo", template: "startup", createdAt: 0, updatedAt: NOW, agents: { [agent.key]: agent }, team: [] };
+  const spots = headquartersSpots(layoutHeadquarters({ [project.key]: project }));
+  return { place: placeAgents({ agents: [agent], now, spots, freeSince }).get(agent.key), spots };
 }
 
 describe("where agents go", () => {
@@ -69,8 +66,8 @@ describe("where agents go", () => {
   });
 
   it("walks someone who left out the door without hurrying", () => {
-    const { place, layout } = placeOf(agentWith("idle", { endedAt: NOW }));
-    assert.deepEqual(place.stop, exitStop(layout));
+    const { place, spots } = placeOf(agentWith("idle", { endedAt: NOW }));
+    assert.equal(place.stop, spots.exit);
     assert.equal(place.isUrgent, false);
   });
 });

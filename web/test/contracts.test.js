@@ -8,7 +8,7 @@ import { TEMPLATE_IDS } from "../../collector/src/office/domain/templates.js";
 import { THEMES } from "../scripts/data/themes.js";
 import { busyReactionOf } from "../scripts/domain/behavior/agent-reactions.js";
 import { thoughtAt, thoughtSubjectOf } from "../scripts/domain/behavior/agent-thoughts.js";
-import { ACTIVE_STATUSES, KNOWN_STATUSES } from "../scripts/domain/office/agent-status.js";
+import { KNOWN_STATUSES } from "../scripts/domain/office/agent-status.js";
 import { canReceiveMessages as webCanReceiveMessages } from "../scripts/domain/office/can-receive-messages.js";
 import { buildDecision } from "../scripts/domain/office/decision-body.js";
 import { describeToolEntry, diffLines } from "../scripts/domain/terminal/terminal-format.js";
@@ -152,9 +152,5 @@ describe("agent statuses", () => {
   it("are shown with a label, a glyph and a color for exactly the statuses the domain knows", () => {
     assert.deepEqual(Object.keys(STATUS).sort(), [...KNOWN_STATUSES].sort());
     for (const display of Object.values(STATUS)) assert.ok(display.label && display.glyph && display.color);
-  });
-
-  it("count as activity only when the domain knows them", () => {
-    assert.deepEqual([...ACTIVE_STATUSES].filter((status) => !KNOWN_STATUSES.has(status)), []);
   });
 });

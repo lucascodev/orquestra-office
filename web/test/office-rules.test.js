@@ -1,17 +1,18 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import { FIRST_NAMES } from "../scripts/data/first-names.js";
-import { withAgentNames, withBuildingAgentNames } from "../scripts/domain/office/agent-names.js";
+import { withBuildingAgentNames } from "../scripts/domain/office/agent-names.js";
 import { statusOf } from "../scripts/domain/office/agent-status.js";
 import { buildDecision } from "../scripts/domain/office/decision-body.js";
-import { needsYou, sortedProjects } from "../scripts/domain/office/project-order.js";
+import { needsYou } from "../scripts/domain/office/project-order.js";
 
 const NOW = 1_800_000_000_000;
 const MINUTE = 60_000;
 
 const agentOf = (key, extra = {}) => ({ key, kind: "main", source: "claude", status: "working", startedAt: NOW, updatedAt: NOW, endedAt: null, ...extra });
 const projectOf = (agents, extra = {}) => ({ key: "c:/demo", name: "demo", updatedAt: NOW, agents: Object.fromEntries(agents.map((agent) => [agent.key, agent])), ...extra });
-const namesOf = (project) => Object.fromEntries(Object.values(withAgentNames(project).agents).map((agent) => [agent.key, agent.name]));
+const namedProject = (project) => withBuildingAgentNames({ [project.key]: project })[project.key];
+const namesOf = (project) => Object.fromEntries(Object.values(namedProject(project).agents).map((agent) => [agent.key, agent.name]));
 
 describe("agent names", () => {
   it("names each agent the same way on every release, so people keep their colleagues' names", () => {
@@ -40,7 +41,7 @@ describe("agent names", () => {
   it("adds the name without touching the project or the other agent fields", () => {
     const agent = agentOf("claude:a1", { label: "Claude Code", action: "editando a.js" });
     const project = projectOf([agent]);
-    const named = withAgentNames(project);
+    const named = namedProject(project);
     assert.deepEqual(named.agents["claude:a1"], { ...agent, name: "Heitor" });
     assert.equal(named.key, project.key);
     assert.equal(project.agents["claude:a1"].name, undefined);
@@ -79,27 +80,13 @@ describe("agent names in the headquarters", () => {
   });
 });
 
-describe("project order", () => {
+describe("who needs you in a project", () => {
   const waiting = (key) => agentOf(key, { status: "needs_you" });
 
   it("counts only the agents that need you", () => {
     const project = projectOf([waiting("claude:a"), waiting("claude:b"), agentOf("claude:c", { status: "waiting" }), agentOf("claude:d", { status: "blocked" })]);
     assert.equal(needsYou(project), 2);
     assert.equal(needsYou(projectOf([])), 0);
-  });
-
-  it("puts the rooms with more agents needing you first, then the most recently active", () => {
-    const projects = {
-      quiet: projectOf([agentOf("claude:q")], { key: "quiet", updatedAt: NOW }),
-      recent: projectOf([agentOf("claude:r")], { key: "recent", updatedAt: NOW + MINUTE }),
-      oneNeed: projectOf([waiting("claude:o")], { key: "oneNeed", updatedAt: NOW - 10 * MINUTE }),
-      twoNeeds: projectOf([waiting("claude:t1"), waiting("claude:t2")], { key: "twoNeeds", updatedAt: NOW - 20 * MINUTE }),
-    };
-    assert.deepEqual(sortedProjects(projects).map((project) => project.key), ["twoNeeds", "oneNeed", "recent", "quiet"]);
-  });
-
-  it("returns an empty list when there are no rooms", () => {
-    assert.deepEqual(sortedProjects({}), []);
   });
 });
 

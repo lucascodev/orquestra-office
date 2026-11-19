@@ -4,19 +4,6 @@ import { clockTime } from "../shared/format.js";
 
 const FAILED_DECISION_ALERT = `<p class="pending-error" role="alert" hidden></p>`;
 
-const quickDecision = () => `<div class="pending-actions"><button class="btn btn-sm btn-secondary" data-decide="deny">Negar</button><button class="btn btn-sm btn-primary" data-decide="allow">Permitir</button></div>
-    ${FAILED_DECISION_ALERT}`;
-
-const answerInSheet = (request) => `<div class="pending-actions"><button class="btn btn-sm btn-primary" data-open-agent="${esc(request.agentKey)}">Responder</button></div>`;
-
-export function renderPendingStrip(request) {
-  return `<div class="pending-strip" data-pending="${esc(request.id)}">
-    <p class="pending-what">${esc(toolSummaryText(request))}</p>
-    ${request.detail ? `<code class="mono">${esc(request.detail)}</code>` : ""}
-    ${request.kind === "permission" ? quickDecision() : answerInSheet(request)}
-  </div>`;
-}
-
 function permissionCard(request, agentName) {
   return `<h3 class="card-title">${esc(agentName)} quer usar ${esc(request.toolName)}</h3>
     <p class="pending-what">${esc(toolSummaryText(request))}</p>

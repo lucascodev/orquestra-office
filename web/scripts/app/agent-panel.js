@@ -1,8 +1,6 @@
 import { logEntryText } from "../domain/office/agent-action-text.js";
 import { ownValueOf } from "../domain/shared/own-value.js";
-import { agentMark, originOf, statusBadge } from "../view/office/agent-badges.js";
 import { ago } from "../view/shared/format.js";
-import { renderAgentFacts, renderAgentIdentity, renderSheetShell } from "../view/sheet/agent-sheet-view.js";
 import { renderPendingCard } from "../view/sheet/pending-request-view.js";
 import { renderEntries, renderHistory } from "../view/terminal/terminal-entries.js";
 import { submitDecision, toggleOption } from "./decision-form.js";
@@ -12,12 +10,6 @@ const MESSAGE_FAILED = "Não deu para enviar a mensagem.";
 const LIVE_STATUS = { starting: "abrindo a sessão…", working: "trabalhando…", idle: "aguardando sua mensagem", ended: "sessão encerrada" };
 const FIRST_ANSWER = "[data-pending] [data-option], [data-pending] input";
 
-const ROOM_SHEET = {
-  shell: (agent, context) => renderSheetShell(context),
-  identity: (agent) => renderAgentIdentity(agent, { mark: agentMark(agent), badge: statusBadge(agent), origin: originOf(agent) }),
-  facts: (agent) => renderAgentFacts(agent),
-};
-
 const logAsHistory = (agent) => (agent.log ?? []).map((item) => ({ at: item.at, kind: "note", text: logEntryText(item), detail: "" }));
 
 function queueStatus(queued) {
@@ -25,9 +17,9 @@ function queueStatus(queued) {
   return queued === 1 ? "1 mensagem na fila, esperando o fim do turno." : `${queued} mensagens na fila, esperando o fim do turno.`;
 }
 
-// The agent's sheet: the room shows it beside the team list, the headquarters in a drawer over the map. The view draws it,
-// onOpen and onClose place it on the page, and actions answer the buttons a view adds with data-action.
-export function createAgentPanel({ sheet, control, view = ROOM_SHEET, onOpen = () => {}, onClose = () => {}, actions = {} }) {
+// The agent's sheet, in the drawer over the map. The view draws it, onOpen and onClose place it on the page, and actions
+// answer the buttons a view adds with data-action.
+export function createAgentPanel({ sheet, control, view, onOpen = () => {}, onClose = () => {}, actions = {} }) {
   let agentKey = null;
   let isLive = false;
   let shownRequestId = null;

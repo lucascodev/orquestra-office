@@ -20,11 +20,7 @@ export const HEADQUARTERS_PALETTE = {
 };
 
 export const NEUTRAL_ISLAND_THEME = {
-  id: "sede", name: "Ilha livre", accent: "#e8956b",
-  cabinet: "#eef1f5", leg: "#c9ced6", chair: "#9aa2b4", screen: "#4fb7e8", keyboard: "#e9edf2", wallHeight: 2.4,
-  floorPattern: "grid", wallPattern: "grid",
-  floor: "#ddd6c8", floorLine: "#d2cab9", wall: "#d8d4ca", wallLine: "#cdc8bc", desk: "#ece7dc", shelf: "#d8d1c2",
-  rug: "#cfc8b8", partition: "#b9b0a0", divider: "#b9b0a0", door: "#9a6a44",
+  id: "sede", name: "Ilha livre",
+  cabinet: "#eef1f5", leg: "#c9ced6", chair: "#9aa2b4", screen: "#4fb7e8", keyboard: "#e9edf2", desk: "#ece7dc", rug: "#cfc8b8", divider: "#b9b0a0",
   items: ["#3a6ab0", "#e85a3a", "#f2c94c", "#47b85e", "#8a4ab0", "#2b2f3a", "#e8ecf3", "#ff7aa8"],
-  backWall: [], meetingWall: "board", corner: ["plant"], floorProps: ["plant"],
 };

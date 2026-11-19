@@ -18,12 +18,6 @@ function namesFor(agents, taken = new Set()) {
   return names;
 }
 
-export function withAgentNames(project) {
-  const names = namesFor(Object.values(project.agents));
-  const agents = Object.fromEntries(Object.entries(project.agents).map(([key, agent]) => [key, { ...agent, name: names.get(agent.key) }]));
-  return { ...project, agents };
-}
-
 const withNames = (project, names) => ({
   ...project,
   agents: Object.fromEntries(Object.entries(project.agents).map(([key, agent]) => [key, { ...agent, name: names.get(agent.key) ?? agent.name }])),

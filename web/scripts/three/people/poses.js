@@ -109,22 +109,6 @@ export const POSES = {
     arm(person, 1, 0.45, -0.5);
     person.head.rotation.set(-0.08, Math.sin(t * 0.4) * 0.35, 0);
   },
-  reaching: (person, t) => {
-    const isHigh = t % 5 < 2.5;
-    arm(person, 1, isHigh ? -2.5 : -1.3, -0.25 + Math.sin(t * 2) * 0.1);
-    person.head.rotation.x = isHigh ? -0.3 : 0.1;
-  },
-  rummaging: (person, t) => {
-    person.upper.rotation.x = 0.4;
-    arm(person, 0, -0.7 + (beat(t, 2) ? 0.2 : 0), -0.4);
-    arm(person, 1, -0.7 + (beat(t, 2) ? 0 : 0.2), -0.4);
-    person.head.rotation.x = 0.25;
-  },
-  copying: (person, t) => {
-    arm(person, 0, -0.8, -0.9 + (beat(t, 1.2) ? 0.25 : 0));
-    arm(person, 1, -0.5, -1.5);
-    person.head.rotation.x = 0.2;
-  },
   drawing: (person, t) => {
     arm(person, 1, -2.1 + Math.sin(t * 2.3) * 0.25, -0.3, Math.sin(t * 1.7) * 0.3);
     person.head.rotation.set(-0.15, Math.sin(t * 1.7) * 0.15, 0);

@@ -70,7 +70,7 @@ export function createHeadquartersRenderer({
   const labelLayer = document.createElement("div");
   labelLayer.className = "hq-labels";
   const tagLayer = document.createElement("div");
-  tagLayer.className = "room-tags hq-tags";
+  tagLayer.className = "hq-tags";
   const instructions = document.createElement("p");
   instructions.className = "hq-instructions";
   instructions.id = "hq-map-instructions";

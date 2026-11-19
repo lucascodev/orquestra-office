@@ -1,13 +1,12 @@
-/* The headquarters view (?vista=sede): the map takes the whole window and the interface floats over it, as in the approved mock-up. */
-.is-headquarters .toolbar, .is-headquarters .tabs, .is-headquarters .side { display: none; }
-.is-headquarters .workspace { display: block; position: relative; height: 100dvh; padding: 0; overflow: hidden; }
-.is-headquarters .office { display: block; position: relative; height: 100%; }
+/* The headquarters: the map takes the whole window and the interface floats over it, as in the approved mock-up. */
+.workspace { position: relative; height: 100dvh; overflow: hidden; }
+.office { position: relative; height: 100%; }
 
 .hq-stage { position: absolute; inset: 0; overflow: hidden; background: var(--bg-canvas); }
 .hq-canvas { display: block; width: 100%; height: 100%; image-rendering: pixelated; touch-action: none; }
 .hq-meter { position: absolute; right: var(--space-6); bottom: var(--space-6); padding: var(--space-2) var(--space-4); border: 1px solid var(--border-strong); border-radius: var(--radius-md); background: var(--bg-overlay); color: var(--text); font: 400 12px var(--font-mono); }
 .hq-labels, .hq-tags { position: absolute; inset: 0; overflow: hidden; pointer-events: none; }
-.hq-tags { --tag-max-width: 132px; }
+.hq-tags { isolation: isolate; --tag-max-width: 132px; --thought-paper: var(--balloon-paper); --thought-ink: var(--balloon-ink); --thought-lift: 40px; }
 .area-label { position: absolute; transform: translate(-50%, -100%); padding: 1px 6px; border-radius: var(--radius-md); background: var(--bg-overlay); color: var(--text); font: 600 10px/1.4 var(--font-sans); white-space: nowrap; }
 .area-label.is-free-island { color: var(--muted); }
 .name-tag.is-figurant { padding: 1px 6px; color: var(--muted); font-size: 10px; cursor: default; pointer-events: none; }

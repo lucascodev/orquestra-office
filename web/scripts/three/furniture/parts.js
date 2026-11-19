@@ -1,8 +1,8 @@
 import { box, group, shade } from "../kit.js";
 
 export const DARK = "#22252e";
-export const POT = "#c0663a";
-export const GREENS = ["#3f9a52", "#47b85e", "#57c46a", "#358a48"];
+const POT = "#c0663a";
+const GREENS = ["#3f9a52", "#47b85e", "#57c46a", "#358a48"];
 export const HANDLE = "#8a96a3";
 
 const RUG_HEIGHT = 0.014;

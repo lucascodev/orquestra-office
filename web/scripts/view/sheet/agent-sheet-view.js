@@ -7,24 +7,12 @@ import { icon } from "../shared/icons.js";
 
 const NO_MESSAGES = "Só sessões do Claude Code abertas nesta máquina recebem mensagens pela Sede.";
 
-export function renderAgentIdentity(agent, { mark, badge, origin }) {
-  const role = [...new Set([agent.label, origin])].join(" · ");
-  return `${mark}<div class="identity"><h2 class="panel-title" id="sheet-title">${esc(agent.name)}</h2><p class="muted">${esc(role)}</p></div>${badge}`;
-}
-
-export function renderAgentFacts(agent) {
-  return `<div><dt>Agora</dt><dd>${esc(agentActionText(agent) || "sem atividade")}</dd></div>
-    <div><dt>Ferramentas</dt><dd class="mono">${agent.tools ?? 0}</dd></div>
-    <div><dt>Começou</dt><dd>${ago(agent.startedAt)}</dd></div>
-    <div><dt>Atualizado</dt><dd>${ago(agent.updatedAt)}</dd></div>`;
-}
-
 const DELIVERY_HINT = {
   queued: "Chega quando o agente terminar o turno atual.",
   live: "Chega na hora. No meio de um turno, entra logo em seguida.",
 };
 
-function renderComposer(isLive, label = "Mensagem para o agente") {
+function renderComposer(isLive, label) {
   return `<form class="composer">
     <div class="field"><label for="agent-message">${esc(label)}</label>
       <textarea class="textarea" id="agent-message" name="message" rows="3" maxlength="4000" required placeholder="Ex.: também atualize o README"></textarea></div>
@@ -38,10 +26,8 @@ function renderComposer(isLive, label = "Mensagem para o agente") {
 
 const INTERRUPT = `<button class="btn btn-sm btn-secondary" data-live="interrupt">Interromper</button>`;
 const STOP = `<button class="btn btn-sm btn-ghost" data-live="stop">Encerrar sessão</button>`;
-const LIVE_TOOLS = `${INTERRUPT}
-    ${STOP}`;
 
-function paneHead(isLive, liveTools = LIVE_TOOLS) {
+function paneHead(isLive, liveTools) {
   const title = isLive
     ? `<span class="pane-title"><span class="live-dot" aria-hidden="true"></span>Terminal ao vivo</span>`
     : `<span class="pane-title">Terminal e histórico</span>`;
@@ -58,19 +44,6 @@ function renderPane(isLive, liveTools) {
         <button type="button" class="btn btn-sm btn-secondary pane-jump" data-jump hidden>↓ novas linhas</button>
         <footer class="pane-foot" data-slot="history-foot"></footer>
       </section>`;
-}
-
-export function renderSheetShell({ canReceiveMessages, isLive }) {
-  return `<header class="panel-head sheet-head">
-      <button class="icon-btn" data-close aria-label="Voltar para o time">${icon("back")}</button>
-      <div class="sheet-identity" data-slot="identity"></div>
-    </header>
-    <div class="sheet-body">
-      <div data-slot="pending"></div>
-      <dl class="facts" data-slot="facts"></dl>
-      ${canReceiveMessages ? renderComposer(isLive) : ""}
-      ${renderPane(isLive)}
-    </div>`;
 }
 
 export function renderDrawerIdentity(agent, { mark, origin, projectName, accountLabel = null }) {
