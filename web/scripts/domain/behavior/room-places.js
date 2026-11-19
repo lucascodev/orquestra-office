@@ -48,6 +48,13 @@ function holdersOf(wishes, previous) {
   return holders;
 }
 
+// Whoever was already on a spot chooses before newcomers, so an activity with a single spot is not taken from under them.
+function holdersFirst(wishes, holders) {
+  const holderKeys = new Set(holders.values());
+  const entries = [...wishes];
+  return [...entries.filter(([key]) => holderKeys.has(key)), ...entries.filter(([key]) => !holderKeys.has(key))];
+}
+
 function placeFreeTime(wishes, spots, previous) {
   const spotsById = new Map([...spots.freeTime.values()].flat().map((spot) => [spot.id, spot]));
   const holders = holdersOf(wishes, previous);
@@ -59,7 +66,7 @@ function placeFreeTime(wishes, spots, previous) {
     taken.add(kept.id);
     places.set(key, freeTimePlace(kept));
   }
-  for (const [key, wish] of wishes) {
+  for (const [key, wish] of holdersFirst(wishes, holders)) {
     if (places.has(key)) continue;
     const spot = firstFreeSpot(key, wish, spots, taken, holders);
     if (spot) taken.add(spot.id);
