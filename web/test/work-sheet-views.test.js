@@ -50,6 +50,18 @@ describe("plan markdown", () => {
     assert.ok(html.includes("clique"));
   });
 
+  it("shows a reference definition as escaped text instead of turning it into a hidden link target", () => {
+    const html = planMarkdownHtml('[x]: javascript:alert(1)\n\n[y][x]\n\n[site]: https://example.com "<b>t</b>"\n\n[ver][site]');
+    assert.ok(html.includes("[x]: javascript:alert(1)"));
+    assert.ok(html.includes("[y][x]"));
+    assert.ok(html.includes("[site]: https://example.com") && html.includes("&lt;b&gt;t&lt;/b&gt;"));
+    assert.ok(html.includes("[ver][site]"));
+    assert.ok(!html.includes("<b>"));
+    assert.ok(!html.includes('href="javascript'));
+    assert.equal(planMarkdownHtml("[a]: https://a.example\n[b]: https://b.example\n\n[a][] [b]"),
+      "<p>[a]: https://a.example</p>\n<p>[b]: https://b.example</p>\n<p>[a][] [b]</p>\n");
+  });
+
   it("shows task boxes as marks, not as inputs", () => {
     const html = planMarkdownHtml("- [x] feito\n- [ ] aberto");
     assert.ok(!html.includes("<input"));
