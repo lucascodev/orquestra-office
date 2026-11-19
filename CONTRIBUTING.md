@@ -1,48 +1,67 @@
-# Como contribuir
+**English** | [Português (Brasil)](CONTRIBUTING.pt-BR.md)
 
-> **English.** Contributions are welcome. The project is written in Portuguese, but issues and pull requests in English are fine. Requirements: Node 22 or newer, no npm dependencies, no build step for the web page. Run the five test suites listed below before opening a pull request, follow Conventional Commits, and never put personal data or secrets in code, fixtures, logs or screenshots. Security issues go through private vulnerability reporting, see [SECURITY.md](SECURITY.md).
+# Contributing
 
-Obrigado pelo interesse no Orquestra Office. Este guia mostra como rodar o projeto, como testar e o que uma mudança precisa ter para entrar.
+Thanks for your interest in Orquestra Office. This guide covers how to run the project, how to test it, and what a change needs before it can be merged.
 
-## Antes de começar
+## Before you start
 
-- Para uma mudança grande (funcionalidade nova, mudança de contrato entre coletor, hooks e página, nova camada), abra uma issue antes e descreva a ideia. Assim ninguém perde trabalho com algo que não cabe no projeto.
-- Correção pequena, teste que falta ou texto errado podem ir direto num pull request.
-- Falha de segurança não vai em issue pública: siga o [SECURITY.md](SECURITY.md).
-- Ao participar, você concorda com o [Código de Conduta](CODE_OF_CONDUCT.md).
+- For a large change (a new feature, a change to the contract between the collector, the hooks and the page, a new layer), open an issue first and describe the idea. That way nobody spends time on something that does not fit the project.
+- Small fixes, missing tests and typos can go straight to a pull request.
+- Security issues do not go in public issues: follow [SECURITY.md](SECURITY.md).
+- By taking part, you agree to the [Code of Conduct](CODE_OF_CONDUCT.md).
 
-## Requisitos
+## Languages
 
-| Ferramenta | Para quê |
+The project is bilingual, with English as the main language on GitHub.
+
+| What | Language |
 |---|---|
-| Node 22 ou mais novo | coletor, executor, hooks, testes e montagem da landing |
-| Git | clonar e fazer commits |
-| Docker com Compose | opcional: rodar o coletor como o usuário final roda |
-| Claude Code ou Codex | opcional: ver sessões reais no escritório |
-| Python 3 | opcional: servir a landing montada |
+| `README`, `CONTRIBUTING`, `CODE_OF_CONDUCT` | English in the main file and Brazilian Portuguese in the `.pt-BR.md` file next to it, linked to each other at the top |
+| Issue and pull request templates | English, with a note that Portuguese is welcome too |
+| Issues, pull requests and reviews | English or Portuguese, whichever you prefer |
+| Landing page (`site/`) | Portuguese and English, with the same structure |
+| ADRs (`docs/adr/`) and `docs/arquitetura/` | Portuguese only: they are internal decision records and are not translated |
+| Office user interface text | Portuguese |
+| Code, identifiers, comments and log messages | English |
+| Commit messages | Portuguese |
 
-O projeto não tem dependências npm. Não existe `npm install` a rodar.
+Product terms have a fixed name in each language in the [glossary](docs/glossary.md). Use those names when writing in either language.
 
-## Rodar localmente
+Changed a file that exists in both languages? Change the other one in the same pull request. If you are not comfortable writing in one of them, say so in the description and the review will help with the translation.
 
-### Só a página, com dados de exemplo
+## Requirements
 
-Suba o coletor direto pelo Node, sem Docker:
+| Tool | What for |
+|---|---|
+| Node 22 or newer | collector, runner, hooks, tests and building the landing page |
+| Git | cloning and committing |
+| Docker with Compose | optional: run the collector the way end users run it |
+| Claude Code or Codex | optional: see real sessions in the office |
+| Python 3 | optional: serve the built landing page |
+
+The project has no npm dependencies. There is no `npm install` to run.
+
+## Running locally
+
+### The page only, with sample data
+
+Start the collector directly with Node, without Docker:
 
 ```powershell
 cd collector
 npm start
 ```
 
-Abra `http://localhost:8420/?modo=demo`. No modo demo a página não faz nenhuma requisição à API e mostra agentes de exemplo. Sem `?modo=demo`, a página usa o coletor e, se ele não responder, cai para a demo.
+Open `http://localhost:8420/?modo=demo`. In demo mode the page makes no API requests and shows sample agents. Without `?modo=demo`, the page uses the collector and falls back to the demo if it does not answer.
 
-O coletor escuta em `127.0.0.1:8420`, serve a pasta `web/` e guarda o estado em `collector/data/`, que o Git ignora. As variáveis `PORT`, `OFFICE_HOST`, `OFFICE_HOLD_SECONDS`, `OFFICE_ALLOWED_HOSTS`, `WEB_DIR` e `DATA_DIR` mudam esses padrões.
+The collector listens on `127.0.0.1:8420`, serves the `web/` folder and keeps its state in `collector/data/`, which Git ignores. The `PORT`, `OFFICE_HOST`, `OFFICE_HOLD_SECONDS`, `OFFICE_ALLOWED_HOSTS`, `WEB_DIR` and `DATA_DIR` variables override these defaults.
 
-A página não tem etapa de build: edite um arquivo em `web/` e recarregue o navegador.
+The page has no build step: edit a file in `web/` and reload the browser.
 
-### Com sessões reais
+### With real sessions
 
-Siga a seção "Instalar" do [README](README.md). Os instaladores gravam na sua configuração do Claude Code (`settings.json`) e do Codex (`config.toml`). Para experimentar sem mexer na sua configuração, aponte `CLAUDE_CONFIG_DIR` e `CODEX_HOME` para uma pasta temporária antes de instalar e de abrir a sessão:
+Follow the install section of the [README](README.md). The installers write to your Claude Code configuration (`settings.json`) and your Codex configuration (`config.toml`). To try it without touching your own configuration, point `CLAUDE_CONFIG_DIR` and `CODEX_HOME` at a temporary folder before installing and before opening the session:
 
 ```powershell
 $env:CLAUDE_CONFIG_DIR = "$env:TEMP\orquestra-claude"
@@ -58,28 +77,32 @@ node hooks/install-claude-hooks.mjs
 node hooks/install-codex-notify.mjs
 ```
 
-Abra o Claude Code ou o Codex no mesmo terminal, com as variáveis ainda definidas. Como a pasta de configuração é nova, a sessão pode pedir login de novo.
+Open Claude Code or Codex in the same terminal, with the variables still set. Because the configuration folder is new, the session may ask you to log in again.
 
-O executor, que abre sessões pelo escritório, roda fora do Docker e escuta em `127.0.0.1:8421`:
+The runner, which opens sessions from the office, runs outside Docker and listens on `127.0.0.1:8421`:
 
 ```powershell
 node runner/src/main.js
 ```
 
-### Landing
+### Landing page
 
-A landing fica em `site/`, em português (`site/index.html`) e inglês (`site/en/index.html`). Para ver o site montado, com o escritório em `demo/`:
+The landing page lives in `site/`, in Portuguese (`site/index.html`) and English (`site/en/index.html`). To see the built site, with the office under `demo/`:
 
 ```powershell
 node site/assemble.mjs _site
 python -m http.server 8000 -d _site
 ```
 
-Mudou uma página da landing? Mude a outra língua no mesmo pull request. O teste `site/test/pages.test.mjs` compara a estrutura das duas.
+Changed one landing page? Change the other language in the same pull request. The `site/test/pages.test.mjs` test compares the structure of both.
 
-## Testes
+### Screenshots
 
-São cinco pacotes, cada um com a própria suíte. Rode a do pacote que você mexeu e, antes do pull request, todas:
+README images live in `docs/images/`. Always take them with `?modo=demo`, which only has fictional names and projects, and never from your live office. Before committing, optimize the PNG (a reduced palette when there is no visible loss) and check that no screenshot shows a path, user name or project of yours.
+
+## Tests
+
+There are five packages, each with its own suite. Run the suite of the package you changed and, before opening the pull request, all of them:
 
 ```powershell
 node --test site/test/*.test.mjs
@@ -92,86 +115,86 @@ cd ..
 node --test hooks/test/*.test.mjs
 ```
 
-Os comandos são os mesmos no PowerShell e no bash. O workflow de CI (`.github/workflows/ci.yml`) roda as cinco suítes com Node 22 em todo pull request e em todo push na `main`.
+The commands are the same in PowerShell and bash. The CI workflow (`.github/workflows/ci.yml`) runs the five suites on Node 22 for every pull request and every push to `main`.
 
-- `web/test` cobre as regras de comportamento dos bonecos, a Sede, a formatação do terminal e o contrato entre o backend ao vivo e o de demonstração, sem navegador.
-- `hooks/test` roda os instaladores com `CLAUDE_CONFIG_DIR` e `CODEX_HOME` numa pasta temporária e os hooks contra um escritório falso em `127.0.0.1`. Não mexe na sua configuração.
-- `collector/test` e `runner/test` sobem servidores em portas livres de `127.0.0.1`.
+- `web/test` covers the behavior rules of the characters, the Sede (HQ), terminal formatting and the contract between the live backend and the demo backend, without a browser.
+- `hooks/test` runs the installers with `CLAUDE_CONFIG_DIR` and `CODEX_HOME` in a temporary folder, and the hooks against a fake office on `127.0.0.1`. It does not touch your configuration.
+- `collector/test` and `runner/test` start servers on free `127.0.0.1` ports.
 
-## Regras do código
+## Code rules
 
-### Arquitetura em camadas
+### Layered architecture
 
-O projeto segue Clean Architecture, com a dependência apontando para dentro: domínio, depois casos de uso, depois adapters e infraestrutura, e a composição na borda. A decisão está no [ADR 0001](docs/adr/0001-arquitetura-em-camadas.md).
+The project follows Clean Architecture, with dependencies pointing inward: domain, then use cases, then adapters and infrastructure, with composition at the edge. The decision is recorded in [ADR 0001](docs/adr/0001-arquitetura-em-camadas.md) (in Portuguese).
 
-- O domínio não faz I/O: nada de rede, disco, DOM, `three.js` ou relógio direto. Regra de decisão vai para o domínio e ganha teste sem navegador e sem servidor.
-- A camada de apresentação (views, `three/`, rotas HTTP) só traduz e mostra. Regra de negócio não fica nela.
-- Um arquivo, uma responsabilidade. Contrato, dado e lógica ficam em arquivos separados.
-- As regras de camada são verificadas por teste, lendo os imports de cada arquivo: `collector/test/architecture.test.js`, `runner/test/architecture.test.js` e `web/test/architecture.test.js`. Em `hooks/`, o `hooks/test/hook-imports.test.mjs` garante que os hooks gravados no `settings.json` só importam módulos `node:` e `./lib/`. Se a sua mudança quebra um desses testes, mude o código, não o teste. Mudar a regra pede um ADR novo em `docs/adr/`.
-- O backend ao vivo e o de demonstração da página têm os mesmos métodos (`web/test/backends.test.js`). Método novo entra nos dois.
-- `hooks/office-session-start.mjs` e `hooks/office-statusline.mjs` não mudam de nome nem de lugar, porque as sessões já abertas apontam para eles.
+- The domain does no I/O: no network, disk, DOM, `three.js` or direct clock access. Decision rules go into the domain and get tests that need no browser and no server.
+- The presentation layer (views, `three/`, HTTP routes) only translates and displays. Business rules do not live there.
+- One file, one responsibility. Contracts, data and logic live in separate files.
+- Layer rules are enforced by tests that read each file's imports: `collector/test/architecture.test.js`, `runner/test/architecture.test.js` and `web/test/architecture.test.js`. In `hooks/`, `hooks/test/hook-imports.test.mjs` makes sure the hooks written to `settings.json` only import `node:` modules and `./lib/`. If your change breaks one of these tests, change the code, not the test. Changing the rule requires a new ADR in `docs/adr/`.
+- The page's live backend and demo backend expose the same methods (`web/test/backends.test.js`). A new method goes into both.
+- `hooks/office-session-start.mjs` and `hooks/office-statusline.mjs` keep their names and locations, because sessions that are already open point to them.
 
-### Teste primeiro
+### Test first
 
-Escreva o teste antes do código e veja ele falhar pelo motivo certo. Depois faça passar. Em correção de bug, o teste reproduz o bug. O nome do teste diz o comportamento, não a função: "recém-chegado não tira quem já estava na única vaga", e não "testa chooseSpot".
+Write the test before the code and watch it fail for the right reason. Then make it pass. For a bug fix, the test reproduces the bug. The test name states the behavior, not the function: "a newcomer does not take the only seat from whoever already had it", not "tests chooseSpot".
 
-### Sem dependências npm
+### No npm dependencies
 
-- Coletor, executor e hooks usam só módulos `node:` do Node 22.
-- As bibliotecas do navegador ficam copiadas em `web/vendor`, com a licença ao lado. Para atualizar uma delas, siga a seção "Desenvolvimento" do README: baixe o pacote do npm, confira o hash `integrity` do registro e troque o arquivo.
-- Biblioteca nova em `web/vendor` precisa de uma issue antes, com o motivo e a licença.
+- The collector, the runner and the hooks use only Node 22 `node:` modules.
+- Browser libraries are copied into `web/vendor`, with their license next to them. To update one, follow the development section of the README: download the package from npm, check the registry `integrity` hash and replace the file.
+- A new library in `web/vendor` needs an issue first, with the reason and the license.
 
-### Sem build na página
+### No build step for the page
 
-A página em `web/` é HTML, CSS e módulos ES servidos como estão. Nada de bundler, transpilador ou pré-processador. O servidor do coletor não serve `.mjs`, então o código da página usa `.js`.
+The page in `web/` is HTML, CSS and ES modules served as they are. No bundler, transpiler or preprocessor. The collector's server does not serve `.mjs`, so page code uses `.js`.
 
-### Estilo
+### Style
 
-- Código, nomes, comentários e mensagens de log em inglês. Texto da interface, documentação e mensagens de commit em português. A landing também tem a versão em inglês.
-- Nomes que dizem o que a coisa é. Booleanos com `is`, `has` ou `should`.
-- Constantes nomeadas no lugar de números e textos soltos.
-- Sem comentário que repete o código. Comente só o porquê: uma decisão, um limite, uma armadilha.
-- Sem código morto, import sem uso ou código comentado "para depois". O `web/test/architecture.test.js` acusa import sem uso na página.
-- Indentação de 2 espaços, UTF-8 e fim de linha LF, como manda o `.editorconfig`.
+- Follow the table in [Languages](#languages): code in English, interface text and commits in Portuguese.
+- Names that say what the thing is. Booleans start with `is`, `has` or `should`.
+- Named constants instead of loose numbers and strings.
+- No comments that repeat the code. Comment only the why: a decision, a limit, a pitfall.
+- No dead code, unused imports or code commented out "for later". `web/test/architecture.test.js` flags unused imports in the page.
+- Two-space indentation, UTF-8 and LF line endings, as set in `.editorconfig`.
 
-## Dados pessoais e segredos
+## Personal data and secrets
 
-Este repositório é público, e tudo o que entra no histórico fica lá. Em código, testes, fixtures, logs, capturas de tela e descrições de issue ou pull request:
+This repository is public, and everything that enters the history stays there. In code, tests, fixtures, logs, screenshots and issue or pull request descriptions:
 
-- nada de caminho real com o seu usuário (`C:\Users\<seu nome>\...`, `/Users/<seu nome>/...`);
-- nada de e-mail, nome real, IP da sua rede, nome de máquina ou de projeto privado;
-- nada de token, chave, senha ou o conteúdo do `env` do seu `settings.json`;
-- nada de conteúdo copiado de um `settings.json`, `config.toml` ou backup real;
-- nada de texto real de sessões: pedidos, respostas do agente, comandos com argumentos.
+- no real paths with your user name (`C:\Users\<your name>\...`, `/Users/<your name>/...`);
+- no email, real name, IP address from your network, machine name or private project name;
+- no token, key, password or the `env` block of your `settings.json`;
+- no content copied from a real `settings.json`, `config.toml` or backup;
+- no real session text: prompts, agent replies, commands with their arguments.
 
-Use dados fictícios que continuem cobrindo o caso. Os testes já fazem assim, por exemplo `C:\Users\ana\My Projects\escritorio_v2\hooks` para cobrir pasta com espaço e sublinhado, e `/home/me/src/orquestra-office/hooks` no Linux.
+Use fictional data that still covers the case. The tests already do this, for example `C:\Users\ana\My Projects\escritorio_v2\hooks` to cover a folder with a space and an underscore, and `/home/me/src/orquestra-office/hooks` on Linux.
 
-Se você commitou algo assim por engano, não tente consertar com outro commit: avise no pull request para que o histórico seja reescrito antes do merge.
+If you committed something like this by mistake, do not try to fix it with another commit: say so in the pull request so the history can be rewritten before the merge.
 
 ## Commits
 
-Os commits seguem [Conventional Commits](https://www.conventionalcommits.org/pt-br/v1.0.0/), em português.
+Commits follow [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/), written in Portuguese to match the history.
 
 ```text
-<tipo>(<escopo>): <o que muda, do ponto de vista de quem usa>
+<type>(<scope>): <what changes, from the user's point of view>
 
-<corpo opcional: por que a mudança foi feita e o que ela evita>
+<optional body: why the change was made and what it prevents>
 ```
 
-| Tipo | Quando |
+| Type | When |
 |---|---|
-| `feat` | comportamento novo |
-| `fix` | correção de comportamento |
-| `refactor` | muda a estrutura sem mudar o comportamento |
-| `perf` | melhora de desempenho |
-| `test` | só testes |
-| `docs` | só documentação |
-| `ci` | workflows do GitHub Actions |
-| `chore` | manutenção que não muda o produto |
+| `feat` | new behavior |
+| `fix` | behavior fix |
+| `refactor` | changes structure without changing behavior |
+| `perf` | performance improvement |
+| `test` | tests only |
+| `docs` | documentation only |
+| `ci` | GitHub Actions workflows |
+| `chore` | maintenance that does not change the product |
 
-Escopos usados: `web`, `collector`, `runner`, `hooks`, `site`, `adr` e `arquitetura`. Mudança que atravessa vários pacotes pode ficar sem escopo.
+Scopes in use: `web`, `collector`, `runner`, `hooks`, `site`, `adr` and `arquitetura`. A change that spans several packages can go without a scope.
 
-Exemplos do histórico:
+Examples from the history:
 
 ```text
 feat(web): busca Ctrl K de agentes, salas e ações na Sede
@@ -184,21 +207,23 @@ docs(adr): autenticação entre hooks, coletor e painel
 ci: testes em pull request e push na main, com Dependabot das actions
 ```
 
-- O assunto começa com letra minúscula, fica no presente, não termina com ponto e descreve o efeito, não o arquivo.
-- O corpo explica o porquê, em parágrafos curtos.
-- Um commit por parte lógica: cada um conta uma história sozinho e pode ser revertido em separado.
-- Sem trailer `Co-Authored-By` e sem assinatura gerada por ferramenta.
+- The subject starts with a lowercase letter, uses the present tense, has no trailing period and describes the effect, not the file.
+- The body explains the why, in short paragraphs.
+- One commit per logical change: each one tells a story on its own and can be reverted on its own.
+- No `Co-Authored-By` trailer and no tool-generated signature.
+
+Don't write Portuguese? Send the pull request with commits in English and say so in the description: whoever merges it will adjust the messages.
 
 ## Pull requests
 
-1. Faça um fork e crie uma branch a partir da `main`, com o tipo no nome: `feat/busca-na-sede`, `fix/backup-do-instalador`, `docs/guia-de-instalacao`.
-2. Faça a mudança com teste primeiro e rode as cinco suítes.
-3. Atualize o README ou a documentação em `docs/` quando a mudança altera como o sistema é usado, instalado ou guardado.
-4. Decisão de arquitetura (camada nova, contrato novo, dependência nova) vira um ADR curto em `docs/adr/`, com o próximo número livre.
-5. Abra o pull request contra a `main` e preencha o modelo: resumo, como testar e o checklist.
-6. Um assunto por pull request. Duas mudanças independentes vão em dois.
-7. Espere o CI ficar verde. A revisão pode pedir ajustes; responda nos comentários e faça novos commits na mesma branch.
+1. Fork the repository and create a branch from `main`, with the type in its name: `feat/busca-na-sede`, `fix/backup-do-instalador`, `docs/guia-de-instalacao`.
+2. Make the change test first and run the five suites.
+3. Update the README (in both languages) or the documentation in `docs/` when the change affects how the system is used, installed or what it stores.
+4. An architecture decision (a new layer, a new contract, a new dependency) becomes a short ADR in `docs/adr/`, in Portuguese, with the next free number.
+5. Open the pull request against `main` and fill in the template: summary, how to test and the checklist.
+6. One topic per pull request. Two independent changes go in two pull requests.
+7. Wait for CI to pass. The review may ask for changes; reply in the comments and push new commits to the same branch.
 
-## Licença
+## License
 
-Ao contribuir, você concorda que a sua contribuição é publicada sob a [licença MIT](LICENSE) do projeto.
+By contributing, you agree that your contribution is published under the project's [MIT license](LICENSE).
