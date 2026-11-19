@@ -46,14 +46,21 @@ export function createOffice({ webDir, dataDir = null, holdMs, allowedHosts = []
   const legacyHooks = createLegacyHooksNotice();
   const security = () => ({ legacyHooksSeenAt: legacyHooks.seenAt(), isSecretMissing: officeKey.isMissing() });
   const officeView = createPublicOfficeView({ store, decisions, outbox, security });
-  const stream = createEventStream({ snapshot: officeView, sources: [store, decisions, outbox, legacyHooks] });
+  const stream = createEventStream({
+    snapshot: () => {
+      applyCurrentKey();
+      return officeView();
+    },
+    sources: [store, decisions, outbox, legacyHooks],
+  });
 
   const devicesFile = dataDir ? createDeviceSessionsFile(dataDir) : null;
   const deviceSessions = createDeviceSessions({ saved: devicesFile?.load(), keyId: officeKey.keyId(), newId: newDeviceId });
   if (devicesFile) deviceSessions.onChange(() => devicesFile.save(deviceSessions.snapshot()));
   deviceSessions.onChange(() => stream.keepDevices(new Set(deviceSessions.list().map((device) => device.id))));
   // A rotated secret is noticed on the next read of the key; checking it here too means a page paired under the old key
-  // stops holding requests the moment one arrives, not on the next sweep. A missing secret drops nobody: it may be mid-rotation.
+  // gets no further frame and stops holding requests the moment one arrives, not on the next sweep. A missing secret drops
+  // nobody: it may be mid-rotation.
   function applyCurrentKey() {
     const keyId = officeKey.keyId();
     if (keyId) deviceSessions.useKey(keyId);

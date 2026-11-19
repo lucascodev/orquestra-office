@@ -5,7 +5,7 @@ import { request } from "node:http";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { createOffice } from "../src/composition.js";
-import { postSigned, signedHeaders } from "./support/hook-client.js";
+import { postActivity, postSigned, signedHeaders } from "./support/hook-client.js";
 import { listenOnFetchablePort } from "./support/listen-on-fetchable-port.js";
 import { OTHER_KEY, OTHER_SECRET, secretFileFor } from "./support/office-secret.js";
 import { bootstrapChallengeOf, cookieOf, issueBootstrapCode, pairBrowser, redeem } from "./support/panel-client.js";
@@ -276,6 +276,29 @@ test("a rotated secret closes the pages paired under the old one, so a request s
     assert.deepEqual(answer.body, { decision: null });
     assert.deepEqual(office.decisions.list(), []);
     assert.equal(await reader.read().then(({ done }) => done, () => true), true);
+    viewer.abort();
+  }, { secretFile });
+});
+
+const STREAM_SILENCE_MS = 1_500;
+const nextChunkOrSilence = (reader) => Promise.race([
+  reader.read().then(({ done, value }) => (done ? { isClosed: true } : { text: new TextDecoder().decode(value) }), () => ({ isClosed: true })),
+  new Promise((resolve) => setTimeout(() => resolve({ isSilent: true }), STREAM_SILENCE_MS)),
+]);
+
+test("a rotated secret closes the page paired under the old one before the next frame, so it never sees new activity", (t) => {
+  const secretFile = secretFileFor(t);
+  return withOffice(t, async (base) => {
+    const browser = await pairBrowser(base);
+    const viewer = new AbortController();
+    const reader = (await browser.get("/api/stream", { signal: viewer.signal })).body.getReader();
+    await reader.read();
+    writeFileSync(secretFile, `${OTHER_SECRET}\n`);
+
+    const posted = await postActivity(base, "/events/claude", { session_id: "s-rotated", cwd: "/tmp/after-rotation", hook_event_name: "SessionStart" }, OTHER_KEY);
+
+    assert.equal(posted.status, 200);
+    assert.deepEqual(await nextChunkOrSilence(reader), { isClosed: true });
     viewer.abort();
   }, { secretFile });
 });
