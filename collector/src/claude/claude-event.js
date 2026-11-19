@@ -3,7 +3,9 @@ import { TOOL_PHASE } from "../office/domain/tool-order.js";
 import { PATH_LIMIT } from "../shared/text/field-limits.js";
 import { claudeSessionIdOf } from "./claude-session-id.js";
 import { describeActivity } from "./describe-activity.js";
+import { claudeWorkOf } from "./work/claude-work.js";
 
+const PLAN_TOOL = "ExitPlanMode";
 const NEEDS_YOU_NOTIFICATIONS = new Set(["permission_prompt", "elicitation_dialog", "agent_needs_input"]);
 const ROLE_NAME = /^[\w.-]{1,40}$/;
 const TEAM_LIMIT = 40;
@@ -43,11 +45,20 @@ function toolNamed(actionId, payload) {
   return named(actionId, payload.tool_name == null ? null : String(payload.tool_name).slice(0, TOOL_NAME_LIMIT));
 }
 
-const toolCallOf = (payload, toolPhase) => ({ toolUseId: typeof payload.tool_use_id === "string" ? payload.tool_use_id.slice(0, TOOL_USE_ID_LIMIT) : null, toolPhase });
+const toolUseIdOf = (payload) => (typeof payload.tool_use_id === "string" ? payload.tool_use_id.slice(0, TOOL_USE_ID_LIMIT) : null);
+const rootOf = (payload) => projectRootOf(payload) || claudeActorOf(payload).cwd;
+
+function toolCallOf(payload, toolPhase) {
+  const toolUseId = toolUseIdOf(payload);
+  const work = claudeWorkOf(payload, { toolUseId, root: rootOf(payload) });
+  return { toolUseId, toolPhase, ...(work && { work }) };
+}
 
 function activity(payload, now, status, described, extra = {}) {
   return { ...base(payload, now), kind: "activity", status, ...described, ...extra };
 }
+
+const afterToolAction = (payload) => (payload.tool_name === PLAN_TOOL ? named(AGENT_ACTION.PLAN_APPROVED) : NO_ACTION);
 
 export function normalizeClaudeEvent(payload, now = Date.now()) {
   if (!payload || typeof payload !== "object" || !payload.session_id) return null;
@@ -59,11 +70,11 @@ export function normalizeClaudeEvent(payload, now = Date.now()) {
     case "UserPromptSubmit":
       return activity(payload, now, "working", named(AGENT_ACTION.PROMPT_RECEIVED), { counts: "prompts", activity: "thinking" });
     case "PreToolUse": {
-      const { status, activity: doing, actionId, subject } = describeActivity(payload.tool_name, payload.tool_input);
+      const { status, activity: doing, actionId, subject } = describeActivity(payload.tool_name, payload.tool_input, rootOf(payload));
       return activity(payload, now, status, named(actionId, subject), { counts: "tools", activity: doing, ...toolCallOf(payload, TOOL_PHASE.BEFORE) });
     }
     case "PostToolUse":
-      return activity(payload, now, "working", NO_ACTION, toolCallOf(payload, TOOL_PHASE.AFTER));
+      return activity(payload, now, "working", afterToolAction(payload), toolCallOf(payload, TOOL_PHASE.AFTER));
     case "PostToolUseFailure":
       return activity(payload, now, "working", toolNamed(AGENT_ACTION.TOOL_FAILED, payload), { activity: "failed", ...toolCallOf(payload, TOOL_PHASE.AFTER) });
     case "PermissionRequest":
