@@ -219,6 +219,7 @@ const taskResponses = [
   ["a task id field", { taskId: 8 }, "8"],
   ["a text", "Task #9 created successfully: Write tests", "9"],
   ["a text field", { message: "Created task 10" }, "10"],
+  ["a text with another number before the #", "1 task created as #12: Write tests", "12"],
 ];
 
 for (const [what, response, id] of taskResponses) {
@@ -275,6 +276,19 @@ test("the start of an approved plan that arrives late does not make a new versio
   office.send("PostToolUse", exit, DAY + 5);
   office.send("PreToolUse", exit, DAY);
   assert.deepEqual([office.agent().plan.version, office.agent().plan.state], [1, "approved"]);
+});
+
+const SILENT_SESSION_TTL_MS = 6 * 60 * 60_000;
+
+// The text kept in memory goes with the agent, so the same session coming back proposes its plan as a new one.
+test("an agent that expired takes the same plan text again as version 1", () => {
+  const office = officeWith();
+  const exit = { tool_name: "ExitPlanMode", tool_use_id: "p1", tool_input: { plan: "# Plan" } };
+  office.send("PreToolUse", exit, DAY);
+  office.store.sweep(DAY + SILENT_SESSION_TTL_MS + 1);
+  assert.equal(office.agent(), null);
+  office.send("PreToolUse", { ...exit, tool_use_id: "p2" }, DAY + SILENT_SESSION_TTL_MS + 2);
+  assert.deepEqual([office.agent().plan?.version, office.store.planOf(MAIN_KEY)?.text], [1, "# Plan"]);
 });
 
 test("an agent with no plan has none through planOf", () => {
