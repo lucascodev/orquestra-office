@@ -6,6 +6,7 @@ import { layoutHeadquarters } from "../scripts/domain/headquarters/headquarters-
 import { accountUsage, HIGH_USAGE_PERCENT } from "../scripts/domain/office/account-usage.js";
 import { areaCensus } from "../scripts/domain/office/area-census.js";
 import { dayTimeline } from "../scripts/domain/office/day-timeline.js";
+import { decisionForKey } from "../scripts/domain/office/decision-shortcuts.js";
 import { searchHeadquarters } from "../scripts/domain/office/headquarters-search.js";
 import { crossesWarning, newArrivals, pendingInFocus, requesterOf, serverClockNow } from "../scripts/domain/office/pending-queue.js";
 import { requestIntentText } from "../scripts/domain/office/request-intent-text.js";
@@ -365,5 +366,21 @@ describe("frame insets around the floating panels", () => {
     const phone = { width: 390, height: 800 };
     const insets = insetsAroundPanels(phone, { left: [rect(16, 80, 220, 300)], right: [rect(260, 80, 120, 40)], top: [rect(16, 16, 358, 60)], bottom: [rect(16, 640, 358, 144)] });
     assert.deepEqual(insets, { left: 16, right: 16, top: 92, bottom: 176 });
+  });
+});
+
+describe("decision shortcuts", () => {
+  const press = (key, extra = {}) => decisionForKey({ key, hasModifier: false, isTyping: false, ...extra });
+
+  it("allows with A and denies with N, in either case", () => {
+    assert.deepEqual(["a", "A", "n", "N"].map((key) => press(key)), ["allow", "allow", "deny", "deny"]);
+  });
+
+  it("ignores every other key, a key held with a modifier and a key typed into a field", () => {
+    assert.equal(press("x"), null);
+    assert.equal(press("Enter"), null);
+    assert.equal(press("toString"), null);
+    assert.equal(press("a", { hasModifier: true }), null);
+    assert.equal(press("n", { isTyping: true }), null);
   });
 });

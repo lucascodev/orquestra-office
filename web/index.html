@@ -47,7 +47,11 @@
       <h1 class="hq-brand">Orquestra Office</h1>
       <span class="hq-connection" role="status" data-slot="connection"></span>
     </header>
-    <section class="hq-alert" aria-label="Precisa de você" data-slot="alert" hidden></section>
+    <section class="hq-alert" aria-label="Precisa de você" aria-describedby="hq-alert-keys" tabindex="-1" data-slot="alert" hidden>
+      <div class="hq-alert-head" data-part="head"></div>
+      <div data-part="body"></div>
+      <p class="sr-only" id="hq-alert-keys">Com o foco neste aviso, A permite e N nega o pedido.</p>
+    </section>
     <section class="hq-accounts hq-panel" aria-label="Contas e uso do plano">
       <div data-slot="accounts"></div>
       <button class="btn btn-sm btn-primary" type="button" data-new-session hidden>Nova sessão</button>

@@ -12,8 +12,12 @@ import { renderAreaList } from "../view/hud/area-list-view.js";
 import { renderConnection } from "../view/hud/connection-view.js";
 import { renderDayTimeline } from "../view/hud/day-timeline-view.js";
 import { renderLegend } from "../view/hud/legend-view.js";
+import { createPendingAlert } from "./pending-alert.js";
 
 const CENSUS_REFRESH_MS = 2_000;
+const ANNOUNCE_DELAY_MS = 100;
+const LOWERED_ALERT_GAP_PX = 8;
+const TOP_ROW = [".hq-capsule", ".hq-accounts"];
 const DAY_REFRESH_MS = 30_000;
 const FOCUS_KEYS = ["project", "area", "frame"];
 const DOCKED_PANELS = {
@@ -28,6 +32,7 @@ const EMPTY_STATE = {
 };
 
 const startOfDay = (ms) => new Date(ms).setHours(0, 0, 0, 0);
+const sharesColumns = (a, b) => a.left < b.right && b.left < a.right;
 
 function focusSelectorOf(element) {
   const key = FOCUS_KEYS.find((name) => element.dataset[name] !== undefined);
@@ -100,6 +105,7 @@ export function createHeadquartersPage({ hud, headquarters, source, newSessionDi
     state = { ...next, projects: withBuildingAgentNames(next.projects) };
     headquarters?.show(state.projects);
     render();
+    pendingAlert.update(state);
     followArrival();
   }
 
@@ -107,6 +113,17 @@ export function createHeadquartersPage({ hud, headquarters, source, newSessionDi
     awaitedAgentKey = agentKey;
     followArrival();
   }
+
+  // Emptied first and filled a moment later, so the same sentence twice in a row is still read out.
+  function announce(text) {
+    const announcer = slot("announcer");
+    announcer.textContent = "";
+    setTimeout(() => { announcer.textContent = text; }, ANNOUNCE_DELAY_MS);
+  }
+
+  const pendingAlert = createPendingAlert({
+    element: slot("alert"), announce, control: source, clockNow, onLeave: () => headquarters?.element.focus(),
+  });
 
   function frameRoom(button) {
     if (!headquarters) return;
@@ -127,7 +144,18 @@ export function createHeadquartersPage({ hud, headquarters, source, newSessionDi
       .map((element) => element.getBoundingClientRect());
   }
 
+  // Only the horizontal extents are compared, and they do not change when the alert drops, so this never flips back and forth.
+  function placeAlert() {
+    const alertElement = slot("alert");
+    if (alertElement.hidden) return;
+    const alertRect = alertElement.getBoundingClientRect();
+    const row = visibleRectsOf(TOP_ROW);
+    const isCrowded = row.some((rect) => sharesColumns(rect, alertRect));
+    alertElement.style.top = isCrowded ? `${Math.max(...row.map((rect) => rect.bottom)) + LOWERED_ALERT_GAP_PX}px` : "";
+  }
+
   function fitMapBetweenPanels() {
+    placeAlert();
     if (!headquarters) return;
     const stage = headquarters.element.getBoundingClientRect();
     const docked = Object.fromEntries(Object.entries(DOCKED_PANELS).map(([edge, selectors]) => [edge, visibleRectsOf(selectors)]));

@@ -56,5 +56,5 @@ const newSessionDialog = createNewSessionDialog({
 });
 const page = createHeadquartersPage({ hud, headquarters, source, newSessionDialog });
 
-const demo = () => createDemoBackend({ scene: params.get(SCENE_PARAM) });
+const demo = () => createDemoBackend({ scene: params.get(SCENE_PARAM), keepsAsking: true });
 source.start(params.get(MODE_PARAM) === DEMO_MODE ? [demo()] : [createLiveBackend(), demo()]);

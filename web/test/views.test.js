@@ -17,6 +17,7 @@ import { renderAreaList } from "../scripts/view/hud/area-list-view.js";
 import { renderConnection } from "../scripts/view/hud/connection-view.js";
 import { renderDayTimeline } from "../scripts/view/hud/day-timeline-view.js";
 import { renderLegend } from "../scripts/view/hud/legend-view.js";
+import { arrivalsText, arrivalText, countdownText, renderAlertBody, renderAlertHead, warningText } from "../scripts/view/hud/pending-alert-view.js";
 import { renderPendingCard, renderPendingStrip } from "../scripts/view/sheet/pending-request-view.js";
 
 // ago(), clockTime() and resetTime() print in the machine's time zone; the recorded pages are in UTC.
@@ -307,5 +308,43 @@ describe("headquarters day", () => {
 
   it("says the collector does not send the day yet", () => {
     assertMatchesRecording("hq-day-empty", renderDayTimeline(null));
+  });
+});
+
+describe("headquarters request alert", () => {
+  const vitor = { name: "Vitor", projectName: "loja <online>" };
+
+  it("says who asks, where, what for, and which of the waiting requests this is, with arrows between them", () => {
+    assertMatchesRecording("hq-alert-head", renderAlertHead({ requester: vitor, intent: "quer rodar um comando", position: 1, total: 3, previousId: null, nextId: "b" }));
+  });
+
+  it("leaves out the arrows for a single request and names an agent that is gone", () => {
+    assertMatchesRecording("hq-alert-head-single", renderAlertHead({ requester: null, intent: "tem uma pergunta", position: 1, total: 1, previousId: null, nextId: null }));
+  });
+
+  it("shows the command with allow and deny and their keys, and the error to fill when sending fails", () => {
+    assertMatchesRecording("hq-alert-command", renderAlertBody(withFields(permission, { summaryId: "run-command", subject: "Aplicar as migrações <db>" }), vitor));
+  });
+
+  it("shows what a tool without a command wants", () => {
+    const edit = { ...permission, id: "req-edit", toolName: "Edit", detail: "", summaryId: "edit-file", subject: "people.js" };
+    assertMatchesRecording("hq-alert-tool", renderAlertBody(edit, vitor));
+  });
+
+  it("offers to answer a question in a panel with the same card as the room", () => {
+    assertMatchesRecording("hq-alert-question", renderAlertBody(question, { name: "Duda <dev>", projectName: "jogo" }));
+  });
+
+  it("counts down in minutes and seconds, and says when the request is going back", () => {
+    assert.deepEqual([112_000, 59_001, 0, -5, null].map(countdownText), [
+      "volta ao terminal em 1:52", "volta ao terminal em 1:00", "voltando ao terminal", "voltando ao terminal", "sem prazo para voltar ao terminal",
+    ]);
+  });
+
+  it("announces who asks, in a sentence a screen reader can say", () => {
+    assert.equal(arrivalText(vitor, "quer rodar um comando"), "Vitor, em loja <online>, quer rodar um comando.");
+    assert.equal(arrivalText(null, "tem uma pergunta"), "Um agente tem uma pergunta.");
+    assert.equal(arrivalsText([{ requester: vitor, intent: "quer rodar um comando" }, { requester: null, intent: "tem uma pergunta" }]), "2 pedidos novos. Vitor, em loja <online>, quer rodar um comando.");
+    assert.equal(warningText(vitor), "Faltam 30 segundos para o pedido de Vitor voltar ao terminal.");
   });
 });
