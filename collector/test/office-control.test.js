@@ -132,6 +132,21 @@ test("a question longer than the page shows keeps its whole text as the answer k
   viewer.abort();
 }));
 
+test("a question over 4 000 characters is not held and goes back to the terminal whole, without reaching the office state", { timeout: NO_VIEWER_TEST_TIMEOUT_MS }, () => withOffice(async (base) => {
+  const viewer = await openOfficePage(base);
+  const hugeQuestion = `Which one? ${"x".repeat(5_000)}`;
+  const questions = [{ question: hugeQuestion, header: "Huge", multiSelect: false, options: [{ label: "A", description: "" }] }];
+
+  const answer = await postSigned(base, "/hooks/claude/question", { ...SESSION, hook_event_name: "PreToolUse", tool_name: "AskUserQuestion", tool_input: { questions } });
+
+  assert.ok(hugeQuestion.length > 5_000);
+  assert.deepEqual(answer.body, { answers: null });
+  const state = await stateOf(base);
+  assert.deepEqual(state.pending, []);
+  assert.ok(!JSON.stringify(state).includes("x".repeat(100)));
+  viewer.abort();
+}));
+
 test("a message waits in the outbox and is delivered when the turn ends",() => withOffice(async (base) => {
   await postActivity(base, "/events/claude", { ...SESSION, hook_event_name: "SessionStart" });
   assert.equal((await post(`${base}/api/agents/message`, { key: "claude:unknown", text: "hi" })).status, 404);
