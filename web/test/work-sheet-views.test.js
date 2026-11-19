@@ -112,6 +112,12 @@ describe("tabs of the agent's sheet", () => {
     assert.ok(renderPlanTab(null).includes("Nenhum plano nesta sessão."));
   });
 
+  it("says a revised plan is a new version waiting for approval since it arrived", () => {
+    const revised = planStatus({ version: 2, state: "revised", proposedAt: NOW - MINUTE, decidedAt: null });
+    assert.ok(renderPlanTab(revised, { loading: "loading" }).includes("Versão nova, esperando sua aprovação desde 18:41</span>"));
+    assert.ok(renderPlanTab(planStatus({ state: "revised" }), { loading: "loading" }).includes("Versão nova, esperando sua aprovação</span>"));
+  });
+
   it("escapes the hostile text of a plan fetched for the tab", () => {
     const html = renderPlanTab(planStatus({ version: 1, state: "proposed", proposedAt: NOW }), { text: HOSTILE_PLAN, loading: "ready" });
     for (const tag of ["<button", "<style", "<textarea", "<img"]) assert.ok(!html.includes(tag), tag);

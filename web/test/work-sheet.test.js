@@ -104,10 +104,14 @@ describe("test rounds", () => {
 describe("plans", () => {
   it("reads the state of the latest plan without its text, dating it by its decision or its proposal", () => {
     const approved = planStatus({ version: 2, state: "approved", proposedAt: NOW - 2 * MINUTE, decidedAt: NOW - MINUTE, length: 900 });
-    assert.deepEqual(pick(approved, ["state", "version", "at", "isApproved", "isWaiting"]), ["approved", 2, NOW - MINUTE, true, false]);
+    assert.deepEqual(pick(approved, ["state", "version", "at", "decidedAt"]), ["approved", 2, NOW - MINUTE, NOW - MINUTE]);
     const proposed = planStatus({ version: 3, state: "proposed", proposedAt: NOW, decidedAt: null });
-    assert.deepEqual(pick(proposed, ["state", "at", "isWaiting"]), ["proposed", NOW, true]);
-    assert.equal(planStatus({ version: 1, state: "revised", proposedAt: NOW, decidedAt: null }).at, NOW);
+    assert.deepEqual(pick(proposed, ["state", "at"]), ["proposed", NOW]);
+  });
+
+  it("dates a revised plan, the new version still waiting for approval, by when it arrived", () => {
+    const revised = planStatus({ version: 2, state: "revised", proposedAt: NOW - 2 * MINUTE, decidedAt: NOW - MINUTE });
+    assert.deepEqual(pick(revised, ["state", "version", "at"]), ["revised", 2, NOW - 2 * MINUTE]);
   });
 
   it("changes its stamp when the version or the state changes, so the sheet fetches the text again", () => {

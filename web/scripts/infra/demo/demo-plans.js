@@ -1,5 +1,8 @@
 const MIN = 60_000;
 const PLAN_TOOL = "ExitPlanMode";
+const PROPOSED = "proposed";
+const APPROVED = "approved";
+const REVISED = "revised";
 
 const NOTIFY_PLAN = `# Encadear o notify do Codex
 
@@ -67,11 +70,11 @@ function planText(agentKey, version) {
 }
 
 export function approvedPlan(now) {
-  return { version: 2, state: "approved", proposedAt: now - 30 * MIN, decidedAt: now - 28 * MIN, length: NOTIFY_PLAN.length };
+  return { version: 2, state: APPROVED, proposedAt: now - 30 * MIN, decidedAt: now - 28 * MIN, length: NOTIFY_PLAN.length };
 }
 
-export function proposedPlan(agentKey, version, now) {
-  return { version, state: "proposed", proposedAt: now, decidedAt: null, length: planText(agentKey, version)?.length ?? 0 };
+export function proposedPlan(agentKey, version, now, state = PROPOSED) {
+  return { version, state, proposedAt: now, decidedAt: null, length: planText(agentKey, version)?.length ?? 0 };
 }
 
 export function planRequest(agentKey, now) {
@@ -84,17 +87,20 @@ export function planRequest(agentKey, now) {
 
 export const isDemoPlanRequest = (request) => request.toolName === PLAN_TOOL;
 
-// The agent asks again with a new version, the one the request carries; the previous one, never approved, was revised.
+// The agent asks again with a new version, the one the request carries. As in the collector, a version that comes while the
+// one before was never approved is revised, and waits for approval like the first.
 export function proposeAgain(agent, request, now) {
-  const version = (agent.plan?.version ?? 0) + 1;
-  agent.plan = proposedPlan(agent.key, version, now);
+  const previous = agent.plan;
+  const version = (previous?.version ?? 0) + 1;
+  const state = previous && previous.state !== APPROVED ? REVISED : PROPOSED;
+  agent.plan = proposedPlan(agent.key, version, now, state);
   const text = planText(agent.key, version);
   return { ...request, plan: text, planLength: text.length };
 }
 
 // As with the collector, only approving changes the plan: one sent back stays proposed until the agent sends the next version.
 export function approvePlan(agent, now) {
-  if (agent.plan) agent.plan = { ...agent.plan, state: "approved", decidedAt: now };
+  if (agent.plan) agent.plan = { ...agent.plan, state: APPROVED, decidedAt: now };
 }
 
 // What GET /api/agents/plan answers in the demo, for the agent as the page holds it: its key and the version the stream gave.

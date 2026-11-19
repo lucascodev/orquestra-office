@@ -8,6 +8,7 @@ import { createHoldPermission } from "../../collector/src/control/application/ho
 import { createHoldQuestion } from "../../collector/src/control/application/hold-question.js";
 import { AGENT_ACTION } from "../../collector/src/office/domain/agent-actions.js";
 import { TOOL_SUMMARY } from "../../collector/src/shared/claude/tool-summary-ids.js";
+import { PLAN_STATE } from "../../collector/src/work/domain/plan.js";
 import { ENTRY_TEXT } from "../../collector/src/shared/terminal/entry-text-ids.js";
 import { changesOf } from "../../runner/src/claude/stream-changes.js";
 import { SESSION_ENTRY } from "../../runner/src/sessions/session-entry-ids.js";
@@ -16,6 +17,7 @@ import { AGENT_ACTIONS } from "../scripts/data/text/pt-br/agent-actions.js";
 import { TERMINAL_NOTES } from "../scripts/data/text/pt-br/terminal-notes.js";
 import { REQUEST_INTENTS } from "../scripts/data/text/pt-br/request-intents.js";
 import { TOOL_SUMMARIES } from "../scripts/data/text/pt-br/tool-summaries.js";
+import { PLAN_STATES } from "../scripts/data/text/pt-br/work-sheet.js";
 import { agentActionText, logEntryText } from "../scripts/domain/office/agent-action-text.js";
 import { terminalEntryText } from "../scripts/domain/terminal/terminal-entry-text.js";
 import { describeToolEntry } from "../scripts/domain/terminal/terminal-format.js";
@@ -229,6 +231,12 @@ describe("ids the collector and the runner publish", () => {
       "rodou os testes: x falharam", "rodou os testes: houve falhas",
       "teve o plano aprovado", "teve o plano aprovado",
     ]);
+  });
+
+  it("give every plan state the collector publishes a phrase in the Plano tab, and no state it does not publish", () => {
+    const states = Object.values(PLAN_STATE);
+    assert.deepEqual(states.filter((state) => !Object.hasOwn(PLAN_STATES, state) || !isFilledPhrase(PLAN_STATES[state])), []);
+    assert.deepEqual(Object.keys(PLAN_STATES).filter((state) => !states.includes(state)), []);
   });
 
   it("never repeat a terminal note between the collector and the runner, which share one catalog", () => {

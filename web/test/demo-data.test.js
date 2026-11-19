@@ -189,6 +189,20 @@ describe("checklist, plan and tests in the demonstration", () => {
     assert.equal(asked.plan, demoPlanDocument(planner).text);
   });
 
+  it("marks the next version revised when the one before was sent back, and proposed when it was approved", () => {
+    const nextVersionAfter = (behavior) => {
+      const state = demoState();
+      const start = Date.now();
+      const askAgain = createDemoAsker(state.pending);
+      resolveDemoRequest(state, "demo-plan", { behavior });
+      for (let tick = 1; tick <= 3; tick += 1) askAgain(state, start + tick * 4_000);
+      const { version, state: planState } = agentByKey(state)[PLANNER].plan;
+      return [version, planState];
+    };
+    assert.deepEqual(nextVersionAfter("deny"), [2, "revised"]);
+    assert.deepEqual(nextVersionAfter("allow"), [2, "proposed"]);
+  });
+
   it("runs the tests of the platformer round and round: writes, runs, fails, fixes and passes", () => {
     const state = demoState();
     const seen = [];
