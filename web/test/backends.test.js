@@ -177,6 +177,18 @@ describe("live backend", () => {
 const PAIRING_CODE = "AAECAwQFBgcICQoLDA0ODw";
 const jsonResponse = (status, body) => ({ ok: status >= 200 && status < 300, status, json: async () => body });
 
+// Node has no EventSource without a flag; the page only needs one that can fail and be closed.
+function fakeEventSources(context) {
+  const streams = [];
+  globalThis.EventSource = class {
+    constructor(url) { this.url = url; this.isClosed = false; streams.push(this); }
+    addEventListener() {}
+    close() { this.isClosed = true; }
+  };
+  context.after(() => { delete globalThis.EventSource; });
+  return streams;
+}
+
 describe("live backend pairing", () => {
   it("shows the unpaired page instead of falling back to the demo when the collector answers 401", async (context) => {
     context.mock.method(globalThis, "fetch", async () => jsonResponse(401, { error: "unpaired", isSecretMissing: true }));
@@ -208,6 +220,43 @@ describe("live backend pairing", () => {
       ["/api/pairings/redeem", "POST", { code: PAIRING_CODE, label: "Chrome no Windows" }],
       ["/api/state", "GET", null],
     ]);
+  });
+
+  it("when the stream breaks, asks the state whether the browser was unpaired and shows it", async (context) => {
+    context.mock.timers.enable({ apis: ["setInterval"] });
+    const streams = fakeEventSources(context);
+    let isPaired = true;
+    context.mock.method(globalThis, "fetch", async (url) => {
+      if (url === "/api/state") return isPaired ? jsonResponse(200, { projects: {} }) : jsonResponse(401, { error: "unpaired" });
+      return jsonResponse(503, {});
+    });
+    const states = [];
+    await createLiveBackend().start((state) => states.push(state));
+    isPaired = false;
+
+    streams[0].onerror();
+    await new Promise((resolve) => setImmediate(resolve));
+
+    assert.deepEqual(states.map((state) => state.mode).slice(-2), ["offline", "unpaired"]);
+    assert.equal(streams[0].isClosed, true);
+  });
+
+  it("when the stream breaks with the collector away, stays offline instead of calling itself unpaired", async (context) => {
+    context.mock.timers.enable({ apis: ["setInterval"] });
+    const streams = fakeEventSources(context);
+    let isUp = true;
+    context.mock.method(globalThis, "fetch", async (url) => {
+      if (!isUp) throw new TypeError("fetch failed");
+      return url === "/api/state" ? jsonResponse(200, { projects: {} }) : jsonResponse(503, {});
+    });
+    const states = [];
+    await createLiveBackend().start((state) => states.push(state));
+    isUp = false;
+
+    streams[0].onerror();
+    await new Promise((resolve) => setImmediate(resolve));
+
+    assert.equal(states.at(-1).mode, "offline");
   });
 
   it("lists, pairs and revokes devices through the office API", async (context) => {
