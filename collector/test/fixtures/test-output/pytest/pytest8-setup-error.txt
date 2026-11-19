@@ -1,0 +1,20 @@
+============================= test session starts =============================
+platform win32 -- Python 3.14.5, pytest-8.4.2, pluggy-1.7.0
+rootdir: C:\work\shop
+collected 3 items
+
+tests\test_orders.py E.                                                  [ 66%]
+tests\test_rounding.py X                                                 [100%]
+
+=================================== ERRORS ====================================
+_____________________ ERROR at setup of test_lists_orders _____________________
+
+    @pytest.fixture
+    def database():
+>       raise ConnectionError("database is down")
+E       ConnectionError: database is down
+
+tests\test_orders.py:6: ConnectionError
+=========================== short test summary info ===========================
+ERROR tests/test_orders.py::test_lists_orders - ConnectionError: database is ...
+==================== 1 passed, 1 xpassed, 1 error in 0.10s ====================

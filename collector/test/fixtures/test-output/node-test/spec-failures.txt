@@ -1,0 +1,58 @@
+✖ applies the discount from 100 (1.2846ms)
+✖ rejects negative totals (0.2295ms)
+✔ keeps totals under the threshold (0.7439ms)
+▶ sum
+  ✔ adds two numbers (1.0927ms)
+  ✔ adds negative numbers (0.1264ms)
+  ✔ adds zero (0.1012ms)
+✔ sum (2.3286ms)
+﹣ computes the state tax (0.5924ms) # waiting for the tax table
+✔ rounds the tax to cents (0.1118ms) # TODO
+✔ charges no tax on zero (0.7168ms)
+ℹ tests 9
+ℹ suites 1
+ℹ pass 5
+ℹ fail 2
+ℹ cancelled 0
+ℹ skipped 1
+ℹ todo 1
+ℹ duration_ms 104.349
+
+✖ failing tests:
+
+test at test\discount.test.js:5:1
+✖ applies the discount from 100 (1.2846ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  
+  100 !== 90
+  
+      at TestContext.<anonymous> (file:///C:/work/shop/test/discount.test.js:6:10)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1402:25)
+      at Test.start (node:internal/test_runner/test:1262:17)
+      at startSubtestAfterBootstrap (node:internal/test_runner/harness:387:17) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 100,
+    expected: 90,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at test\discount.test.js:9:1
+✖ rejects negative totals (0.2295ms)
+  AssertionError [ERR_ASSERTION]: Missing expected exception.
+      at TestContext.<anonymous> (file:///C:/work/shop/test/discount.test.js:10:10)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1402:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:974:18)
+      at Test.postRun (node:internal/test_runner/test:1542:19)
+      at Test.run (node:internal/test_runner/test:1467:12)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:387:3) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: undefined,
+    expected: /negative total/,
+    operator: 'throws',
+    diff: 'simple'
+  }

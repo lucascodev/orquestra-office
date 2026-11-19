@@ -1,0 +1,62 @@
+TAP version 13
+# Subtest: coupon
+    # Subtest: expiry
+        # Subtest: rejects an expired coupon
+        not ok 1 - rejects an expired coupon
+          ---
+          duration_ms: 0.5082
+          type: 'test'
+          location: 'C:\\work\\shop\\nested\\coupon.test.js:6:5'
+          failureType: 'testCodeFailure'
+          error: 'coupon EXPIRED10 is past its date'
+          code: 'ERR_TEST_FAILURE'
+          name: 'RangeError'
+          stack: |-
+            TestContext.<anonymous> (file:///C:/work/shop/nested/coupon.test.js:7:13)
+            Test.runInAsyncScope (node:async_hooks:227:14)
+            Test.run (node:internal/test_runner/test:1402:25)
+            Test.start (node:internal/test_runner/test:1262:17)
+            node:internal/test_runner/test:1903:71
+            node:internal/per_context/primordials:504:82
+            new Promise (<anonymous>)
+            new SafePromise (node:internal/per_context/primordials:478:3)
+            node:internal/per_context/primordials:504:9
+            Array.map (<anonymous>)
+          ...
+        # Subtest: accepts a valid coupon
+        ok 2 - accepts a valid coupon
+          ---
+          duration_ms: 0.1695
+          type: 'test'
+          ...
+        1..2
+    not ok 1 - expiry
+      ---
+      duration_ms: 1.8298
+      type: 'suite'
+      location: 'C:\\work\\shop\\nested\\coupon.test.js:5:3'
+      failureType: 'subtestsFailed'
+      error: '1 subtest failed'
+      code: 'ERR_TEST_FAILURE'
+      stack: |-
+        async Promise.all (index 0)
+      ...
+    1..1
+not ok 1 - coupon
+  ---
+  duration_ms: 2.1694
+  type: 'suite'
+  location: 'C:\\work\\shop\\nested\\coupon.test.js:4:1'
+  failureType: 'subtestsFailed'
+  error: '1 subtest failed'
+  code: 'ERR_TEST_FAILURE'
+  ...
+1..1
+# tests 2
+# suites 2
+# pass 1
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 73.866

@@ -1,0 +1,32 @@
+
+Running 5 tests using 1 worker
+
+  ✓  1 e2e\cart.spec.js:5:3 › cart › adds two items (4ms)
+  ✓  2 e2e\cart.spec.js:9:3 › cart › keeps totals under the threshold (1ms)
+  ✘  3 e2e\checkout.spec.js:5:3 › checkout › applies the discount from 100 (2ms)
+Testing stopped early after 1 maximum allowed failures.
+
+
+  1) e2e\checkout.spec.js:5:3 › checkout › applies the discount from 100 ───────────────────────────
+
+    Error: expect(received).toBe(expected) // Object.is equality
+
+    Expected: 90
+    Received: 100
+
+      4 | test.describe("checkout", () => {
+      5 |   test("applies the discount from 100", async () => {
+    > 6 |     expect(applyDiscount(100)).toBe(90);
+        |                                ^
+      7 |   });
+      8 |
+      9 |   test("shows the coupon field", async () => {
+        at C:\work\shop\e2e\checkout.spec.js:6:32
+
+    Error Context: test-results\checkout-checkout-applies-the-discount-from-100\error-context.md
+
+  1 failed
+    e2e\checkout.spec.js:5:3 › checkout › applies the discount from 100 ────────────────────────────
+  2 did not run
+  2 passed (478ms)
+  1 error was not a part of any test, see above for details

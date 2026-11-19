@@ -1,0 +1,12 @@
+=== RUN   TestCheckout
+=== PAUSE TestCheckout
+=== RUN   TestRefund
+=== PAUSE TestRefund
+=== CONT  TestCheckout
+    checkout_test.go:21: Checkout() total = 100; want 90
+=== CONT  TestRefund
+--- FAIL: TestCheckout (0.00s)
+--- PASS: TestRefund (0.01s)
+FAIL
+FAIL	example.com/shop/payments	0.144s
+FAIL

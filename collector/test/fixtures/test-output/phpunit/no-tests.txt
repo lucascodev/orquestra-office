@@ -1,0 +1,6 @@
+PHPUnit 11.5.42 by Sebastian Bergmann and contributors.
+
+Runtime:       PHP 8.4.14
+Configuration: /work/shop/phpunit.xml
+
+Test file "tests/CartTest.php" not found

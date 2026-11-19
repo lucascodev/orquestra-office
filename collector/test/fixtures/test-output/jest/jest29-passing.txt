@@ -1,0 +1,11 @@
+PASS tests/sum.test.js
+  sum
+    √ adds two numbers (2 ms)
+    √ adds negative numbers
+    √ adds zero (1 ms)
+
+Test Suites: 1 passed, 1 total
+Tests:       3 passed, 3 total
+Snapshots:   0 total
+Time:        0.326 s, estimated 1 s
+Ran all test suites matching /tests\\sum/i.

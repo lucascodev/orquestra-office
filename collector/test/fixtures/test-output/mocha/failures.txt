@@ -1,0 +1,45 @@
+
+
+  applyDiscount
+    1) applies the discount from 100
+    2) rejects negative totals
+    ✔ keeps totals under the threshold
+
+  sum
+    ✔ adds two numbers
+    ✔ adds negative numbers
+    ✔ adds zero
+
+  tax
+    - computes the state tax
+    - rounds the tax to cents
+    ✔ charges no tax on zero
+
+
+  5 passing (5ms)
+  2 pending
+  2 failing
+
+  1) applyDiscount
+       applies the discount from 100:
+
+      AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+
+100 !== 90
+
+      + expected - actual
+
+      -100
+      +90
+      
+      at Context.<anonymous> (file:///C:/work/shop/test/discount.spec.js:6:12)
+      at process.processImmediate (node:internal/timers:574:21)
+
+  2) applyDiscount
+       rejects negative totals:
+     AssertionError [ERR_ASSERTION]: Missing expected exception.
+      at Context.<anonymous> (file:///C:/work/shop/test/discount.spec.js:10:12)
+      at process.processImmediate (node:internal/timers:574:21)
+
+
+

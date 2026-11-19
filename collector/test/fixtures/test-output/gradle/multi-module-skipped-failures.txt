@@ -1,0 +1,48 @@
+> Task :core:compileJava UP-TO-DATE
+> Task :core:classes UP-TO-DATE
+> Task :core:compileTestJava UP-TO-DATE
+> Task :core:testClasses UP-TO-DATE
+
+> Task :core:test FAILED
+
+TaxTest > roundsTheTaxToCents() FAILED
+    org.opentest4j.AssertionFailedError at TaxTest.java:21
+
+5 tests completed, 1 failed, 2 skipped
+
+> Task :api:compileJava UP-TO-DATE
+> Task :api:classes UP-TO-DATE
+> Task :api:compileTestJava UP-TO-DATE
+> Task :api:testClasses UP-TO-DATE
+
+> Task :api:test FAILED
+
+OrderControllerTest > rejectsAnEmptyOrder() FAILED
+    java.lang.IllegalStateException at OrderControllerTest.java:33
+
+4 tests completed, 1 failed
+
+FAILURE: Build completed with 2 failures.
+
+1: Task failed with an exception.
+-----------
+* What went wrong:
+Execution failed for task ':core:test'.
+> There were failing tests. See the report at: file:///C:/work/shop/core/build/reports/tests/test/index.html
+
+* Try:
+> Run with --scan to get full insights from a Build Scan (powered by Develocity).
+==============================================================================
+
+2: Task failed with an exception.
+-----------
+* What went wrong:
+Execution failed for task ':api:test'.
+> There were failing tests. See the report at: file:///C:/work/shop/api/build/reports/tests/test/index.html
+
+* Try:
+> Run with --scan to get full insights from a Build Scan (powered by Develocity).
+==============================================================================
+
+BUILD FAILED in 6s
+8 actionable tasks: 2 executed, 6 up-to-date

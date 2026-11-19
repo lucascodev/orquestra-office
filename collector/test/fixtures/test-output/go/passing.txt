@@ -1,0 +1,4 @@
+?   	example.com/shop/cmd/shop	[no test files]
+ok  	example.com/shop	0.215s
+ok  	example.com/shop/cart	(cached)
+ok  	example.com/shop/tax	0.104s

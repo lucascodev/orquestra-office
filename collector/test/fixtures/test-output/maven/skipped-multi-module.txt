@@ -1,0 +1,41 @@
+[INFO] Reactor Build Order:
+[INFO]
+[INFO] shop-parent                                                        [pom]
+[INFO] shop-core                                                          [jar]
+[INFO] shop-api                                                           [jar]
+[INFO]
+[INFO] -----------------------< com.example:shop-core >------------------------
+[INFO] Building shop-core 1.0.0-SNAPSHOT                                  [2/3]
+[INFO] --- surefire:3.5.4:test (default-test) @ shop-core ---
+[INFO] -------------------------------------------------------
+[INFO]  T E S T S
+[INFO] -------------------------------------------------------
+[INFO] Running com.example.shop.core.TaxTest
+[WARNING] Tests run: 2, Failures: 0, Errors: 0, Skipped: 1, Time elapsed: 0.031 s -- in com.example.shop.core.TaxTest
+[INFO]
+[INFO] Results:
+[INFO]
+[WARNING] Tests run: 2, Failures: 0, Errors: 0, Skipped: 1
+[INFO]
+[INFO] ------------------------< com.example:shop-api >------------------------
+[INFO] Building shop-api 1.0.0-SNAPSHOT                                   [3/3]
+[INFO] --- surefire:3.5.4:test (default-test) @ shop-api ---
+[INFO] -------------------------------------------------------
+[INFO]  T E S T S
+[INFO] -------------------------------------------------------
+[INFO] Running com.example.shop.api.OrderControllerTest
+[INFO] Tests run: 4, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.212 s -- in com.example.shop.api.OrderControllerTest
+[INFO]
+[INFO] Results:
+[INFO]
+[INFO] Tests run: 4, Failures: 0, Errors: 0, Skipped: 0
+[INFO]
+[INFO] ------------------------------------------------------------------------
+[INFO] Reactor Summary for shop-parent 1.0.0-SNAPSHOT:
+[INFO]
+[INFO] shop-parent ........................................ SUCCESS [  0.104 s]
+[INFO] shop-core .......................................... SUCCESS [  1.611 s]
+[INFO] shop-api ........................................... SUCCESS [  0.904 s]
+[INFO] ------------------------------------------------------------------------
+[INFO] BUILD SUCCESS
+[INFO] ------------------------------------------------------------------------

@@ -1,0 +1,4 @@
+# example.com/shop [example.com/shop.test]
+.\discount_test.go:12:9: undefined: ApplyDiscont
+FAIL	example.com/shop [build failed]
+FAIL

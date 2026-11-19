@@ -1,0 +1,26 @@
+▶ payment gateway
+  ✖ waits for the bank (65.0586ms)
+  ✖ confirms the charge
+✖ payment gateway (65.3638ms)
+ℹ tests 2
+ℹ suites 1
+ℹ pass 0
+ℹ fail 0
+ℹ cancelled 2
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 1115.1674
+
+✖ failing tests:
+
+test at cancel\slow.test.js:4:3
+✖ waits for the bank (65.0586ms)
+  'test did not finish before its parent and was cancelled'
+
+test at cancel\slow.test.js:8:3
+✖ confirms the charge
+  'test did not finish before its parent and was cancelled'
+
+test at cancel\slow.test.js:3:1
+✖ payment gateway (65.3638ms)
+  'test timed out after 50ms'

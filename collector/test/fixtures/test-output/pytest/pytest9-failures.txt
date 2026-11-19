@@ -1,0 +1,40 @@
+============================= test session starts =============================
+platform win32 -- Python 3.14.5, pytest-9.2.0, pluggy-1.7.0
+rootdir: C:\work\shop
+collected 10 items
+
+tests\test_discount.py FF.F                                              [ 40%]
+tests\test_sum.py ...                                                    [ 70%]
+tests\test_tax.py sx.                                                    [100%]
+
+================================== FAILURES ===================================
+_____________________ test_applies_the_discount_from_100 ______________________
+
+    def test_applies_the_discount_from_100():
+>       assert apply_discount(100) == 90
+E       assert 100 == 90
+E        +  where 100 = apply_discount(100)
+
+tests\test_discount.py:7: AssertionError
+________________________ test_rejects_negative_totals _________________________
+
+    def test_rejects_negative_totals():
+>       with pytest.raises(ValueError, match="negative total"):
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE ValueError
+
+tests\test_discount.py:11: Failed
+__________________ TestCoupon.test_rejects_an_expired_coupon __________________
+
+self = <test_discount.TestCoupon object at 0x0000022B8DE6E990>
+
+    def test_rejects_an_expired_coupon(self):
+>       raise KeyError("coupon EXPIRED10")
+E       KeyError: 'coupon EXPIRED10'
+
+tests\test_discount.py:21: KeyError
+=========================== short test summary info ===========================
+FAILED tests/test_discount.py::test_applies_the_discount_from_100 - assert 10...
+FAILED tests/test_discount.py::test_rejects_negative_totals - Failed: DID NOT...
+FAILED tests/test_discount.py::TestCoupon::test_rejects_an_expired_coupon - K...
+============== 3 failed, 5 passed, 1 skipped, 1 xfailed in 0.14s ==============

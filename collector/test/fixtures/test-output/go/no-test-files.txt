@@ -1,0 +1,2 @@
+?   	example.com/shop	[no test files]
+?   	example.com/shop/cmd/shop	[no test files]

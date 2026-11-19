@@ -1,0 +1,43 @@
+PASS tests/sum.test.js
+PASS tests/tax.test.js
+FAIL tests/discount.test.js
+  ● applyDiscount › applies the discount from 100
+
+    expect(received).toBe(expected) // Object.is equality
+
+    Expected: 90
+    Received: 100
+
+    [0m [90m 3 |[39m describe([32m"applyDiscount"[39m[33m,[39m () [33m=>[39m {
+     [90m 4 |[39m   test([32m"applies the discount from 100"[39m[33m,[39m () [33m=>[39m {
+    [31m[1m>[22m[39m[90m 5 |[39m     expect(applyDiscount([35m100[39m))[33m.[39mtoBe([35m90[39m)[33m;[39m
+     [90m   |[39m                                [31m[1m^[22m[39m
+     [90m 6 |[39m   })[33m;[39m
+     [90m 7 |[39m
+     [90m 8 |[39m   test([32m"rejects negative totals"[39m[33m,[39m () [33m=>[39m {[0m
+
+      at Object.toBe (tests/discount.test.js:5:32)
+
+  ● applyDiscount › rejects negative totals
+
+    expect(received).toThrow(expected)
+
+    Expected substring: "negative total"
+
+    Received function did not throw
+
+    [0m [90m  7 |[39m
+     [90m  8 |[39m   test([32m"rejects negative totals"[39m[33m,[39m () [33m=>[39m {
+    [31m[1m>[22m[39m[90m  9 |[39m     expect(() [33m=>[39m applyDiscount([33m-[39m[35m1[39m))[33m.[39mtoThrow([32m"negative total"[39m)[33m;[39m
+     [90m    |[39m                                     [31m[1m^[22m[39m
+     [90m 10 |[39m   })[33m;[39m
+     [90m 11 |[39m
+     [90m 12 |[39m   test([32m"keeps totals under the threshold"[39m[33m,[39m () [33m=>[39m {[0m
+
+      at Object.toThrow (tests/discount.test.js:9:37)
+
+Test Suites: 1 failed, 2 passed, 3 total
+Tests:       2 failed, 1 skipped, 1 todo, 5 passed, 9 total
+Snapshots:   0 total
+Time:        0.961 s
+Ran all test suites.

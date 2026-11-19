@@ -1,0 +1,35 @@
+FAIL extra/coupon.test.js (5.487 s)
+  ● rejects an expired coupon
+
+    RangeError: coupon EXPIRED10 is past its date
+
+    [0m [90m 2 |[39m
+     [90m 3 |[39m test([32m"rejects an expired coupon"[39m[33m,[39m () [33m=>[39m {
+    [31m[1m>[22m[39m[90m 4 |[39m   expect(validate([32m"EXPIRED10"[39m))[33m.[39mtoBe([36mfalse[39m)[33m;[39m
+     [90m   |[39m          [31m[1m^[22m[39m
+     [90m 5 |[39m })[33m;[39m
+     [90m 6 |[39m
+     [90m 7 |[39m test([32m"accepts a valid coupon"[39m[33m,[39m () [33m=>[39m {[0m
+
+      at validate (node_modules/coupon-lib/index.js:2:9)
+      at Object.validate (extra/coupon.test.js:4:10)
+
+FAIL extra/checkout.test.js
+  ● Test suite failed to run
+
+    Cannot find module '../src/checkout' from 'extra/checkout.test.js'
+
+    [0m[31m[1m>[22m[39m[90m 1 |[39m [36mconst[39m { checkout } [33m=[39m require([32m"../src/checkout"[39m)[33m;[39m
+     [90m   |[39m                      [31m[1m^[22m[39m
+     [90m 2 |[39m
+     [90m 3 |[39m test([32m"charges the card"[39m[33m,[39m () [33m=>[39m {
+     [90m 4 |[39m   expect(checkout())[33m.[39mtoBe([35m0[39m)[33m;[39m[0m
+
+      at Resolver._throwModNotFoundError (node_modules/jest-resolve/build/index.js:1031:11)
+      at Object.require (extra/checkout.test.js:1:22)
+
+Test Suites: 2 failed, 2 total
+Tests:       1 failed, 1 passed, 2 total
+Snapshots:   0 total
+Time:        8.83 s
+Ran all test suites matching extra.

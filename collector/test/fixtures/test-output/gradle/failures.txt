@@ -1,0 +1,30 @@
+> Task :compileJava UP-TO-DATE
+> Task :processResources NO-SOURCE
+> Task :classes UP-TO-DATE
+> Task :compileTestJava
+> Task :processTestResources NO-SOURCE
+> Task :testClasses
+
+> Task :test FAILED
+
+DiscountTest > appliesTheDiscountFrom100() FAILED
+    org.opentest4j.AssertionFailedError at DiscountTest.java:12
+
+DiscountTest > rejectsNegativeTotals() FAILED
+    org.opentest4j.AssertionFailedError at DiscountTest.java:17
+
+8 tests completed, 2 failed, 1 skipped
+
+[Incubating] Problems report is available at: file:///C:/work/shop/build/reports/problems/problems-report.html
+
+FAILURE: Build failed with an exception.
+
+* What went wrong:
+Execution failed for task ':test'.
+> There were failing tests. See the report at: file:///C:/work/shop/build/reports/tests/test/index.html
+
+* Try:
+> Run with --scan to get full insights from a Build Scan (powered by Develocity).
+
+BUILD FAILED in 4s
+4 actionable tasks: 2 executed, 2 up-to-date

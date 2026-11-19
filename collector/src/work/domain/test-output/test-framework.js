@@ -1,0 +1,18 @@
+export const TEST_FRAMEWORK = Object.freeze({
+  JEST: "jest",
+  VITEST: "vitest",
+  PYTEST: "pytest",
+  NODE_TEST: "node-test",
+  TAP: "tap",
+  GO: "go",
+  CARGO: "cargo",
+  DOTNET: "dotnet",
+  MAVEN: "maven",
+  GRADLE: "gradle",
+  MOCHA: "mocha",
+  RSPEC: "rspec",
+  PHPUNIT: "phpunit",
+  MIX: "mix",
+  PLAYWRIGHT: "playwright",
+  MIXED: "mixed",
+});
