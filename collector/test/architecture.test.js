@@ -104,6 +104,21 @@ test("each layer imports only the layers the architecture allows", () => {
   assert.deepEqual(violations, []);
 });
 
+function contextOf(path) {
+  const [top, second] = pathInSrc(path).split("/");
+  return CONTEXT_LAYERS.has(second) ? top : null;
+}
+
+test("no two contexts import each other, so the arrows between contexts point one way", () => {
+  const edges = new Set(scriptsUnder(SRC_DIR)
+    .flatMap(relativeImportsOf)
+    .map(({ file, target }) => [contextOf(file), contextOf(target)])
+    .filter(([from, to]) => from && to && from !== to)
+    .map(([from, to]) => `${from} -> ${to}`));
+  const mutual = [...edges].filter((edge) => edges.has(edge.split(" -> ").reverse().join(" -> ")));
+  assert.deepEqual(mutual, []);
+});
+
 test("only infra, http and the composition root use Node built-ins", () => {
   const violations = scriptsUnder(SRC_DIR)
     .filter((file) => !BUILTIN_LAYERS.has(layerOf(file)))

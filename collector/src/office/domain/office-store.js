@@ -1,12 +1,13 @@
 import { agentKeyOf, mainAgentKey, sessionIdOfKey } from "./agent-key.js";
 import { hasAgentExpired, isBreakOver, isRoomAbandoned } from "./agent-expiry.js";
-import { dayOf, freshStats, growthOf } from "./daily-stats.js";
+import { freshStats, growthOf } from "./daily-stats.js";
 import { dictionaryOf } from "./dictionary.js";
 import { officeStateFrom } from "./office-state.js";
 import { baseName } from "./path-name.js";
 import { projectKeyOf } from "./project-key.js";
 import { isTemplate, nextTemplate } from "./templates.js";
 import { createToolOrder } from "./tool-order.js";
+import { dayOf } from "../../shared/time/day.js";
 import { createAgentWork } from "../../work/domain/agent-work.js";
 
 const LOG_LIMIT = 20;
