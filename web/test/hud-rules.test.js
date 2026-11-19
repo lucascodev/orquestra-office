@@ -10,6 +10,8 @@ import { dayTimeline } from "../scripts/domain/office/day-timeline.js";
 import { decisionForKey } from "../scripts/domain/office/decision-shortcuts.js";
 import { searchHeadquarters } from "../scripts/domain/office/headquarters-search.js";
 import { islandFacts } from "../scripts/domain/office/island-facts.js";
+import { movedCursor } from "../scripts/domain/office/option-cursor.js";
+import { searchEntries } from "../scripts/domain/office/search-entries.js";
 import { crossesWarning, newArrivals, pendingInFocus, requesterOf, serverClockNow } from "../scripts/domain/office/pending-queue.js";
 import { requestIntentText } from "../scripts/domain/office/request-intent-text.js";
 
@@ -398,6 +400,59 @@ describe("headquarters search", () => {
     assert.deepEqual(result.actions.map(({ id }) => id), ["new-session"]);
     assert.deepEqual(search("copa").rooms.map(({ id }) => id), ["pantry"]);
     assert.deepEqual(search("copa").agentGroups, []);
+  });
+});
+
+describe("what the search looks through", () => {
+  const census = {
+    total: 3,
+    projects: [{ key: "c:/loja", name: "loja-online", themeId: "cafe", total: 2, byStatus: [] }],
+    areas: [{ id: "pantry", name: "Copa", count: 1 }],
+  };
+  const projects = {
+    "c:/loja": projectOf("c:/loja", "loja-online", [
+      agentOf("claude:Vitor", "needs_you", { actionId: "permission-requested", subject: "Bash" }),
+      agentOf("claude:Otto", "mystery", { kind: "subagent", label: "Explore", action: "lendo README.md" }),
+    ]),
+  };
+  const entriesOf = (extra = {}) => searchEntries({ projects, census, pendingCount: 0, isRunnerAvailable: false, isFollowing: false, ...extra });
+
+  it("lists every agent with its room, its status and what it is doing now in words", () => {
+    assert.deepEqual(entriesOf().agents, [
+      { key: "claude:Vitor", name: "Vitor", label: "Claude Code", room: "loja-online", status: "needs_you", doing: "pede permissão para usar Bash" },
+      { key: "claude:Otto", name: "Otto", label: "Explore", room: "loja-online", status: "idle", doing: "lendo README.md" },
+    ]);
+  });
+
+  it("lists the islands and then the common rooms", () => {
+    assert.deepEqual(entriesOf().rooms, [
+      { id: "c:/loja", kind: "project", name: "loja-online" },
+      { id: "pantry", kind: "area", name: "Copa" },
+    ]);
+  });
+
+  it("offers only the actions that make sense now, the request first when there is one", () => {
+    assert.deepEqual(entriesOf().actions.map(({ id }) => id), ["frame-whole"]);
+    const busy = entriesOf({ pendingCount: 2, isRunnerAvailable: true, isFollowing: true });
+    assert.deepEqual(busy.actions.map(({ id }) => id), ["go-to-request", "new-session", "frame-whole", "stop-following"]);
+    assert.deepEqual(busy.actions.map(({ label }) => label), ["Ir para o pedido", "Nova sessão", "Enquadrar a Sede inteira", "Parar de seguir com a câmera"]);
+  });
+});
+
+describe("option cursor", () => {
+  it("moves down and up through the options and wraps around the ends", () => {
+    assert.equal(movedCursor({ count: 3, index: 0, key: "ArrowDown" }), 1);
+    assert.equal(movedCursor({ count: 3, index: 2, key: "ArrowDown" }), 0);
+    assert.equal(movedCursor({ count: 3, index: 0, key: "ArrowUp" }), 2);
+    assert.equal(movedCursor({ count: 3, index: -1, key: "ArrowDown" }), 0);
+    assert.equal(movedCursor({ count: 3, index: -1, key: "ArrowUp" }), 2);
+  });
+
+  it("goes to the first and last option with Page Up and Page Down, and ignores other keys or an empty list", () => {
+    assert.equal(movedCursor({ count: 5, index: 2, key: "PageUp" }), 0);
+    assert.equal(movedCursor({ count: 5, index: 2, key: "PageDown" }), 4);
+    assert.equal(movedCursor({ count: 5, index: 2, key: "Enter" }), null);
+    assert.equal(movedCursor({ count: 0, index: -1, key: "ArrowDown" }), null);
   });
 });
 

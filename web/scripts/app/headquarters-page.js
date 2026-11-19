@@ -9,6 +9,8 @@ import { canReceiveMessages } from "../domain/office/can-receive-messages.js";
 import { dayTimeline } from "../domain/office/day-timeline.js";
 import { islandFacts } from "../domain/office/island-facts.js";
 import { serverClockNow } from "../domain/office/pending-queue.js";
+import { searchEntries } from "../domain/office/search-entries.js";
+import { ownValueOf } from "../domain/shared/own-value.js";
 import { renderAccounts } from "../view/hud/accounts-view.js";
 import { renderAreaList } from "../view/hud/area-list-view.js";
 import { followingStoppedText, renderCameraControls, renderFollowing } from "../view/hud/camera-controls-view.js";
@@ -16,6 +18,7 @@ import { renderConnection } from "../view/hud/connection-view.js";
 import { renderDayTimeline } from "../view/hud/day-timeline-view.js";
 import { renderLegend } from "../view/hud/legend-view.js";
 import { createAgentDrawer } from "./agent-drawer.js";
+import { createCommandPalette } from "./command-palette.js";
 import { createMinimap } from "./minimap.js";
 import { createPendingAlert } from "./pending-alert.js";
 
@@ -27,7 +30,7 @@ const FOCUS_KEYS = ["project", "area", "frame"];
 const DOCKED_PANELS = {
   left: [".hq-rooms", ".hq-legend"],
   right: [".hq-drawer"],
-  top: [".hq-capsule", ".hq-alert", ".hq-accounts"],
+  top: [".hq-capsule", ".hq-search-button", ".hq-alert", ".hq-accounts"],
   bottom: [".hq-day", ".hq-camera"],
 };
 const EMPTY_STATE = {
@@ -38,6 +41,8 @@ const EMPTY_STATE = {
 const NO_MAP = { element: null, followedKey: () => null, follow: () => {}, stopFollowing: () => {}, tagOf: () => null };
 const WHOLE_ROOM = { kind: "whole", id: "whole" };
 const ROOM_ATTRIBUTE = { whole: "frame", project: "project", area: "area" };
+const APPLE_PLATFORM = /mac|iphone|ipad/i;
+const APPLE_SEARCH_KEYS = "⌘ K";
 
 const startOfDay = (ms) => new Date(ms).setHours(0, 0, 0, 0);
 
@@ -46,6 +51,7 @@ function focusSelectorOf(element) {
   return key ? `[data-${key}="${CSS.escape(element.dataset[key])}"]` : null;
 }
 
+const isApplePlatform = () => APPLE_PLATFORM.test(navigator.userAgentData?.platform ?? navigator.platform ?? "");
 const roomSelectorOf = (room) => `[data-${ROOM_ATTRIBUTE[room.kind]}="${CSS.escape(room.id)}"]`;
 
 function roomOfButton(button) {
@@ -72,6 +78,7 @@ export function createHeadquartersPage({ hud, headquarters, source, newSessionDi
 
   const clockNow = () => serverClockNow({ localNow: Date.now(), generatedAt: state.generatedAt, receivedAt });
   const layoutNow = () => headquarters?.layoutShown() ?? layoutHeadquarters(state.projects);
+  const censusNow = () => areaCensus({ layout: layoutNow(), projects: state.projects, stops: headquarters?.destinations() ?? new Map() });
 
   function setHtml(element, html) {
     if (renderedHtml.get(element) === html) return;
@@ -91,8 +98,7 @@ export function createHeadquartersPage({ hud, headquarters, source, newSessionDi
       hasDeferredRooms = true;
       return;
     }
-    const census = areaCensus({ layout: layoutNow(), projects: state.projects, stops: headquarters?.destinations() ?? new Map() });
-    keepingFocus(rooms, () => setHtml(rooms, renderAreaList(census, currentRoom)));
+    keepingFocus(rooms, () => setHtml(rooms, renderAreaList(censusNow(), currentRoom)));
   }
 
   function renderDay() {
@@ -173,6 +179,7 @@ export function createHeadquartersPage({ hud, headquarters, source, newSessionDi
     render();
     pendingAlert.update(state);
     updateDrawer();
+    palette.refresh();
     followArrival();
   }
 
@@ -217,6 +224,47 @@ export function createHeadquartersPage({ hud, headquarters, source, newSessionDi
     if (room.kind === "project") openIsland(room.id, opener ?? (() => rooms.querySelector(roomSelectorOf(room))));
     frameRoom(room);
   }
+
+  const searchEntriesNow = () => searchEntries({
+    projects: state.projects, census: censusNow(), pendingCount: state.pending.length,
+    isRunnerAvailable: state.runner.isAvailable, isFollowing: Boolean(headquarters?.followedKey()),
+  });
+
+  function goToCommonRoom(areaId) {
+    const room = { kind: "area", id: areaId };
+    goToRoom(room);
+    rooms.querySelector(roomSelectorOf(room))?.focus();
+  }
+
+  const SEARCH_ACTIONS = {
+    "go-to-request": () => {
+      const alertElement = slot("alert");
+      if (!alertElement.hidden) alertElement.focus();
+    },
+    "new-session": () => newSessionDialog.show(suggestedFolder()),
+    "frame-whole": () => {
+      goToRoom(WHOLE_ROOM);
+      headquarters?.element.focus();
+    },
+    "stop-following": () => headquarters?.stopFollowing(),
+  };
+
+  // An agent opens in the drawer with the camera following it; a room is framed as from the list; an action does its thing.
+  const SEARCH_CHOICES = {
+    agent: ({ id }, opener) => {
+      openAgent(id, { opener });
+      fitMapBetweenPanels();
+      headquarters?.follow(id);
+    },
+    room: ({ id, room }) => (room === "project" ? goToRoom({ kind: "project", id }) : goToCommonRoom(id)),
+    action: ({ id }) => ownValueOf(SEARCH_ACTIONS, id)?.(),
+  };
+
+  const palette = createCommandPalette({
+    dialog: slot("search"),
+    entries: searchEntriesNow,
+    onChoose: (choice, opener) => ownValueOf(SEARCH_CHOICES, choice.kind)?.(choice, opener),
+  });
 
   function cameraMovedByHand() {
     if (!currentRoom) return;
@@ -298,6 +346,8 @@ export function createHeadquartersPage({ hud, headquarters, source, newSessionDi
     if (button) CAMERA_ACTIONS[button.dataset.camera]?.();
   });
   newSessionButton.addEventListener("click", () => newSessionDialog.show(suggestedFolder()));
+  hud.querySelector("[data-open-search]").addEventListener("click", palette.open);
+  if (isApplePlatform()) hud.querySelector("[data-search-keys]").textContent = APPLE_SEARCH_KEYS;
 
   setHtml(slot("legend"), renderLegend());
   const panelWatcher = new ResizeObserver(fitMapBetweenPanels);

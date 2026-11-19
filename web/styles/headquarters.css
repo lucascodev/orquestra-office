@@ -29,7 +29,7 @@
 .hq-labels[data-detail="compact"] .area-label { padding: 0 4px; font-size: 9px; opacity: 0.85; }
 
 /* Floating panels. The layer lets the map take every press that does not land on a panel. */
-.hq-hud { --hq-gap: var(--space-6); --hq-left-width: 220px; --hq-capsule-height: 40px; position: absolute; inset: 0; z-index: 2; pointer-events: none; font-size: 13px; }
+.hq-hud { --hq-gap: var(--space-6); --hq-left-width: 220px; --hq-capsule-height: 40px; --hq-capsule-width: 268px; --hq-search-height: 34px; position: absolute; inset: 0; z-index: 2; pointer-events: none; font-size: 13px; }
 .hq-hud > * { pointer-events: auto; }
 .hq-panel { border: 1px solid var(--border-strong); border-radius: var(--radius-lg); background: var(--bg-floating); box-shadow: var(--shadow-popover); }
 .hq-heading { margin: var(--space-3) var(--space-4) var(--space-1); color: var(--muted); font-size: 10px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; }
@@ -38,7 +38,7 @@
 .hq-figure { color: var(--text); font: 600 12px var(--font-mono); }
 .hq-figure.is-high, .hq-figure.is-warning { color: var(--warning); }
 
-.hq-capsule { position: absolute; left: var(--hq-gap); top: var(--hq-gap); min-width: 268px; max-width: calc(100vw - var(--hq-gap) * 2); height: var(--hq-capsule-height); box-sizing: border-box; display: flex; align-items: center; gap: 10px; padding: 0 var(--space-5); }
+.hq-capsule { position: absolute; left: var(--hq-gap); top: var(--hq-gap); min-width: var(--hq-capsule-width); max-width: calc(100vw - var(--hq-gap) * 2); height: var(--hq-capsule-height); box-sizing: border-box; display: flex; align-items: center; gap: 10px; padding: 0 var(--space-5); }
 .hq-brand-mark { display: grid; grid-template-columns: repeat(2, 6px); gap: 2px; }
 .hq-brand-mark i { width: 6px; height: 6px; background: var(--accent); }
 .hq-brand-mark i:nth-child(2) { background: var(--info); }
@@ -64,7 +64,29 @@
 .hq-meters { color: var(--muted); white-space: nowrap; }
 .hq-meters .hq-figure { font-size: 11px; }
 
-.hq-rooms { position: absolute; left: var(--hq-gap); top: calc(var(--hq-gap) * 1.5 + var(--hq-capsule-height)); width: var(--hq-left-width); box-sizing: border-box; max-height: calc(100dvh - var(--hq-capsule-height) - 320px); overflow-y: auto; display: flex; flex-direction: column; gap: var(--space-1); padding: var(--space-4); font-size: 12px; }
+.hq-search-button { all: unset; position: absolute; left: var(--hq-gap); top: calc(var(--hq-gap) + var(--hq-capsule-height) + var(--space-4)); box-sizing: border-box; display: flex; align-items: center; gap: var(--space-4); width: var(--hq-capsule-width); height: var(--hq-search-height); padding: 0 10px; border: 1px solid var(--border-strong); border-radius: var(--radius-lg); background: var(--bg-floating); box-shadow: var(--shadow-popover); color: var(--muted); font-size: 12px; cursor: pointer; }
+.hq-search-button:hover { color: var(--text); background: var(--bg-overlay); }
+.hq-search-button:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+.hq-search-label { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.hq-search-button kbd, .hq-search-field kbd { padding: 0 5px; border: 1px solid var(--border-strong); border-radius: var(--radius-sm); color: var(--muted); font: 11px var(--font-mono); }
+
+.hq-search { width: min(560px, calc(100vw - var(--space-6) * 2)); max-height: min(560px, calc(100dvh - 96px)); margin: 72px auto auto; padding: 0; overflow: hidden; border: 1px solid var(--border-strong); border-radius: var(--radius-lg); background: var(--bg-floating-strong); color: var(--text); box-shadow: var(--shadow-dialog); font-size: 13px; }
+.hq-search[open] { display: flex; }
+.hq-search::backdrop { background: var(--scrim); }
+.hq-search-box { display: flex; flex: 1; flex-direction: column; min-height: 0; }
+.hq-search-field { display: flex; align-items: center; gap: var(--space-4); padding: var(--space-5) 14px; border-bottom: 1px solid var(--border); color: var(--muted); }
+.hq-search-field input { flex: 1; min-width: 0; padding: 0; border: 0; outline: 0; background: transparent; color: var(--text); font: 14px var(--font-sans); }
+.hq-search-list { flex: 1; min-height: 0; padding: var(--space-3); overflow-y: auto; }
+.hq-search-section + .hq-search-section { margin-top: var(--space-3); }
+.hq-search-group { padding: var(--space-3) var(--space-4) var(--space-2); color: var(--muted); font-size: 10px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; }
+.hq-search-option { display: flex; align-items: center; gap: var(--space-4); min-height: 32px; padding: var(--space-2) var(--space-4); border-radius: var(--radius-md); cursor: pointer; }
+.hq-search-option.is-active { background: var(--bg-selected); box-shadow: inset 2px 0 0 var(--accent); }
+.hq-search-main { flex: none; max-width: 50%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.hq-search-detail { flex: 1; min-width: 0; overflow: hidden; color: var(--muted); font-size: 12px; text-align: right; text-overflow: ellipsis; white-space: nowrap; }
+.hq-search-empty { padding: var(--space-6); }
+.hq-search-help { margin: 0; padding: var(--space-4) 14px; border-top: 1px solid var(--border); color: var(--subtle); font-size: 11px; }
+
+.hq-rooms { position: absolute; left: var(--hq-gap); top: calc(var(--hq-gap) * 2 + var(--hq-capsule-height) + var(--space-4) + var(--hq-search-height)); width: var(--hq-left-width); box-sizing: border-box; max-height: calc(100dvh - var(--hq-capsule-height) - var(--hq-search-height) - 330px); overflow-y: auto; display: flex; flex-direction: column; gap: var(--space-1); padding: var(--space-4); font-size: 12px; }
 .hq-room-list { display: flex; flex-direction: column; gap: var(--space-1); margin: 0; padding: 0; list-style: none; }
 .hq-room { all: unset; box-sizing: border-box; display: flex; align-items: center; gap: var(--space-4); width: 100%; min-height: 30px; padding: 0 var(--space-4); border: 1px solid transparent; border-radius: var(--radius-md); color: var(--text); font-size: 12px; cursor: pointer; }
 .hq-room:hover { background: var(--bg-hover); }

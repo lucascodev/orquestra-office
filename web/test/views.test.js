@@ -23,6 +23,7 @@ import { arrivalsText, arrivalText, countdownText, renderAlertBody, renderAlertH
 import { renderPendingCard, renderPendingStrip } from "../scripts/view/sheet/pending-request-view.js";
 import { islandFacts } from "../scripts/domain/office/island-facts.js";
 import { followingStoppedText, renderCameraControls, renderFollowing } from "../scripts/view/hud/camera-controls-view.js";
+import { renderSearchResults, resultCountText } from "../scripts/view/hud/search-results-view.js";
 import { renderIslandDay, renderIslandIdentity, renderIslandShell, renderIslandTeam } from "../scripts/view/sheet/island-sheet-view.js";
 
 // ago(), clockTime() and resetTime() print in the machine's time zone; the recorded pages are in UTC.
@@ -307,6 +308,26 @@ describe("headquarters room list", () => {
     assert.deepEqual(currentOf(renderAreaList(census, { kind: "project", id: "c:/orquestra" })), ["project:c:/orquestra"]);
     assert.deepEqual(currentOf(renderAreaList(census, { kind: "area", id: "pantry" })), ["area:pantry"]);
     assert.deepEqual(currentOf(renderAreaList(census, null)), []);
+  });
+});
+
+describe("headquarters search results", () => {
+  const results = {
+    agentGroups: [
+      { room: "loja <online>", agents: [{ key: "claude:v", name: "Vitor", label: "Claude Code", room: "loja <online>", status: "needs_you", doing: "pede permissão para usar Bash" }] },
+      { room: "orquestra-office", agents: [{ key: "codex:l", name: "Lívia", label: "Codex", room: "orquestra-office", status: "waiting", doing: "" }] },
+    ],
+    rooms: [{ id: "c:/loja", kind: "project", name: "loja <online>" }, { id: "pantry", kind: "area", name: "Copa" }],
+    actions: [{ id: "go-to-request", label: "Ir para o pedido" }],
+  };
+
+  it("groups the agents by room with the status in words, then the rooms and the actions, numbered in order", () => {
+    assertMatchesRecording("hq-search-results", renderSearchResults(results));
+  });
+
+  it("says nothing was found and how to search instead of an empty list", () => {
+    assert.match(renderSearchResults({ agentGroups: [], rooms: [], actions: [] }), /Nada encontrado/);
+    assert.deepEqual([0, 1, 7].map(resultCountText), ["Nenhum resultado", "1 resultado", "7 resultados"]);
   });
 });
 

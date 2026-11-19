@@ -47,6 +47,24 @@
       <h1 class="hq-brand">Orquestra Office</h1>
       <span class="hq-connection" role="status" data-slot="connection"></span>
     </header>
+    <button type="button" class="hq-search-button hq-panel" aria-haspopup="dialog" aria-keyshortcuts="Control+K Meta+K" data-open-search>
+      <svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"></circle><path d="m20 20-3.5-3.5"></path></svg>
+      <span class="hq-search-label">Buscar agente, sala ou ação</span>
+      <kbd aria-hidden="true" data-search-keys>Ctrl K</kbd>
+    </button>
+    <dialog class="hq-search" aria-labelledby="hq-search-title" data-slot="search">
+      <div class="hq-search-box">
+        <h2 class="sr-only" id="hq-search-title">Buscar agente, sala ou ação</h2>
+        <div class="hq-search-field">
+          <svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"></circle><path d="m20 20-3.5-3.5"></path></svg>
+          <input type="text" role="combobox" aria-label="Buscar agente, sala ou ação" aria-expanded="true" aria-controls="hq-search-list" aria-autocomplete="list" aria-describedby="hq-search-help" autocomplete="off" spellcheck="false" placeholder="Buscar agente, sala ou ação">
+          <kbd aria-hidden="true">Esc</kbd>
+        </div>
+        <div class="hq-search-list" id="hq-search-list" role="listbox" aria-label="Resultados da busca"></div>
+        <p class="hq-search-help" id="hq-search-help">As setas escolhem, Enter abre e Esc fecha. Sem texto, a lista mostra todos os agentes, quem precisa de você primeiro.</p>
+        <p class="sr-only" role="status" data-search-count></p>
+      </div>
+    </dialog>
     <section class="hq-alert" aria-label="Precisa de você" aria-describedby="hq-alert-keys" tabindex="-1" data-slot="alert" hidden>
       <div class="hq-alert-head" data-part="head"></div>
       <div data-part="body"></div>
