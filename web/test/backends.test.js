@@ -128,22 +128,51 @@ describe("demo backend", () => {
   });
 });
 
+const RUNNER_NONCE = "AAECAwQFBgcICQoLDA0ODw";
+const RUNNER_TICKET = "kAQ744p9HcBF8JvI2Tx0JiekFQsGFuWcAw2gPsykN_M";
+const RUNNER_TOKEN = "runner-token";
+const HOUR_MS = 3_600_000;
+
+// The runner and the collector as the page sees them: a challenge, a ticket for it and a token that unlocks the runner.
+function runnerAndOffice(requests, { tokenStatus = () => 200 } = {}) {
+  return async (url, init = {}) => {
+    const body = init.body ? JSON.parse(init.body) : null;
+    requests.push([url, init.method ?? "GET", body, init.headers?.Authorization ?? null]);
+    if (url.endsWith("/auth/challenge")) return jsonResponse(200, { nonce: RUNNER_NONCE });
+    if (url === "/api/runner-ticket") return jsonResponse(200, { ticket: RUNNER_TICKET });
+    if (url.endsWith("/auth/session")) return jsonResponse(200, { token: RUNNER_TOKEN, expiresAt: Date.now() + HOUR_MS });
+    return jsonResponse(url.startsWith("http://127.0.0.1:8421") ? tokenStatus(init.headers?.Authorization) : 200, {});
+  };
+}
+
 describe("live backend", () => {
-  it("sends a message for a live session to the runner and any other to the office queue", async (context) => {
+  it("sends a message for a live session to the runner, with a token bought by the office's ticket, and any other to the office queue", async (context) => {
     const requests = [];
-    context.mock.method(globalThis, "fetch", async (url, init) => {
-      requests.push([url, init.method, JSON.parse(init.body)]);
-      return { ok: true };
-    });
+    context.mock.method(globalThis, "fetch", runnerAndOffice(requests));
     const backend = createLiveBackend();
+
     assert.equal(await backend.sendMessage(LIVE_AGENT, "oi", LIVE_SESSION), true);
     assert.equal(await backend.sendMessage(QUEUED_AGENT, "olá", null), true);
-    assert.deepEqual(requests, [
-      [RUNNER_MESSAGES, "POST", { text: "oi" }],
-      [OFFICE_MESSAGES, "POST", { key: QUEUED_AGENT, text: "olá" }],
+
+    const messages = requests.filter(([url]) => url === RUNNER_MESSAGES || url === OFFICE_MESSAGES);
+    assert.deepEqual(messages, [
+      [RUNNER_MESSAGES, "POST", { text: "oi" }, `Bearer ${RUNNER_TOKEN}`],
+      [OFFICE_MESSAGES, "POST", { key: QUEUED_AGENT, text: "olá" }, null],
     ]);
+    assert.ok(requests.some(([url, , body]) => url === "/api/runner-ticket" && body.nonce === RUNNER_NONCE));
+    assert.ok(requests.some(([url, , body]) => url.endsWith("/auth/session") && body.ticket === RUNNER_TICKET));
+  });
+
+  it("buys a new runner token once when the runner forgot the old one", async (context) => {
+    const requests = [];
+    let refusals = 1;
+    context.mock.method(globalThis, "fetch", runnerAndOffice(requests, { tokenStatus: () => (refusals-- > 0 ? 401 : 200) }));
+
+    assert.equal(await createLiveBackend().interruptSession(LIVE_SESSION), true);
+    assert.equal(requests.filter(([url]) => url.endsWith("/interrupt")).length, 2);
   });
 });
+
 
 const PAIRING_CODE = "AAECAwQFBgcICQoLDA0ODw";
 const jsonResponse = (status, body) => ({ ok: status >= 200 && status < 300, status, json: async () => body });

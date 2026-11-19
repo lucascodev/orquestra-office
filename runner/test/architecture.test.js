@@ -49,7 +49,7 @@ test("every relative import in src and test points to an existing file", () => {
 const COMPOSITION = "composition";
 const COMPOSITION_ROOTS = new Set(["composition.js", "main.js"]);
 const COLLECTOR_SHARED = "collector/src/shared";
-const RUNNER_LAYERS = new Set(["sessions", "claude", "infra", "http"]);
+const RUNNER_LAYERS = new Set(["sessions", "claude", "auth", "infra", "http"]);
 const BUILTIN_PREFIX = "node:";
 const PROCESS_STATE = /\bprocess\.(?:env|cwd)\b/;
 
@@ -57,6 +57,7 @@ const PROCESS_STATE = /\bprocess\.(?:env|cwd)\b/;
 const ALLOWED_LAYERS = {
   sessions: [],
   claude: [COLLECTOR_SHARED],
+  auth: [COLLECTOR_SHARED],
   infra: [],
   http: ["sessions"],
 };
@@ -64,6 +65,7 @@ const ALLOWED_LAYERS = {
 const ALLOWED_BUILTINS = {
   sessions: ["node:crypto"],
   claude: ["node:child_process"],
+  auth: ["node:crypto"],
   infra: ["node:fs"],
   http: ["node:http"],
 };

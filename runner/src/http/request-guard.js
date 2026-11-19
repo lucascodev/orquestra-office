@@ -12,7 +12,7 @@ export function createOriginPolicy(allowedOrigins) {
   return {
     allows: (req) => !req.headers.origin || allowed.has(req.headers.origin),
     headersFor: (req) => (allowed.has(req.headers.origin)
-      ? { "Access-Control-Allow-Origin": req.headers.origin, "Access-Control-Allow-Headers": "Content-Type", "Access-Control-Allow-Methods": "GET, POST, OPTIONS", Vary: "Origin" }
+      ? { "Access-Control-Allow-Origin": req.headers.origin, "Access-Control-Allow-Headers": "Content-Type, Authorization", "Access-Control-Allow-Methods": "GET, POST, OPTIONS", Vary: "Origin" }
       : {}),
   };
 }
@@ -39,4 +39,13 @@ export function readJsonBody(req) {
     });
     req.on("error", () => resolve(null));
   });
+}
+
+const BEARER = /^Bearer ([\w-]+)$/;
+
+// EventSource cannot send headers, so the stream alone takes the token from the address.
+export function tokenOf(req, url, { isStream }) {
+  const [, bearer] = BEARER.exec(String(req.headers.authorization ?? "")) ?? [];
+  if (bearer) return bearer;
+  return isStream ? url.searchParams.get("token") : null;
 }

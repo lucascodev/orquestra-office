@@ -1,4 +1,5 @@
 import { OUTCOME } from "../control/application/outcome.js";
+import { isNonce } from "../shared/auth/signed-message.js";
 import { readJsonBody, sendJson } from "./json-io.js";
 import { decodePathSegment } from "./url-path.js";
 
@@ -8,8 +9,16 @@ const TEMPLATE_ROUTE = /^\/api\/projects\/(.+)\/template$/;
 const CLOSE_ROUTE = /^\/api\/projects\/(.+)\/close$/;
 const DECISION_ROUTE = /^\/api\/decisions\/([\w-]+)$/;
 const MESSAGE_ROUTE = "/api/agents/message";
+const RUNNER_TICKET_ROUTE = "/api/runner-ticket";
 
-export function createOfficeApiRoutes({ store, history, stream, officeView, decidePendingRequest, sendMessageToAgent, panelAuth }) {
+export function createOfficeApiRoutes({ store, history, stream, officeView, decidePendingRequest, sendMessageToAgent, panelAuth, signRunnerTicket }) {
+  // The runner on this machine trusts a page that brings its nonce signed with the office key; only a paired page gets one.
+  function runnerTicket(res, nonce) {
+    if (!isNonce(nonce)) return sendJson(res, 400, { error: "invalid nonce" });
+    const ticket = signRunnerTicket(nonce);
+    return ticket ? sendJson(res, 200, { ticket }) : sendJson(res, 503, { error: "office secret missing" });
+  }
+
   async function post(req, res, url) {
     const body = await readJsonBody(req, API_BODY_LIMIT);
 
@@ -25,6 +34,7 @@ export function createOfficeApiRoutes({ store, history, stream, officeView, deci
     }
     const decisionRoute = url.pathname.match(DECISION_ROUTE);
     if (decisionRoute) return sendJson(res, STATUS_OF_OUTCOME[decidePendingRequest(decisionRoute[1], body)], {});
+    if (url.pathname === RUNNER_TICKET_ROUTE) return runnerTicket(res, body?.nonce);
     if (url.pathname === MESSAGE_ROUTE) return sendJson(res, STATUS_OF_OUTCOME[sendMessageToAgent({ agentKey: body?.key, text: body?.text })], {});
     return sendJson(res, 404, {});
   }

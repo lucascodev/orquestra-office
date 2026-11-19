@@ -51,4 +51,8 @@ export const officeApi = {
     return response.ok ? (await response.json()).devices : null;
   },
   revokeDevice: (id) => postJson(`/api/devices/${encodeURIComponent(id)}/revoke`, {}),
+  async runnerTicket(nonce) {
+    const response = await post("/api/runner-ticket", { nonce });
+    return response.ok ? (await response.json()).ticket : null;
+  },
 };

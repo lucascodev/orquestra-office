@@ -7,25 +7,29 @@ import { createRunner } from "../src/composition.js";
 import { createServer } from "../src/http/server.js";
 import { fakeClaudeLauncher } from "./support/fake-claude-process.js";
 import { listenOnFetchablePort } from "./support/listen-on-fetchable-port.js";
+import { processWideSecretFile, runnerTokenOf } from "./support/runner-token.js";
 
 const OFFICE = "http://localhost:8420";
+let token = null;
 const JSON_HEADERS = { "Content-Type": "application/json", Origin: OFFICE };
+const asOffice = (headers = {}) => ({ Authorization: `Bearer ${token}`, ...headers });
 const SESSION_ID = "11111111-2222-3333-4444-555555555555";
 
 async function withRunner(run) {
   const claude = fakeClaudeLauncher({ sessionId: SESSION_ID });
-  const runner = createRunner({ allowedOrigins: [OFFICE], startProcess: claude.startProcess });
+  const runner = createRunner({ allowedOrigins: [OFFICE], startProcess: claude.startProcess, secretFile: processWideSecretFile() });
   const { server } = runner;
   const base = await listenOnFetchablePort(server);
+  token = await runnerTokenOf(base, OFFICE);
   try { await run(base, claude, runner); } finally { server.closeAllConnections(); server.close(); }
 }
 
-const post = (url, body, headers = JSON_HEADERS) => fetch(url, { method: "POST", headers, body: JSON.stringify(body) });
+const post = (url, body, headers = JSON_HEADERS) => fetch(url, { method: "POST", headers: asOffice(headers), body: JSON.stringify(body) });
 const openSession = async (base, prompt = "run the tests") => (await (await post(`${base}/sessions`, { cwd: tmpdir(), prompt })).json()).session;
 
 async function readSnapshot(base, id) {
   const viewer = new AbortController();
-  const stream = await fetch(`${base}/sessions/${id}/stream`, { headers: { Origin: OFFICE }, signal: viewer.signal });
+  const stream = await fetch(`${base}/sessions/${id}/stream?token=${token}`, { headers: { Origin: OFFICE }, signal: viewer.signal });
   const { value } = await stream.body.getReader().read();
   viewer.abort();
   return JSON.parse(new TextDecoder().decode(value).split("data: ")[1]);
@@ -46,7 +50,7 @@ test("opening a session starts Claude Code with the first message and reports it
   assert.equal(session.sessionId, SESSION_ID);
   assert.equal(session.status, "working");
   assert.deepEqual(claude.processes[0].sent, ["run the tests"]);
-  assert.deepEqual((await (await fetch(`${base}/sessions`)).json()).sessions.map((item) => item.id), [session.id]);
+  assert.deepEqual((await (await fetch(`${base}/sessions`, { headers: asOffice() })).json()).sessions.map((item) => item.id), [session.id]);
 }));
 
 test("a session needs a real folder and a first message", () => withRunner(async (base, claude) => {
@@ -85,7 +89,7 @@ test("stopping the runner ends every open session", () => withRunner(async (base
   const second = await openSession(base, "review the diff");
   runner.stop();
 
-  const { sessions } = await (await fetch(`${base}/sessions`)).json();
+  const { sessions } = await (await fetch(`${base}/sessions`, { headers: asOffice() })).json();
   assert.deepEqual(sessions.map((item) => [item.id, item.status]), [[first.id, "ended"], [second.id, "ended"]]);
 }));
 
@@ -120,7 +124,7 @@ test("a malformed request URL is a 400 and the runner keeps running", { timeout:
 test("an unexpected failure in a route answers 500, is logged and the runner keeps running", { timeout: CRASH_TEST_TIMEOUT_MS }, async (t) => {
   const reportError = t.mock.method(console, "error", () => {});
   const failingRegistry = { list: () => { throw new Error("registry exploded"); } };
-  const server = createServer({ registry: failingRegistry, allowedOrigins: [OFFICE] });
+  const server = createServer({ registry: failingRegistry, allowedOrigins: [OFFICE], runnerAuth: { isValidToken: () => true } });
   const base = await listenOnFetchablePort(server);
   try {
     assert.equal(await rawGet(base, "/sessions"), 500);

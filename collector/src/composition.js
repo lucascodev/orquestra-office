@@ -24,6 +24,7 @@ import { createOfficeApiRoutes } from "./http/office-api-routes.js";
 import { createPairingRoutes } from "./http/pairing-routes.js";
 import { createPanelAuth } from "./http/panel-auth.js";
 import { createServer } from "./http/server.js";
+import { runnerTicketMessage } from "./shared/auth/signed-message.js";
 import { createPublicOfficeView } from "./office/application/public-office-view.js";
 import { createRecordActivity } from "./office/application/record-activity.js";
 import { createOfficeStore } from "./office/domain/office-store.js";
@@ -75,6 +76,7 @@ export function createOffice({ webDir, dataDir = null, holdMs, allowedHosts = []
     decidePendingRequest: createDecidePendingRequest({ decisions }),
     sendMessageToAgent: createSendMessageToAgent({ store, outbox, history }),
     panelAuth,
+    signRunnerTicket: (nonce) => officeKey.sign(runnerTicketMessage(nonce)),
   });
   const pairingRoutes = createPairingRoutes({
     hookAuth,

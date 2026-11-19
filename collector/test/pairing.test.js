@@ -236,3 +236,15 @@ test("an unpaired viewer does not count as an open office page, so permissions g
   assert.deepEqual(office.decisions.list(), []);
   viewer.abort();
 }));
+
+test("a paired page gets the runner ticket for a nonce, signed with the office key", (t) => withOffice(t, async (base) => {
+  const browser = await pairBrowser(base);
+  const nonce = "AAECAwQFBgcICQoLDA0ODw";
+
+  const res = await browser.post("/api/runner-ticket", { nonce });
+
+  assert.equal(res.status, 200);
+  assert.deepEqual(await res.json(), { ticket: "kAQ744p9HcBF8JvI2Tx0JiekFQsGFuWcAw2gPsykN_M" });
+  assert.equal((await browser.post("/api/runner-ticket", { nonce: "not a nonce" })).status, 400);
+  assert.equal((await fetch(`${base}/api/runner-ticket`, { method: "POST", headers: { "Content-Type": "application/json", Origin: base }, body: JSON.stringify({ nonce }) })).status, 401);
+}));

@@ -1,12 +1,14 @@
 import { createServer as createHttpServer } from "node:http";
 import { toMessageText } from "../sessions/message-text.js";
-import { createOriginPolicy, isJson, isLocalHost, readJsonBody } from "./request-guard.js";
+import { createOriginPolicy, isJson, isLocalHost, readJsonBody, tokenOf } from "./request-guard.js";
 import { requestUrlOf } from "./request-url.js";
 
 const SESSION_ID_WAIT_MS = 20_000;
+const AUTH_CHALLENGE_PATH = "/auth/challenge";
+const AUTH_SESSION_PATH = "/auth/session";
 const HEARTBEAT_MS = 25_000;
 
-export function createServer({ registry, allowedOrigins }) {
+export function createServer({ registry, allowedOrigins, runnerAuth }) {
   const origins = createOriginPolicy(allowedOrigins);
 
   function sendJson(req, res, status, body) {
@@ -43,6 +45,12 @@ export function createServer({ registry, allowedOrigins }) {
     return sendJson(req, res, session.send(text) ? 200 : 409, {});
   }
 
+  async function openAuthSession(req, res) {
+    const body = await readJsonBody(req);
+    const opened = runnerAuth.openSession({ nonce: body?.nonce, ticket: body?.ticket });
+    return opened ? sendJson(req, res, 200, opened) : sendJson(req, res, 401, { error: "invalid ticket" });
+  }
+
   async function route(req, res) {
     if (!isLocalHost(req) || !origins.allows(req)) return sendJson(req, res, 403, { error: "forbidden" });
     if (req.method === "OPTIONS") {
@@ -53,8 +61,13 @@ export function createServer({ registry, allowedOrigins }) {
     if (!url) return sendJson(req, res, 400, { error: "invalid url" });
     const sessionRoute = url.pathname.match(/^\/sessions\/([\w-]+)\/(stream|messages|interrupt|stop)$/);
 
+    if (req.method === "GET" && url.pathname === "/health") return sendJson(req, res, 200, { ok: true });
+    if (req.method === "POST" && url.pathname === AUTH_CHALLENGE_PATH) return sendJson(req, res, 200, runnerAuth.issueChallenge());
+    if (req.method === "POST" && url.pathname === AUTH_SESSION_PATH) return isJson(req) ? openAuthSession(req, res) : sendJson(req, res, 415, {});
+    const isStream = req.method === "GET" && sessionRoute?.[2] === "stream";
+    if (!runnerAuth.isValidToken(tokenOf(req, url, { isStream }))) return sendJson(req, res, 401, { error: "unauthorized" });
+
     if (req.method === "GET") {
-      if (url.pathname === "/health") return sendJson(req, res, 200, { ok: true });
       if (url.pathname === "/sessions") return sendJson(req, res, 200, { sessions: registry.list() });
       const session = sessionRoute?.[2] === "stream" ? registry.get(sessionRoute[1]) : null;
       return session ? streamSession(req, res, session) : sendJson(req, res, 404, {});
