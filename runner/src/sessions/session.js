@@ -43,11 +43,8 @@ export function createSession({ cwd, startProcess, now = Date.now }) {
   }
 
   function end({ code, error }) {
-    if (error) addEntry({ kind: "error", textId: SESSION_ENTRY.SESSION_CRASHED, text: "a sessão caiu", detail: error });
-    else {
-      const exitCode = code === 0 ? null : String(code);
-      addEntry({ kind: "note", textId: SESSION_ENTRY.SESSION_ENDED, subject: exitCode, text: exitCode ? `sessão encerrada (código ${exitCode})` : "sessão encerrada", detail: "" });
-    }
+    if (error) addEntry({ kind: "error", textId: SESSION_ENTRY.SESSION_CRASHED, detail: error });
+    else addEntry({ kind: "note", textId: SESSION_ENTRY.SESSION_ENDED, subject: code === 0 ? null : String(code), detail: "" });
     state.status = "ended";
     state.endedAt = now();
     emit({ type: "status", status: "ended" });

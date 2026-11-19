@@ -2,16 +2,18 @@ const MIN = 60_000;
 const HOUR = 60 * MIN;
 const ORQUESTRA = "c:/projetos/orquestra";
 
-function agent(key, label, status, action, minutesAgo, extra = {}) {
+const did = (actionId, subject = null) => ({ actionId, subject });
+
+function agent(key, label, status, doing, minutesAgo, extra = {}) {
   const at = Date.now() - minutesAgo * MIN;
   return {
-    key, label, status, action, source: "claude", kind: "main", parentKey: null,
+    key, label, status, ...doing, source: "claude", kind: "main", parentKey: null,
     startedAt: at - 40 * MIN, updatedAt: at, endedAt: null, tools: 12 + (key.length % 30),
     log: [
-      { at: at - 9 * MIN, text: "recebeu um pedido seu" },
-      { at: at - 6 * MIN, text: "lendo README.md" },
-      { at: at - 3 * MIN, text: "rodando npm" },
-      { at, text: action },
+      { at: at - 9 * MIN, ...did("prompt-received") },
+      { at: at - 6 * MIN, ...did("reading", "README.md") },
+      { at: at - 3 * MIN, ...did("running", "npm") },
+      { at, ...doing },
     ],
     ...extra,
   };
@@ -27,36 +29,38 @@ function project(key, name, template, minutesAgo, agents, team = []) {
 
 const SHOWCASE = "c:/projetos/demo/reacoes";
 const WALKER = "claude:r-walker";
+const NO_TASK = did("no-task");
+const TURN_FINISHED = did("turn-finished");
 const SHOWCASE_CAST = [
-  ["digitando código", "working", "editing", "editando room-layout.js"],
-  ["lendo um arquivo", "reviewing", "reading", "lendo README.md"],
-  ["pesquisando na web", "reviewing", "web", "pesquisando na web"],
-  ["rodando um comando", "working", "terminal", "rodando npm"],
-  ["pensando", "working", "thinking", "recebeu um pedido seu"],
-  ["delegando", "working", "delegating", "delegou para code-reviewer"],
-  ["organizando tarefas", "working", "planning", "atualizou a lista de tarefas"],
-  ["ferramenta falhou", "working", "failed", "falhou ao usar Bash"],
-  ["pedindo permissão", "needs_you", "terminal", "pede permissão para usar Bash"],
-  ["com uma pergunta", "needs_you", "asking", "tem uma pergunta para você"],
-  ["esperando você", "waiting", null, "esperando sua resposta"],
-  ["bloqueado", "blocked", null, "parou por erro da API"],
-  ["em pausa", "break", null, "terminou o turno"],
-  ["em pausa", "break", null, "terminou o turno"],
-  ["em pausa", "break", null, "terminou o turno"],
-  ["livre", "idle", null, "sem tarefa no momento"],
-  ["livre", "idle", null, "sem tarefa no momento"],
-  ["livre", "idle", null, "sem tarefa no momento"],
-  ["livre", "idle", null, "sem tarefa no momento"],
+  ["digitando código", "working", "editing", did("editing", "room-layout.js")],
+  ["lendo um arquivo", "reviewing", "reading", did("reading", "README.md")],
+  ["pesquisando na web", "reviewing", "web", did("searching-web")],
+  ["rodando um comando", "working", "terminal", did("running", "npm")],
+  ["pensando", "working", "thinking", did("prompt-received")],
+  ["delegando", "working", "delegating", did("delegating", "code-reviewer")],
+  ["organizando tarefas", "working", "planning", did("updating-todos")],
+  ["ferramenta falhou", "working", "failed", did("tool-failed", "Bash")],
+  ["pedindo permissão", "needs_you", "terminal", did("permission-requested", "Bash")],
+  ["com uma pergunta", "needs_you", "asking", did("asking-question")],
+  ["esperando você", "waiting", null, did("waiting-for-reply")],
+  ["bloqueado", "blocked", null, did("api-error")],
+  ["em pausa", "break", null, TURN_FINISHED],
+  ["em pausa", "break", null, TURN_FINISHED],
+  ["em pausa", "break", null, TURN_FINISHED],
+  ["livre", "idle", null, NO_TASK],
+  ["livre", "idle", null, NO_TASK],
+  ["livre", "idle", null, NO_TASK],
+  ["livre", "idle", null, NO_TASK],
 ];
 const WALKER_ROUTINE = [
-  ["working", "editing", "editando people.js"], ["working", "terminal", "rodando npm"], ["break", null, "terminou o turno"],
-  ["break", null, "terminou o turno"], ["idle", null, "sem tarefa no momento"], ["idle", null, "sem tarefa no momento"],
-  ["working", "thinking", "recebeu um pedido seu"],
+  ["working", "editing", did("editing", "people.js")], ["working", "terminal", did("running", "npm")], ["break", null, TURN_FINISHED],
+  ["break", null, TURN_FINISHED], ["idle", null, NO_TASK], ["idle", null, NO_TASK],
+  ["working", "thinking", did("prompt-received")],
 ];
 
 function showcaseProject() {
-  const cast = SHOWCASE_CAST.map(([label, status, doing, action], i) => agent(`claude:r${String(i).padStart(2, "0")}`, label, status, action, 1 + i, { activity: doing }));
-  const walker = agent(WALKER, "andando pela sala", "working", "editando people.js", 0, { activity: "editing" });
+  const cast = SHOWCASE_CAST.map(([label, status, activity, doing], i) => agent(`claude:r${String(i).padStart(2, "0")}`, label, status, doing, 1 + i, { activity }));
+  const walker = agent(WALKER, "andando pela sala", "working", did("editing", "people.js"), 0, { activity: "editing" });
   return project(SHOWCASE, "reações", "startup", 0, [...cast, walker]);
 }
 
@@ -64,8 +68,8 @@ function pendingRequests() {
   const now = Date.now();
   const hold = { createdAt: now, expiresAt: now + 2 * MIN };
   return [
-    { ...hold, id: "demo-permission", kind: "permission", agentKey: "claude:c1", toolName: "Bash", summary: "Aplicar as migrações do banco", detail: "npx prisma migrate deploy" },
-    { ...hold, id: "demo-question", kind: "question", agentKey: "claude:d1", toolName: "AskUserQuestion", summary: "Tem uma pergunta para você", detail: "",
+    { ...hold, id: "demo-permission", kind: "permission", agentKey: "claude:c1", toolName: "Bash", summaryId: "run-command", subject: "Aplicar as migrações do banco", detail: "npx prisma migrate deploy" },
+    { ...hold, id: "demo-question", kind: "question", agentKey: "claude:d1", toolName: "AskUserQuestion", summaryId: "ask-question", subject: null, detail: "",
       questions: [{
         question: "Qual motor de física usar no protótipo?", header: "Física", multiSelect: false,
         options: [
@@ -77,8 +81,8 @@ function pendingRequests() {
 }
 
 export function demoState() {
-  const sub = (parent, id, label, status, action, minutesAgo) =>
-    agent(`${parent}:${id}`, label, status, action, minutesAgo, { kind: "subagent", parentKey: parent });
+  const sub = (parent, id, label, status, doing, minutesAgo) =>
+    agent(`${parent}:${id}`, label, status, doing, minutesAgo, { kind: "subagent", parentKey: parent });
   return {
     pending: pendingRequests(),
     outbox: {},
@@ -87,29 +91,29 @@ export function demoState() {
     projects: {
       [SHOWCASE]: showcaseProject(),
       [ORQUESTRA]: project(ORQUESTRA, "orquestra", "startup", 0, [
-        agent("claude:a1", "Claude Code", "working", "editando office-store.js", 0),
-        sub("claude:a1", "s1", "code-reviewer", "reviewing", "lendo server.js", 1),
-        sub("claude:a1", "s2", "security-engineer", "reviewing", "procurando no código", 2),
-        agent("codex:b1", "Codex", "waiting", "terminou o turno e espera você", 4, { source: "codex" }),
+        agent("claude:a1", "Claude Code", "working", did("editing", "office-store.js"), 0),
+        sub("claude:a1", "s1", "code-reviewer", "reviewing", did("reading", "server.js"), 1),
+        sub("claude:a1", "s2", "security-engineer", "reviewing", did("reading"), 2),
+        agent("codex:b1", "Codex", "waiting", did("turn-finished-waiting"), 4, { source: "codex" }),
       ], ["code-reviewer", "security-engineer", "test-engineer", "tech-writer", "board-keeper"]),
       "c:/projetos/loja-online": project("c:/projetos/loja-online", "loja-online", "cafe", 3, [
-        agent("claude:c1", "Claude Code", "needs_you", "pede permissão para usar Bash", 1),
-        sub("claude:c1", "s3", "Explore", "break", "entregou a tarefa", 6),
+        agent("claude:c1", "Claude Code", "needs_you", did("permission-requested", "Bash"), 1),
+        sub("claude:c1", "s3", "Explore", "break", did("task-delivered"), 6),
       ]),
       "c:/projetos/jogo-de-plataforma": project("c:/projetos/jogo-de-plataforma", "jogo-de-plataforma", "fliperama", 12, [
-        agent("claude:d1", "Claude Code", "needs_you", "tem uma pergunta para você", 2),
-        agent("claude:d2", "Claude Code 2", "blocked", "parou por erro da API", 15),
+        agent("claude:d1", "Claude Code", "needs_you", did("asking-question"), 2),
+        agent("claude:d2", "Claude Code 2", "blocked", did("api-error"), 15),
       ]),
       "c:/projetos/site-institucional": project("c:/projetos/site-institucional", "site-institucional", "jardim", 40, [
-        agent("claude:e1", "Claude Code", "idle", "fechou a sessão", 40),
+        agent("claude:e1", "Claude Code", "idle", did("session-closed"), 40),
       ]),
     },
   };
 }
 
 const CYCLE = [
-  ["working", "editing", "editando office-view.js"], ["reviewing", "reading", "lendo templates.js"], ["working", "terminal", "rodando node"],
-  ["working", "planning", "atualizou a lista de tarefas"], ["working", "thinking", "recebeu um pedido seu"],
+  ["working", "editing", did("editing", "office-view.js")], ["reviewing", "reading", did("reading", "templates.js")], ["working", "terminal", did("running", "node")],
+  ["working", "planning", did("updating-todos")], ["working", "thinking", did("prompt-received")],
 ];
 const WALKER_TICKS_PER_STEP = 3;
 const HELPER_KEY = "claude:a1:s9";
@@ -121,14 +125,14 @@ function cycleHelper(project, step) {
   const tick = step % HELPER_CYCLE_TICKS;
   const now = Date.now();
   if (tick === 0) {
-    const helper = agent(HELPER_KEY, "test-engineer", "working", "começou a tarefa", 0, { kind: "subagent", parentKey: "claude:a1", activity: "editing" });
+    const helper = agent(HELPER_KEY, "test-engineer", "working", did("task-started"), 0, { kind: "subagent", parentKey: "claude:a1", activity: "editing" });
     project.agents = { ...project.agents, [HELPER_KEY]: { ...helper, startedAt: now } };
     return;
   }
   const helper = project.agents[HELPER_KEY];
   if (!helper) return;
   if (tick === HELPER_ENDS_AT_TICK) {
-    act(helper, "break", "entregou a tarefa");
+    act(helper, "break", did("task-delivered"));
     helper.endedAt = now;
   }
   if (tick === HELPER_LEAVES_AT_TICK) {
@@ -136,25 +140,26 @@ function cycleHelper(project, step) {
   }
 }
 
-function act(agentToUpdate, status, action, doing = agentToUpdate.activity) {
+function act(agentToUpdate, status, { actionId, subject }, activity = agentToUpdate.activity) {
   agentToUpdate.status = status;
-  agentToUpdate.activity = doing;
-  agentToUpdate.action = action;
+  agentToUpdate.activity = activity;
+  agentToUpdate.actionId = actionId;
+  agentToUpdate.subject = subject;
   agentToUpdate.updatedAt = Date.now();
-  agentToUpdate.log = [...agentToUpdate.log, { at: agentToUpdate.updatedAt, text: action }].slice(-20);
+  agentToUpdate.log = [...agentToUpdate.log, { at: agentToUpdate.updatedAt, actionId, subject }].slice(-20);
 }
 
 export function tickDemo(state, step) {
   const main = state.projects[ORQUESTRA]?.agents["claude:a1"];
   if (main) {
-    const [status, doing, action] = CYCLE[step % CYCLE.length];
-    act(main, status, action, doing);
+    const [status, activity, doing] = CYCLE[step % CYCLE.length];
+    act(main, status, doing, activity);
   }
   if (state.projects[ORQUESTRA]) cycleHelper(state.projects[ORQUESTRA], step);
   const walker = state.projects[SHOWCASE]?.agents[WALKER];
   if (walker && step % WALKER_TICKS_PER_STEP === 0) {
-    const [status, doing, action] = WALKER_ROUTINE[(step / WALKER_TICKS_PER_STEP) % WALKER_ROUTINE.length];
-    act(walker, status, action, doing);
+    const [status, activity, doing] = WALKER_ROUTINE[(step / WALKER_TICKS_PER_STEP) % WALKER_ROUTINE.length];
+    act(walker, status, doing, activity);
   }
 }
 
@@ -168,7 +173,7 @@ export function resolveDemoRequest(state, id, body) {
   state.pending = state.pending.filter((item) => item.id !== id);
   const target = findAgent(state, request.agentKey);
   if (!target || body.behavior === "terminal") return true;
-  const outcome = body.answers ? "você respondeu pelo escritório" : `você ${body.behavior === "allow" ? "aprovou" : "recusou"} ${request.toolName} pelo escritório`;
+  const outcome = body.answers ? did("question-answered") : did(body.behavior === "allow" ? "permission-approved" : "permission-denied", request.toolName);
   act(target, "working", outcome);
   return true;
 }

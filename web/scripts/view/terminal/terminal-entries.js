@@ -1,4 +1,5 @@
 import { ownValueOf } from "../../domain/shared/own-value.js";
+import { terminalEntryText } from "../../domain/terminal/terminal-entry-text.js";
 import { describeToolEntry, diffLines } from "../../domain/terminal/terminal-format.js";
 import { esc } from "../shared/escape-html.js";
 import { ago, clockTime } from "../shared/format.js";
@@ -48,8 +49,8 @@ const ENTRY_RENDERERS = {
   message: (entry) => `<div class="entry prompt"><span class="busy" aria-hidden="true">›</span><span class="prompt-text">${esc(entry.text)} <span class="muted">· pelo escritório</span></span>${stamp(entry)}</div>`,
   tool: renderTool,
   reply: (entry) => `<div class="entry reply"><div class="md">${renderMarkdown(entry.text)}</div></div>`,
-  error: (entry) => `<div class="entry error"><div class="entry-head"><span class="tool-glyph" aria-hidden="true">✗</span><b>${esc(entry.text)}</b>${stamp(entry)}</div>${renderDetail(entry.detail, "text")}</div>`,
-  note: (entry) => `<div class="entry note">${esc(entry.text)} <span class="when">· ${ago(entry.at)}</span></div>`,
+  error: (entry) => `<div class="entry error"><div class="entry-head"><span class="tool-glyph" aria-hidden="true">✗</span><b>${esc(terminalEntryText(entry))}</b>${stamp(entry)}</div>${renderDetail(entry.detail, "text")}</div>`,
+  note: (entry) => `<div class="entry note">${esc(terminalEntryText(entry))} <span class="when">· ${ago(entry.at)}</span></div>`,
 };
 
 export const renderEntries = (entries) => entries.map((entry) => (ownValueOf(ENTRY_RENDERERS, entry.kind) ?? ENTRY_RENDERERS.note)(entry)).join("");

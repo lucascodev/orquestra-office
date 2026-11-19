@@ -39,15 +39,15 @@ function thoughtsAbout(activity) {
 
 describe("activity reported by the collector", () => {
   const cases = [
-    { tool: "Edit", input: { file_path: "C:\\repo\\src\\a.js" }, action: "editando a.js", subject: "a.js" },
-    { tool: "Read", input: { file_path: "/repo/README.md" }, action: "lendo README.md", subject: "README.md" },
-    { tool: "Bash", input: { command: "npm test -- --watch" }, action: "rodando npm", subject: "npm" },
-    { tool: "Agent", input: { subagent_type: "code-reviewer" }, action: "delegou para code-reviewer", subject: "code-reviewer" },
-    { tool: "mcp__notion__search", input: {}, action: "usando notion", subject: "notion" },
+    { tool: "Edit", input: { file_path: "C:\\repo\\src\\a.js" }, shown: "editando a.js", subject: "a.js" },
+    { tool: "Read", input: { file_path: "/repo/README.md" }, shown: "lendo README.md", subject: "README.md" },
+    { tool: "Bash", input: { command: "npm test -- --watch" }, shown: "rodando npm", subject: "npm" },
+    { tool: "Agent", input: { subagent_type: "code-reviewer" }, shown: "delegou para code-reviewer", subject: "code-reviewer" },
+    { tool: "mcp__notion__search", input: {}, shown: "usando notion", subject: "notion" },
   ];
 
-  for (const { tool, input, action, subject } of cases) {
-    it(`turns "${action}" into a thought that names ${subject}`, () => {
+  for (const { tool, input, shown, subject } of cases) {
+    it(`turns "${shown}" into a thought that names ${subject}`, () => {
       const activity = describeActivity(tool, input);
       const thoughts = thoughtsAbout(activity);
       assert.ok(thoughts.some((text) => text.includes(subject)), `no thought names ${subject}: ${thoughts.join(" | ")}`);
@@ -57,7 +57,7 @@ describe("activity reported by the collector", () => {
 });
 
 function terminalToolFor(toolName, toolInput) {
-  const { entry: { text, ...entry } } = claudeHistoryEntry({ hook_event_name: "PreToolUse", session_id: SESSION_ID, tool_name: toolName, tool_input: toolInput });
+  const { entry } = claudeHistoryEntry({ hook_event_name: "PreToolUse", session_id: SESSION_ID, tool_name: toolName, tool_input: toolInput });
   return { entry, tool: describeToolEntry(entry) };
 }
 

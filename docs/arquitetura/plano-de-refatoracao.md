@@ -700,6 +700,8 @@ Fase independente: não toca nenhum arquivo das outras fases e pode ir para qual
 
 Troca a interpretação de frases (C15) por campos. Uma área por vez, nesta ordem: collector (eventos de atividade ganham `subject`; entradas de histórico ganham `toolName` e `summary` separados, mantendo `text`), runner (mesmos campos nas entradas do terminal), web (lê os campos e cai na interpretação do texto só quando eles faltam). A queda para texto sai numa limpeza posterior. Verificação: V-C, V-R, V-W, contratos atualizados, V-Browser. É pré-requisito de uma versão do escritório em inglês (D10). Se for feita, entra antes da fase 6, porque o feed de atividade do campus também lê essas frases.
 
+Situação: a limpeza já foi feita. Desde o commit `1937d1e`, o collector não publica mais `text` nas entradas que ele gera, nem `agent.action`, `log[].text` e o `summary` dos pedidos; publica só `actionId`, `summaryId`, `textId`, `toolName` e `subject`, e o web monta as frases pelos catálogos de `web/scripts/data/text/pt-br/`. O runner fez o mesmo com as entradas do terminal no commit `61df987`. Continua em `text` só o que é conteúdo: o pedido do usuário, a mensagem pelo escritório e a resposta do agente. O "mantendo `text`" acima vale só para a transição.
+
 ### 10.8 Paralelismo
 
 - Implementação é sequencial: um agent escrevendo por vez, na ordem 0 → 1 → 2 → 3 → 4 (→ 5) e depois 6 → 7 → 8.

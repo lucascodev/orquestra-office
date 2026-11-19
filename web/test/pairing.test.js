@@ -1,10 +1,52 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
+import { reloadOnPairingLink, takePairingCode } from "../scripts/app/pairing-code.js";
 import { deviceLabelOf } from "../scripts/domain/office/device-label.js";
+import { isLoopbackHost } from "../scripts/domain/office/loopback-host.js";
 import { pairingCodeOf } from "../scripts/domain/office/pairing-fragment.js";
 import { phoneLinkOf } from "../scripts/domain/office/phone-link.js";
 
 const CODE = "AAECAwQFBgcICQoLDA0ODw";
+
+describe("pairing code in the address", () => {
+  const addressWith = (hash) => {
+    const replaced = [];
+    return { location: { hash, pathname: "/", search: "?modo=x" }, history: { replaceState: (...args) => replaced.push(args[2]) }, replaced };
+  };
+
+  it("is taken out of the address, keeping the path and the query", () => {
+    const { location, history, replaced } = addressWith(`#pair=${CODE}`);
+
+    assert.equal(takePairingCode({ location, history }), CODE);
+    assert.deepEqual(replaced, ["/?modo=x"]);
+  });
+
+  it("leaves an address without a code as it was", () => {
+    const { location, history, replaced } = addressWith("#outra-coisa");
+
+    assert.equal(takePairingCode({ location, history }), null);
+    assert.deepEqual(replaced, []);
+  });
+
+  it("a link pasted into a tab already on the office reloads it, so the code is redeemed", () => {
+    const listeners = new Map();
+    let reloads = 0;
+    const location = { hash: "", reload: () => { reloads += 1; } };
+    reloadOnPairingLink({ target: { addEventListener: (type, listener) => listeners.set(type, listener) }, location });
+
+    location.hash = "#outra-coisa";
+    listeners.get("hashchange")();
+    location.hash = `#pair=${CODE}`;
+    listeners.get("hashchange")();
+
+    assert.equal(reloads, 1);
+  });
+
+  it("tells this machine from a device on the network", () => {
+    for (const host of ["localhost", "127.0.0.1", "[::1]", "LOCALHOST"]) assert.equal(isLoopbackHost(host), true, host);
+    for (const host of ["192.168.0.50", "office.local", "", undefined]) assert.equal(isLoopbackHost(host), false, String(host));
+  });
+});
 
 describe("pairing fragment", () => {
   it("reads the code the opener or the QR put after #pair=", () => {

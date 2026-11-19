@@ -67,10 +67,11 @@ if (result.foreignNotifyLine !== undefined) {
 }
 
 if (!isRemoving) prepareOfficeSecret({ officeFiles, rotate: false, fail });
-const { isUnchanged, hasChangedMeanwhile, backupPath } = commitOrFail({ path: configPath, originalText, nextText: configText(result.lines) });
+const { isUnchanged, hasChangedMeanwhile, backupPath, pruneError } = commitOrFail({ path: configPath, originalText, nextText: configText(result.lines) });
 if (hasChangedMeanwhile) fail(`${configPath} was saved by another program while the installer ran. Run the installer again`);
 writeManifestFile(configDir, withManifestSection(manifest, MANIFEST_SECTION, isRemoving ? null : officeNotifyEntries(options)));
 if (backupPath) console.log(`Backup: ${backupPath}`);
+if (pruneError) console.warn(`Saved, but could not remove old backup ${pruneError.path ?? ""} (${pruneError.code ?? pruneError.message}).`);
 if (isUnchanged) console.log(`${configPath} is already up to date. Nothing was changed.`);
 else if (isRemoving) console.log(`Office notify removed from ${configPath}.`);
 else console.log(`Office notify installed in ${configPath}. Codex turns will show up at ${officeUrl}.`);

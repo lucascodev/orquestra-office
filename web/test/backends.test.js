@@ -88,7 +88,10 @@ describe("data source", () => {
     const states = [];
     const { backend } = fakeBackend({ connects: true, sessions: [LIVE_SESSION, { ...LIVE_SESSION, id: "run-2", sessionId: "z9", status: "ended" }] });
     await createDataSource((state) => states.push(state)).start([backend]);
-    assert.deepEqual(states, [{ mode: "fake", projects: {}, pending: [], outbox: {}, usage: null, security: null, runner: { isAvailable: true, liveAgents: { [LIVE_AGENT]: "working" } } }]);
+    assert.deepEqual(states, [{
+      mode: "fake", projects: {}, pending: [], outbox: {}, usage: null, accounts: null, timeline: null, generatedAt: null, security: null,
+      runner: { isAvailable: true, liveAgents: { [LIVE_AGENT]: "working" } },
+    }]);
   });
 });
 

@@ -25,7 +25,10 @@ export function createPanelResizer({ handle, side, workspace, onResize }) {
     onResize();
   }
 
+  let settledWidth = null;
+
   function settle(width) {
+    settledWidth = width;
     apply(width);
     writeWidth(width);
   }
@@ -76,5 +79,9 @@ export function createPanelResizer({ handle, side, workspace, onResize }) {
   });
 
   const saved = readWidth();
-  apply(saved === null ? null : clamp(saved));
+  settledWidth = saved === null ? null : clamp(saved);
+  apply(settledWidth);
+
+  // A panel that was hidden measured zero; showing it again reads its width for the separator and tells the page.
+  return { refresh: () => apply(settledWidth === null ? null : clamp(settledWidth)) };
 }

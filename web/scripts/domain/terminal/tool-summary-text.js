@@ -5,7 +5,7 @@ import { fillPhrase } from "../text/fill-phrase.js";
 
 const SUMMARY_LIMIT = 160;
 
-export function toolSummaryText({ summaryId, subject, summary }, phrases = TOOL_SUMMARIES) {
-  const phrase = summaryId ? ownValueOf(phrases, summaryId) : undefined;
+export function toolSummaryText({ summaryId, subject, summary }) {
+  const phrase = summaryId ? ownValueOf(TOOL_SUMMARIES, summaryId) : undefined;
   return phrase ? clipText(fillPhrase(phrase, { subject }), SUMMARY_LIMIT) : (summary ?? "");
 }

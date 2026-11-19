@@ -17,6 +17,10 @@ const SESSION_START_COMMAND = scriptCommandPattern(SESSION_START_FILE);
 const STATUSLINE_COMMAND = scriptCommandPattern(STATUSLINE_FILE);
 const DECISION_COMMAND = new RegExp(`^node "[^"]*[\\\\/]${escapeRegExp(DECISION_FILE)}" `);
 
+// Recorded on --remove instead of dropping the section: with no commands or execs array the next install would be taken for a
+// pre-manifest one, and the file-name and activity-address patterns would claim third-party scripts and curl hooks again.
+export const REMOVED_OFFICE_ENTRIES = Object.freeze({ urls: Object.freeze([]), commands: Object.freeze([]), execs: Object.freeze([]) });
+
 const stringsIn = (list) => (Array.isArray(list) ? list.filter((item) => typeof item === "string") : []);
 const execKeyOf = (command, args) => JSON.stringify([command, args]);
 const execKeysIn = (list) => (Array.isArray(list) ? list.filter((item) => Array.isArray(item?.args)).map((item) => execKeyOf(item.command, item.args)) : []);

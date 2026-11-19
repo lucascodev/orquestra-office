@@ -211,7 +211,7 @@ node hooks/install-codex-notify.mjs --remove
 docker compose down
 ```
 
-O `--remove` tira só o que o escritório gravou e a anotação correspondente em `orquestra-office.json`. Se o arquivo de configuração não existir, ele não cria nada. O segredo fica onde está; para apagá-lo, remova a pasta `~/.orquestra-office` (no PowerShell, `Remove-Item -Recurse "$HOME\.orquestra-office"`; no macOS, `rm -r ~/.orquestra-office`).
+O `--remove` tira só o que o escritório gravou. Em `orquestra-office.json`, a anotação do Codex é apagada e a do Claude fica vazia, para que uma instalação seguinte não confunda um script ou um `curl` seu com os do escritório, como se fossem de uma instalação antiga. Se o arquivo de configuração não existir, ele não cria nada. O segredo fica onde está; para apagá-lo, remova a pasta `~/.orquestra-office` (no PowerShell, `Remove-Item -Recurse "$HOME\.orquestra-office"`; no macOS, `rm -r ~/.orquestra-office`).
 
 Se o container estiver parado, a atividade se perde sem aviso, as decisões voltam para o terminal e o Claude Code continua normalmente.
 
@@ -244,3 +244,21 @@ A página não tem etapa de build: as bibliotecas ficam copiadas em `web/vendor`
 | uqr | 0.1.3 (`dist/index.mjs`) | QR para parear outro aparelho; a página desenha o SVG a partir da matriz |
 
 Para atualizar uma delas, baixe o pacote do npm, confira o hash `integrity` do registro e substitua o arquivo em `web/vendor`. O DOMPurify e o uqr vão com a extensão `.js`, porque o servidor do coletor não serve `.mjs`.
+
+### Landing
+
+A landing fica em `site/`, com a página em português em `site/index.html` e a em inglês em `site/en/index.html`. O `site/assemble.mjs` monta o site publicado: a landing na raiz e o escritório em `demo/`, que abre em modo demo dentro da página.
+
+As páginas apontam para o repositório `Lucascodev/orquestra-office` e para o endereço `https://lucascodev.github.io/orquestra-office/`. Num fork, troque esses dois nas duas páginas. Se sobrar o marcador `OWNER` numa página, a montagem para com erro e o deploy não acontece.
+
+Para ver o site montado antes de publicar:
+
+```powershell
+node --test site/test/*.test.mjs
+node site/assemble.mjs _site
+python -m http.server 8000 -d _site
+```
+
+A montagem só substitui uma pasta que não existe, que está vazia ou que ela mesma montou antes (com o arquivo `.site-assembly`), então ela não apaga uma pasta sua por engano.
+
+Para publicar, em Settings, Pages, escolha a fonte "GitHub Actions". O workflow `Pages` roda os testes, monta o site e publica a cada push na `main`, e também pode ser disparado à mão.

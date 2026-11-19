@@ -13,6 +13,7 @@ const FULL_STATUS = JSON.stringify({
   rate_limits: { five_hour: { used_percentage: 12.6 }, seven_day: { used_percentage: 40 } },
   cost: { total_cost_usd: 1.234 },
 });
+const FULL_STATUS_LINE = "Opus · 5 h 13% · semana 40% · US$ 1.23\n";
 
 const at = (officeUrl) => ["--office-url", officeUrl];
 
@@ -55,11 +56,11 @@ test("OFFICE_URL in the environment, which a project's settings can set, is neve
 });
 
 for (const officeUrl of REFUSED_OFFICE_URLS) {
-  test(`a refused --office-url "${officeUrl}" turns the hook off: no report, no output, exit 0`, async (t) => {
+  test(`a refused --office-url "${officeUrl}" skips the report but still prints the line, exit 0`, async (t) => {
     const result = await runRecordingFetch(t, SCRIPT, { args: at(officeUrl), input: FULL_STATUS });
 
     assert.deepEqual(result.urls, []);
-    assert.equal(result.stdout, "");
+    assert.equal(result.stdout, FULL_STATUS_LINE);
     assert.equal(result.stderr, "");
     assert.equal(result.code, 0);
   });

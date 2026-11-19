@@ -12,7 +12,17 @@ import { renderSecurityNotice } from "../scripts/view/office/security-notice-vie
 import { renderTabs } from "../scripts/view/office/tabs-view.js";
 import { renderTeam } from "../scripts/view/office/team-view.js";
 import { renderUsage } from "../scripts/view/office/usage-view.js";
-import { renderAgentFacts, renderAgentIdentity, renderSheetShell } from "../scripts/view/sheet/agent-sheet-view.js";
+import {
+  renderAgentFacts, renderAgentIdentity, renderDrawerIdentity, renderDrawerShell, renderDrawerStatus, renderSheetShell,
+} from "../scripts/view/sheet/agent-sheet-view.js";
+import { accountUsage } from "../scripts/domain/office/account-usage.js";
+import { dayTimeline } from "../scripts/domain/office/day-timeline.js";
+import { renderAccounts } from "../scripts/view/hud/accounts-view.js";
+import { renderAreaList } from "../scripts/view/hud/area-list-view.js";
+import { renderConnection } from "../scripts/view/hud/connection-view.js";
+import { renderDayTimeline } from "../scripts/view/hud/day-timeline-view.js";
+import { renderLegend } from "../scripts/view/hud/legend-view.js";
+import { arrivalsText, arrivalText, countdownText, renderAlertBody, renderAlertHead, warningText } from "../scripts/view/hud/pending-alert-view.js";
 import { renderPendingCard, renderPendingStrip } from "../scripts/view/sheet/pending-request-view.js";
 
 // ago(), clockTime() and resetTime() print in the machine's time zone; the recorded pages are in UTC.
@@ -193,6 +203,33 @@ describe("agent sheet", () => {
   });
 });
 
+describe("headquarters agent drawer", () => {
+  it("follows the mock-up for a live session: who, what now, follow and interrupt, the live terminal, then the message by name", () => {
+    assertMatchesRecording("hq-drawer-live", renderDrawerShell({ agentName: "Heitor <dev>", canReceiveMessages: true, isLive: true, isFollowed: true }));
+  });
+
+  it("drops interrupting and says when a message arrives for a session that takes queued messages", () => {
+    assertMatchesRecording("hq-drawer-queued", renderDrawerShell({ agentName: "Ana", canReceiveMessages: true, isLive: false, isFollowed: false }));
+  });
+
+  it("explains why an agent that cannot receive messages has no message box", () => {
+    assertMatchesRecording("hq-drawer-read-only", renderDrawerShell({ agentName: "Ana", canReceiveMessages: false, isLive: false, isFollowed: false }));
+  });
+
+  it("names the agent with its role, origin and project", () => {
+    const agent = busyTeam()[1];
+    assertMatchesRecording("hq-drawer-identity", renderDrawerIdentity(agent, { mark: agentMark(agent), origin: originOf(agent), projectName: "loja <online>" }));
+  });
+
+  it("writes the status out in words with what the agent is doing and since when", () => {
+    assertMatchesRecording("hq-drawer-status", renderDrawerStatus(agentOf("claude:a1", { status: "needs_you", action: undefined, actionId: "permission-requested", subject: "Bash" })));
+  });
+
+  it("writes an unknown status as free and one tool in the singular", () => {
+    assertMatchesRecording("hq-drawer-status-unknown", renderDrawerStatus(agentOf("claude:a1", { status: "mystery", action: "", tools: 1 })));
+  });
+});
+
 describe("status names", () => {
   it("names each known status", () => {
     assert.deepEqual(["working", "needs_you", "break"].map(describeStatus), ["digitando", "precisa de você", "pausa"]);
@@ -203,7 +240,163 @@ describe("status names", () => {
   });
 });
 
-const PAIRING_LINK_LOCAL = "http://localhost:8420/#pair=AAECAwQFBgcICQoLDA0ODw";
+const withFields = (record, fields) => {
+  const { action, summary, text, ...rest } = record;
+  return { ...rest, ...fields };
+};
+
+describe("views fed with fields instead of ready-made text", () => {
+  it("show the same team when the actions and the request summary come as fields", () => {
+    const [caio, bia, nara, eva] = busyTeam();
+    const team = [
+      withFields(caio, { actionId: "permission-requested", subject: "Bash" }),
+      withFields(bia, { actionId: "reading", subject: "server.js" }),
+      withFields(nara, { actionId: null, subject: null }),
+      eva,
+    ];
+    const pendingByAgent = new Map([["claude:c1", withFields(permission, { summaryId: "run-command", subject: "Aplicar as migrações do banco" })]]);
+    assertMatchesRecording("team-busy", renderTeam(projectOf("c:/loja", "loja", team), { pendingByAgent, outbox: { "claude:c1": 2 } }));
+  });
+
+  it("show the same facts when the action comes as fields", () => {
+    assertMatchesRecording("facts-busy", renderAgentFacts(withFields(agentOf("claude:a1"), { actionId: "editing", subject: "office-store.js" })));
+    const fresh = withFields(agentOf("claude:a1", { tools: undefined, startedAt: 0, updatedAt: NOW - 2 * DAY }), { actionId: null, subject: null });
+    assertMatchesRecording("facts-new", renderAgentFacts(fresh));
+  });
+
+  it("show the same request strip and card when the summary comes as fields", () => {
+    const permissionFields = withFields(permission, { summaryId: "run-command", subject: "Aplicar as migrações do banco" });
+    const questionFields = withFields(question, { summaryId: "ask-question", subject: null });
+    assertMatchesRecording("pending-strip-permission", renderPendingStrip(permissionFields));
+    assertMatchesRecording("pending-card-permission", renderPendingCard(permissionFields, "Caio"));
+    assertMatchesRecording("pending-strip-question", renderPendingStrip(questionFields));
+    assertMatchesRecording("pending-card-question", renderPendingCard(questionFields, "Duda <dev>"));
+  });
+});
+
+
+describe("headquarters connection", () => {
+  it("says whether the page is live, in the demo, connecting or cut off", () => {
+    assertMatchesRecording("hq-connection-live", renderConnection("live"));
+    assertMatchesRecording("hq-connection-demo", renderConnection("demo"));
+    assert.equal(renderConnection("toString"), renderConnection("connecting"));
+    assert.ok(renderConnection("offline").includes("sem conexão com o coletor"));
+  });
+});
+
+describe("headquarters room list", () => {
+  const census = {
+    total: 8,
+    projects: [
+      { key: "c:/loja", name: "loja <online>", themeId: "cafe", total: 2, byStatus: [{ status: "needs_you", count: 1 }, { status: "break", count: 1 }] },
+      { key: "c:/orquestra", name: "orquestra-office", themeId: "startup", total: 4, byStatus: [{ status: "working", count: 3 }, { status: "idle", count: 1 }] },
+      { key: "c:/vazio", name: "vazio", themeId: "unknown", total: 0, byStatus: [] },
+    ],
+    areas: [{ id: "meeting", name: "Sala de reuniões", count: 0 }, { id: "pantry", name: "Copa", count: 2 }],
+  };
+
+  it("lists the whole building, each project with its most urgent status spelled out, and the common rooms", () => {
+    assertMatchesRecording("hq-room-list", renderAreaList(census));
+  });
+
+  it("says no project is open yet", () => {
+    assertMatchesRecording("hq-room-list-empty", renderAreaList({ total: 0, projects: [], areas: census.areas }));
+  });
+});
+
+describe("headquarters legend", () => {
+  it("explains every status color in words", () => {
+    assertMatchesRecording("hq-legend", renderLegend());
+  });
+});
+
+describe("headquarters accounts", () => {
+  const reading = (fiveHour, sevenDay) => ({
+    fiveHour: { usedPercentage: fiveHour, resetsAt: NOW + 2 * HOUR }, sevenDay: { usedPercentage: sevenDay, resetsAt: NOW + 70 * HOUR },
+  });
+
+  it("shows a ring per account with each window as a meter, flagging the high ones", () => {
+    const accounts = {
+      b: { id: "b", label: "Trabalho", rateLimits: reading(12, 41), updatedAt: NOW },
+      a: { id: "a", label: "Pessoal <casa>", rateLimits: reading(37, 84), updatedAt: NOW },
+      c: { id: "c", label: "nova", rateLimits: null, updatedAt: NOW },
+    };
+    assertMatchesRecording("hq-accounts", renderAccounts(accountUsage({ accounts })));
+  });
+
+  it("says there is no reading yet instead of inventing one", () => {
+    assertMatchesRecording("hq-accounts-empty", renderAccounts(accountUsage({ accounts: null, usage: null })));
+  });
+});
+
+describe("headquarters day", () => {
+  const slotAt = (hour, extra) => ({
+    start: Date.UTC(2026, 10, 18, hour), workingMs: 0, workingAgentMs: 0, needsYouMs: 0, needsYouAgentMs: 0, needsYouCount: 0, costUsd: 0, ...extra,
+  });
+
+  it("sums the day, draws a bar per hour with the marks and the current time, and keeps a table for screen readers", () => {
+    const timeline = {
+      slotMs: HOUR,
+      slots: [
+        slotAt(9, { workingMs: 40 * MINUTE, workingAgentMs: HOUR, costUsd: 2.5 }),
+        slotAt(11, { workingMs: HOUR, workingAgentMs: 2 * HOUR, needsYouMs: 4 * MINUTE, needsYouAgentMs: 4 * MINUTE, needsYouCount: 1, costUsd: 4.25 }),
+      ],
+      open: { since: NOW - 10 * MINUTE, working: 1, needsYou: 0 },
+    };
+    assertMatchesRecording("hq-day", renderDayTimeline(dayTimeline(timeline, { now: NOW, dayStart: Date.UTC(2026, 10, 18) })));
+  });
+
+  it("says the collector does not send the day yet", () => {
+    assertMatchesRecording("hq-day-empty", renderDayTimeline(null));
+  });
+});
+
+describe("headquarters request alert", () => {
+  const vitor = { name: "Vitor", projectName: "loja <online>" };
+
+  it("says who asks, where, what for, and which of the waiting requests this is, with arrows between them", () => {
+    assertMatchesRecording("hq-alert-head", renderAlertHead({ requester: vitor, intent: "quer rodar um comando", position: 1, total: 3, previousId: null, nextId: "b" }));
+  });
+
+  it("leaves out the arrows for a single request and names an agent that is gone", () => {
+    assertMatchesRecording("hq-alert-head-single", renderAlertHead({ requester: null, intent: "tem uma pergunta", position: 1, total: 1, previousId: null, nextId: null }));
+  });
+
+  it("shows the command with allow and deny and their keys, the way back to the terminal and the error to fill when sending fails", () => {
+    assertMatchesRecording("hq-alert-command", renderAlertBody(withFields(permission, { summaryId: "run-command", subject: "Aplicar as migrações <db>" })));
+  });
+
+  it("shows what a tool without a command wants", () => {
+    const edit = { ...permission, id: "req-edit", toolName: "Edit", detail: "", summaryId: "edit-file", subject: "people.js" };
+    assertMatchesRecording("hq-alert-tool", renderAlertBody(edit));
+  });
+
+  it("sends a question to the drawer of the agent who asks, where the room's card answers it", () => {
+    assertMatchesRecording("hq-alert-question", renderAlertBody({ ...question, agentKey: "claude:<d1>" }));
+  });
+
+  it("counts down in minutes and seconds, and says when the request is going back", () => {
+    assert.deepEqual([112_000, 59_001, 0, -5, null].map(countdownText), [
+      "volta ao terminal em 1:52", "volta ao terminal em 1:00", "voltando ao terminal", "voltando ao terminal", "sem prazo para voltar ao terminal",
+    ]);
+  });
+
+  it("announces who asks, in a sentence a screen reader can say", () => {
+    assert.equal(arrivalText(vitor, "quer rodar um comando"), "Vitor, em loja <online>, quer rodar um comando.");
+    assert.equal(arrivalText(null, "tem uma pergunta"), "Um agente tem uma pergunta.");
+    assert.equal(arrivalsText([{ requester: vitor, intent: "quer rodar um comando" }, { requester: null, intent: "tem uma pergunta" }]), "2 pedidos novos. Vitor, em loja <online>, quer rodar um comando.");
+    assert.equal(warningText(vitor), "Faltam 30 segundos para o pedido de Vitor voltar ao terminal.");
+  });
+
+  it("clips a long question on screen", () => {
+    const html = renderAlertBody({ ...question, questions: [{ ...question.questions[0], question: "q".repeat(600) }] });
+
+    assert.ok(html.includes(`${"q".repeat(500)}…`));
+    assert.ok(!html.includes("q".repeat(501)));
+  });
+});
+
+const PAIRING_LINK_LOCAL = "http://127.0.0.1:8420/#pair=AAECAwQFBgcICQoLDA0ODw";
 const PAIRING_LINK_NETWORK = "http://192.168.0.50:8420/#pair=AAECAwQFBgcICQoLDA0ODw";
 const QR_SVG = /<svg class="qr" viewBox="0 0 (\d+) \1" role="img" aria-label="[^"]+" shape-rendering="crispEdges">[\s\S]*?<\/svg>/;
 
@@ -214,6 +407,10 @@ describe("pairing", () => {
 
   it("tells a device on the network to pair from the computer, and says when the secret is missing", () => {
     assertMatchesRecording("unpaired-network", renderUnpaired({ isOnThisMachine: false, isSecretMissing: true }));
+  });
+
+  it("says in the Sede's capsule that this browser is not paired", () => {
+    assert.match(renderConnection("unpaired"), /data-tone="off".*navegador não pareado/);
   });
 
   it("shows the QR and the link of the network address, with when the code stops working", () => {

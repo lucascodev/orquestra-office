@@ -99,3 +99,16 @@ test("plain progress keeps the action and the log as they were", () => {
   assert.deepEqual(actionOf(agent), { actionId: AGENT_ACTION.RUNNING, subject: "npm" });
   assert.equal(agent.log.length, 1);
 });
+
+test("no event carries a ready-made phrase, only the action and its subject", () => {
+  for (const [what, event] of reported) assert.equal(event.action, undefined, what);
+  assert.equal(normalizeCodexEvent({ type: "agent-turn-complete", "thread-id": "t1", cwd: "/repo" }, 1).action, undefined);
+});
+
+test("the agent and its log keep no ready-made phrase", () => {
+  const store = createOfficeStore();
+  store.apply(claude("PreToolUse", { tool_name: "Read", tool_input: { file_path: "/repo/a.md" } }));
+  const agent = mainAgentIn(store);
+  assert.equal(agent.action, undefined);
+  assert.deepEqual(agent.log.map((entry) => entry.text), [undefined]);
+});

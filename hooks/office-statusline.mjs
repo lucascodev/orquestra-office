@@ -9,8 +9,7 @@ const REPORT_TIMEOUT_MS = 800;
 
 const AUTHORIZATION = OFFICE_URL === null ? null : activityAuthorizationOf(homedir());
 
-if (OFFICE_URL === null) process.exit(0);
-
+// A refused --office-url, or a missing secret, only stops the report; the terminal keeps its status line.
 async function reportToOffice(body) {
   if (AUTHORIZATION === null) return;
   try {

@@ -15,12 +15,20 @@ function startingPoint(person, room) {
   return room.hasVisited ? room.door : null;
 }
 
+// Desks move when an island shifts: whoever sits at one sits down at the new one, whether the person was kept or drawn again.
+function staysSeated(person, stop) {
+  if (!stop.isDesk) return false;
+  if (person.position) return Boolean(person.isSeated && person.stop?.isDesk);
+  return Boolean(person.lastSeen?.wasAtDesk);
+}
+
 export function planMovement({ person, place, room, isMotionReduced }) {
   const { stop, isUrgent } = place;
-  if (keepsCourse(person, stop, isUrgent)) return KEEP;
-  const staysSeated = !person.position && Boolean(person.lastSeen?.wasAtDesk) && Boolean(stop.isDesk);
+  if (!stop || keepsCourse(person, stop, isUrgent)) return KEEP;
   const from = person.position ?? startingPoint(person, room);
-  if (!from || isMotionReduced || staysSeated || isSameStop(from, stop)) return { kind: "place", stop };
+  if (!from || isMotionReduced || staysSeated(person, stop) || isSameStop(from, stop)) return { kind: "place", stop };
   const origin = isSameStop(from, person.stop) ? person.stop : { x: from.x, z: from.z };
-  return { kind: "walk", from, path: room.routeFor(origin, stop), isUrgent };
+  const path = room.routeFor(origin, stop);
+  if (path.length === 0) return { kind: "place", stop };
+  return { kind: "walk", from, path, isUrgent };
 }

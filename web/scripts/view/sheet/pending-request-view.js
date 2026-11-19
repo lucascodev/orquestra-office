@@ -1,9 +1,8 @@
-import { clipText } from "../../domain/text/clip-text.js";
+import { toolSummaryText } from "../../domain/terminal/tool-summary-text.js";
 import { esc } from "../shared/escape-html.js";
 import { clockTime } from "../shared/format.js";
+import { shownQuestion } from "../shared/shown-question.js";
 
-// Only what is shown is clipped: data-question keeps the whole text, because it is the key Claude Code checks the answer by.
-const QUESTION_TEXT_LIMIT = 500;
 const FAILED_DECISION_ALERT = `<p class="pending-error" role="alert" hidden></p>`;
 
 const quickDecision = () => `<div class="pending-actions"><button class="btn btn-sm btn-secondary" data-decide="deny">Negar</button><button class="btn btn-sm btn-primary" data-decide="allow">Permitir</button></div>
@@ -13,7 +12,7 @@ const answerInSheet = (request) => `<div class="pending-actions"><button class="
 
 export function renderPendingStrip(request) {
   return `<div class="pending-strip" data-pending="${esc(request.id)}">
-    <p class="pending-what">${esc(request.summary)}</p>
+    <p class="pending-what">${esc(toolSummaryText(request))}</p>
     ${request.detail ? `<code class="mono">${esc(request.detail)}</code>` : ""}
     ${request.kind === "permission" ? quickDecision() : answerInSheet(request)}
   </div>`;
@@ -21,7 +20,7 @@ export function renderPendingStrip(request) {
 
 function permissionCard(request, agentName) {
   return `<h3 class="card-title">${esc(agentName)} quer usar ${esc(request.toolName)}</h3>
-    <p class="pending-what">${esc(request.summary)}</p>
+    <p class="pending-what">${esc(toolSummaryText(request))}</p>
     ${request.detail ? `<pre class="mono">${esc(request.detail)}</pre>` : ""}
     <div class="field"><label for="deny-reason">Motivo, se for negar (opcional)</label><input class="input" id="deny-reason" type="text" name="reason" maxlength="500" autocomplete="off"></div>
     <div class="pending-actions">
@@ -36,7 +35,7 @@ function questionBlock(item, index) {
   const options = item.options.map((option) => `<button type="button" class="choice" aria-pressed="false" data-option="${esc(option.label)}">
       <b>${esc(option.label)}</b>${option.description ? `<span>${esc(option.description)}</span>` : ""}</button>`).join("");
   return `<fieldset class="question" data-question="${esc(item.question)}" data-multi="${item.multiSelect}">
-    <legend>${item.header ? `<span class="badge">${esc(item.header)}</span>` : ""}<span>${esc(clipText(item.question, QUESTION_TEXT_LIMIT))}</span></legend>
+    <legend>${item.header ? `<span class="badge">${esc(item.header)}</span>` : ""}<span>${esc(shownQuestion(item.question))}</span></legend>
     <div class="choices">${options}</div>
     <div class="field"><label for="other-${index}">Outra resposta</label><input class="input" id="other-${index}" type="text" maxlength="1000" autocomplete="off"></div>
   </fieldset>`;

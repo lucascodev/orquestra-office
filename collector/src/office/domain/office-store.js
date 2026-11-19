@@ -43,7 +43,7 @@ export function createOfficeStore(initial) {
       project.agents[mainKey] = {
         key: mainKey, source: event.source, kind: "main", parentKey: null,
         label: `${SOURCE_LABEL[event.source] ?? event.source}${sameSourceSessions ? ` ${sameSourceSessions + 1}` : ""}`,
-        status: "idle", activity: null, action: "", actionId: null, subject: null, startedAt: event.at, updatedAt: event.at, endedAt: null, tools: 0, log: [],
+        status: "idle", activity: null, actionId: null, subject: null, startedAt: event.at, updatedAt: event.at, endedAt: null, tools: 0, log: [],
       };
     }
     if (!event.agentId) return project.agents[mainKey];
@@ -52,7 +52,7 @@ export function createOfficeStore(initial) {
       project.agents[subKey] = {
         key: subKey, source: event.source, kind: "subagent", parentKey: mainKey,
         label: event.agentType ?? "subagente",
-        status: "working", activity: null, action: "", actionId: null, subject: null, startedAt: event.at, updatedAt: event.at, endedAt: null, tools: 0, log: [],
+        status: "working", activity: null, actionId: null, subject: null, startedAt: event.at, updatedAt: event.at, endedAt: null, tools: 0, log: [],
       };
     }
     return project.agents[subKey];
@@ -100,12 +100,14 @@ export function createOfficeStore(initial) {
     }
 
     if (event.actionId) {
+      // A state saved before the action ids keeps the phrase in action; the id that arrives now replaces it.
+      // A late event still goes to the log, but leaves the agent showing what it did after.
       if (!isLate) {
-        agent.action = event.action;
+        delete agent.action;
         agent.actionId = event.actionId;
         agent.subject = event.subject ?? null;
       }
-      agent.log.push({ at: event.at, text: event.action, actionId: event.actionId, subject: event.subject ?? null });
+      agent.log.push({ at: event.at, actionId: event.actionId, subject: event.subject ?? null });
       if (agent.log.length > LOG_LIMIT) agent.log.splice(0, agent.log.length - LOG_LIMIT);
     }
     const isPlainProgress = event.actionId === null;

@@ -83,3 +83,19 @@ test("what the user typed and what the agent replied stay as text, with no text 
   assert.equal(entryOf("UserPromptSubmit", { prompt: "fix it" }).textId, undefined);
   assert.equal(entryOf("Stop", { last_assistant_message: "done" }).textId, undefined);
 });
+
+test("no summary or entry made by the collector carries a ready-made phrase", () => {
+  for (const [, toolName, toolInput] of summarized) assert.equal(summarizeTool(toolName, toolInput).summary, undefined);
+  const made = [
+    entryOf("PreToolUse", { tool_name: "Bash", tool_input: { command: "ls" } }),
+    entryOf("PostToolUseFailure", { tool_name: "Bash" }),
+    entryOf("StopFailure", { error: "x" }),
+    entryOf("UserPromptSubmit", { prompt: "<task-notification>x</task-notification>" }),
+  ];
+  assert.deepEqual(made.map((entry) => entry.text), [undefined, undefined, undefined, undefined]);
+});
+
+test("a tool with no name and an empty prompt still leave nothing in the history", () => {
+  assert.equal(claudeHistoryEntry({ ...SESSION, hook_event_name: "PreToolUse", tool_input: {} }, 1), null);
+  assert.equal(claudeHistoryEntry({ ...SESSION, hook_event_name: "UserPromptSubmit", prompt: "" }, 1), null);
+});

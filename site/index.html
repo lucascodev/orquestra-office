@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self'; frame-src 'self'; connect-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'">
+<title>Orquestra Office · seus agentes de IA num escritório em pixel art</title>
+<meta name="description" content="Veja as sessões do Claude Code e do Codex trabalhando num escritório em pixel art 3D. Aprove permissões, responda perguntas e acompanhe o terminal pelo navegador. Código aberto, roda na sua máquina.">
+<meta name="color-scheme" content="dark">
+<meta name="theme-color" content="#0b0b0d">
+<link rel="canonical" href="https://lucascodev.github.io/orquestra-office/">
+<link rel="alternate" hreflang="pt-BR" href="https://lucascodev.github.io/orquestra-office/">
+<link rel="alternate" hreflang="en" href="https://lucascodev.github.io/orquestra-office/en/">
+<link rel="alternate" hreflang="x-default" href="https://lucascodev.github.io/orquestra-office/">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Orquestra Office">
+<meta property="og:locale" content="pt_BR">
+<meta property="og:locale:alternate" content="en_US">
+<meta property="og:title" content="Orquestra Office · seus agentes de IA num escritório em pixel art">
+<meta property="og:description" content="Cada sessão do Claude Code ou do Codex ganha uma mesa. Veja quem está digitando, lendo ou pedindo sua permissão, e responda pelo navegador.">
+<meta property="og:url" content="https://lucascodev.github.io/orquestra-office/">
+<meta property="og:image" content="https://lucascodev.github.io/orquestra-office/assets/og.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="Escritório em pixel art com agentes de IA trabalhando nas mesas">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="demo/styles/tokens.css">
+<link rel="stylesheet" href="styles/landing.css">
+<script type="module" src="scripts/main.js"></script>
+</head>
+<body>
+<a class="skip-link" href="#topo">Pular para o conteúdo</a>
+
+<header class="site-header">
+  <div class="container site-header-bar">
+    <a class="brand" href="#topo">
+      <span class="brand-mark" aria-hidden="true"><span></span><span></span><span></span><span></span></span>
+      Orquestra Office
+    </a>
+    <nav class="site-nav" aria-label="Seções">
+      <ul>
+        <li><a href="#demo">Demo</a></li>
+        <li><a href="#recursos">Recursos</a></li>
+        <li><a href="#como-funciona">Como funciona</a></li>
+        <li><a href="#instalar">Instalar</a></li>
+      </ul>
+    </nav>
+    <div class="header-actions">
+      <nav class="language-switch" aria-label="Idioma">
+        <a href="./" hreflang="pt-BR" lang="pt-BR" aria-current="page"><span aria-hidden="true">PT</span><span class="visually-hidden">Português</span></a>
+        <a href="en/" hreflang="en" lang="en"><span aria-hidden="true">EN</span><span class="visually-hidden">English</span></a>
+      </nav>
+      <a class="github-link" href="https://github.com/Lucascodev/orquestra-office">
+        <svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 19c-4 1.5-4-2-6-2.5M15 21v-3.5c0-1 .1-1.4-.5-2 2.8-.3 5.5-1.4 5.5-6a4.6 4.6 0 0 0-1.3-3.2 4.2 4.2 0 0 0-.1-3.2s-1.1-.3-3.5 1.3a12 12 0 0 0-6.2 0C6.5 2.8 5.4 3.1 5.4 3.1a4.2 4.2 0 0 0-.1 3.2A4.6 4.6 0 0 0 4 9.5c0 4.6 2.7 5.7 5.5 6-.6.6-.6 1.2-.5 2V21"></path></svg>
+        GitHub
+      </a>
+    </div>
+  </div>
+</header>
+
+<main id="topo" tabindex="-1">
+
+<section class="container hero" aria-labelledby="hero-title">
+  <p class="hero-badge"><span class="dot" aria-hidden="true"></span>Código aberto · roda na sua máquina</p>
+  <h1 class="hero-title" id="hero-title">Veja seus agentes de IA trabalhando num escritório em pixel art</h1>
+  <p class="hero-text">Cada sessão do Claude Code ou do Codex ganha uma mesa. Você vê quem está digitando, lendo, pedindo sua permissão ou tomando café, e responde pelo navegador.</p>
+  <div class="hero-actions">
+    <a class="button button-primary" href="#demo">Abrir a demo</a>
+    <a class="button button-secondary" href="#instalar">Instalar</a>
+  </div>
+  <p class="hero-stack">Claude Code · Codex · Docker · Node 22+ · MIT</p>
+</section>
+
+<section class="container demo" id="demo" aria-labelledby="demo-title">
+  <figure class="demo-figure">
+    <div class="demo-frame">
+      <div class="demo-bar">
+        <h2 class="demo-label" id="demo-title"><span class="dot" aria-hidden="true"></span>Demo ao vivo</h2>
+        <span class="demo-hint">Roda no navegador, com dados de exemplo</span>
+        <a class="demo-open" href="demo/?modo=demo&amp;vista=sede">Abrir em tela cheia</a>
+      </div>
+      <a class="skip-link" href="#recursos">Pular a demo</a>
+      <iframe class="demo-view" src="demo/?modo=demo&amp;vista=sede" title="Demonstração do escritório com dados de exemplo" loading="lazy"></iframe>
+    </div>
+    <figcaption class="demo-caption">Clique num personagem para abrir a ficha com o terminal, o histórico e as aprovações.</figcaption>
+  </figure>
+</section>
+
+<section class="section section-surface" id="recursos" aria-labelledby="recursos-title">
+  <div class="container section-body">
+    <div class="section-intro">
+      <h2 class="section-title" id="recursos-title">Tudo o que os agentes fazem, num lugar só</h2>
+      <p class="lead">O escritório lê os eventos do Claude Code e do Codex e transforma cada um num gesto, num balão ou num pedido para você.</p>
+    </div>
+    <div class="card-grid">
+      <article class="card">
+        <svg class="feature-icon" aria-hidden="true" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12h4l3-8 4 16 3-8h4"></path></svg>
+        <h3 class="card-title">Atividade ao vivo</h3>
+        <p class="card-text">Quem trabalha fica sentado digitando, lendo ou rodando comandos. Quem termina recosta, levanta e vai para o café.</p>
+      </article>
+      <article class="card">
+        <svg class="feature-icon" aria-hidden="true" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"></path></svg>
+        <h3 class="card-title">Aprove sem trocar de janela</h3>
+        <p class="card-text">Pedidos de permissão e perguntas do agente aparecem na ficha. Você aprova, recusa com motivo ou responde, e a sessão continua.</p>
+      </article>
+      <article class="card">
+        <svg class="feature-icon" aria-hidden="true" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
+        <h3 class="card-title">Agentes que conversam</h3>
+        <p class="card-text">O agente principal passa a tarefa ao subagente, que leva o resultado até a mesa quando termina. No tempo livre, eles batem papo.</p>
+      </article>
+      <article class="card">
+        <svg class="feature-icon" aria-hidden="true" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m4 17 6-6-6-6"></path><path d="M12 19h8"></path></svg>
+        <h3 class="card-title">Terminal da ficha</h3>
+        <p class="card-text">Diffs coloridos, comandos com cores de sintaxe, respostas em markdown e horário em cada linha. Expande para a tela toda.</p>
+      </article>
+      <article class="card">
+        <svg class="feature-icon" aria-hidden="true" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>
+        <h3 class="card-title">Uso e custo do dia</h3>
+        <p class="card-text">As janelas de 5 horas e semanal do plano, mais tokens e custo por projeto, direto da linha de status do Claude Code.</p>
+      </article>
+      <article class="card">
+        <svg class="feature-icon" aria-hidden="true" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18M5 21V7l7-4 7 4v14M9 21v-6h6v6"></path></svg>
+        <h3 class="card-title">Um escritório por projeto</h3>
+        <p class="card-text">Sete temas: Laboratório, Café, Biblioteca, Garagem, Estação espacial, Jardim e Fliperama. Cada projeto ganha a sua sala.</p>
+      </article>
+    </div>
+  </div>
+</section>
+
+<section class="section" id="como-funciona" aria-labelledby="como-funciona-title">
+  <div class="container section-body">
+    <div class="section-intro">
+      <h2 class="section-title" id="como-funciona-title">Como funciona</h2>
+      <p class="lead">Tudo roda na sua máquina. Nenhum dado sai dela.</p>
+    </div>
+    <ol class="steps">
+      <li class="step">
+        <div class="step-card">
+          <span class="step-number" aria-hidden="true">01</span>
+          <strong class="step-title">Claude Code · Codex</strong>
+          <span class="step-text">Os hooks do Claude Code e o notify do Codex avisam cada evento.</span>
+        </div>
+        <span class="step-arrow" aria-hidden="true"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"></path></svg></span>
+      </li>
+      <li class="step">
+        <div class="step-card">
+          <span class="step-number" aria-hidden="true">02</span>
+          <strong class="step-title">Hooks HTTP</strong>
+          <span class="step-text">Instalados no seu settings.json, sem apagar os hooks que você já tem.</span>
+        </div>
+        <span class="step-arrow" aria-hidden="true"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"></path></svg></span>
+      </li>
+      <li class="step">
+        <div class="step-card">
+          <span class="step-number" aria-hidden="true">03</span>
+          <strong class="step-title">Coletor no Docker</strong>
+          <span class="step-text">Um servidor Node sem dependências em localhost:8420.</span>
+        </div>
+        <span class="step-arrow" aria-hidden="true"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"></path></svg></span>
+      </li>
+      <li class="step">
+        <div class="step-card">
+          <span class="step-number" aria-hidden="true">04</span>
+          <strong class="step-title">O escritório</strong>
+          <span class="step-text">A página no navegador, atualizada em tempo real.</span>
+        </div>
+      </li>
+    </ol>
+  </div>
+</section>
+
+<section class="section section-surface" aria-labelledby="terminal-title">
+  <div class="container terminal-showcase">
+    <div class="terminal-copy">
+      <h2 class="section-title" id="terminal-title">Um terminal que dá vontade de ler</h2>
+      <p class="lead">A ficha de cada agente mostra o que ele fez e o que está fazendo agora, com o texto chegando enquanto ele escreve.</p>
+      <ul class="check-list">
+        <li><span class="check-mark" aria-hidden="true">+</span>Edições como diff, com linhas removidas e adicionadas</li>
+        <li><span class="check-mark" aria-hidden="true">+</span>Respostas formatadas, com blocos de código e botão de copiar</li>
+        <li><span class="check-mark" aria-hidden="true">+</span>Rolagem que respeita a sua leitura, com aviso de novas linhas</li>
+        <li><span class="check-mark" aria-hidden="true">+</span>Interromper e encerrar sessões abertas pelo escritório</li>
+      </ul>
+    </div>
+    <figure class="terminal-figure">
+      <img src="assets/terminal.png" width="740" height="1350" alt="Terminal da ficha com diff, código com cores de sintaxe e uma resposta em markdown" loading="lazy" decoding="async">
+    </figure>
+  </div>
+</section>
+
+<section class="section" id="instalar" aria-labelledby="instalar-title">
+  <div class="container install" data-install>
+    <div class="install-intro">
+      <h2 class="section-title" id="instalar-title">Instalar</h2>
+      <p class="lead">Depois de instalar, as sessões que você abrir aparecem sozinhas no escritório.</p>
+      <h3 class="install-subtitle">Requisitos</h3>
+      <ul class="requirements">
+        <li data-install-way="docker">Docker</li>
+        <li>Node.js 22+</li>
+        <li>Claude Code ou Codex</li>
+      </ul>
+      <template data-upcoming-install-way="npx">
+        <p class="install-note" data-install-way="npx">Para tirar, rode <code>npx orquestra-office uninstall</code>: os hooks saem e os seus continuam.</p>
+      </template>
+      <p class="install-note" data-install-way="docker">Para tirar, rode <code>node hooks/install-claude-hooks.mjs --remove</code>, <code>node hooks/install-codex-notify.mjs --remove</code> e <code>docker compose down</code>: os hooks do escritório saem e os seus continuam.</p>
+    </div>
+    <div class="install-ways">
+      <div class="install-tabs" role="tablist" aria-label="Formas de instalar" hidden data-install-tabs>
+        <button class="install-tab" type="button" role="tab" id="aba-docker" aria-controls="painel-docker" aria-selected="true" data-install-tab="docker">Docker</button>
+        <button class="install-tab" type="button" role="tab" id="aba-npx" aria-controls="painel-npx" aria-selected="false" tabindex="-1" data-install-tab="npx">npx <span class="tab-badge">em breve</span></button>
+      </div>
+      <div class="terminal-card">
+        <div class="terminal-head">
+          <span>Terminal · Windows, macOS e Linux</span>
+          <button class="copy-button" type="button" data-install-way="docker" data-copy-commands data-done-label="copiado" data-done-status="Comandos copiados para a área de transferência." data-failed-status="Não deu para copiar. Os comandos ficaram selecionados: copie com o teclado." hidden><span data-copy-label>copiar</span><span class="visually-hidden"> os comandos</span></button>
+        </div>
+        <div class="install-panel" role="tabpanel" id="painel-docker" aria-labelledby="aba-docker" tabindex="0" data-install-way="docker">
+<pre class="shell"><span class="shell-comment"># 1. baixe o projeto</span>
+<span data-command>git clone https://github.com/Lucascodev/orquestra-office</span>
+<span data-command>cd orquestra-office</span>
+
+<span class="shell-comment"># 2. suba o coletor e instale os hooks</span>
+<span data-command>docker compose up -d --build</span>
+<span data-command>node hooks/install-claude-hooks.mjs</span>
+<span data-command>node hooks/install-codex-notify.mjs</span>
+
+<span class="shell-comment"># 3. abra o escritório</span>
+<span class="shell-url">http://localhost:8420</span></pre>
+        </div>
+        <div class="install-panel" role="tabpanel" id="painel-npx" aria-labelledby="aba-npx" tabindex="0" data-install-way="npx">
+          <p class="install-soon">Em breve, um comando só vai fazer tudo isto. Por enquanto, instale pela aba Docker.</p>
+          <template data-upcoming-install-way="npx">
+            <pre class="shell shell-large"><span class="shell-prompt" aria-hidden="true">$ </span><span data-command>npx orquestra-office</span></pre>
+          </template>
+          <ol class="install-steps">
+            <li>instala os hooks do Claude Code e o notify do Codex, com backup das suas configurações</li>
+            <li>sobe o coletor só na sua máquina, em localhost:8420</li>
+            <li>abre o escritório no navegador</li>
+          </ol>
+        </div>
+      </div>
+      <p class="visually-hidden" role="status" data-copy-status></p>
+    </div>
+  </div>
+</section>
+
+<section class="section section-surface" aria-labelledby="privacidade-title">
+  <div class="container section-body privacy-body">
+    <div class="section-intro">
+      <h2 class="section-title" id="privacidade-title">Seus dados ficam com você</h2>
+      <p class="lead">O coletor guarda só o necessário para desenhar o escritório. Por padrão, ele só aceita conexões da sua própria máquina.</p>
+    </div>
+    <div class="card-grid">
+      <div class="card privacy-card">
+        <h3 class="card-title">No disco</h3>
+        <p class="card-text">Pasta do projeto, id da sessão, nome da ferramenta, nome do arquivo sem o caminho, o primeiro termo do comando e os totais de tokens e custo.</p>
+      </div>
+      <div class="card privacy-card">
+        <h3 class="card-title">Só na memória</h3>
+        <p class="card-text">O texto dos seus pedidos, os comandos completos e as respostas. Nada disso vai para o disco, e tudo some quando o container reinicia.</p>
+      </div>
+      <div class="card privacy-card">
+        <h3 class="card-title">Só no localhost</h3>
+        <p class="card-text">Escuta em 127.0.0.1. Abrir na rede local, para usar no celular, é opcional e explícito.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+</main>
+
+<footer class="site-footer">
+  <div class="container site-footer-bar">
+    <span>Orquestra Office · Licença MIT</span>
+    <ul class="footer-links">
+      <li><a href="https://github.com/Lucascodev/orquestra-office">GitHub</a></li>
+      <li><a href="https://github.com/Lucascodev/orquestra-office/issues">Reportar um problema</a></li>
+    </ul>
+  </div>
+</footer>
+</body>
+</html>

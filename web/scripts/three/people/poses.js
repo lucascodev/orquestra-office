@@ -7,6 +7,13 @@ const beat = (t, perSecond) => Math.floor(t * perSecond) % 2;
 const lerp = (from, to, amount) => from + (to - from) * amount;
 const swell = (progress) => Math.sin(progress * Math.PI);
 const GLANCE_SIDE_SECONDS = 20;
+const RALLY_SECONDS = 1.6;
+// The two ends of the ping-pong table in the plan stand this far apart. Both players draw the same ball, so it reads as one.
+const RALLY_LENGTH = 3.8;
+const BALL_REACH = 0.35;
+const BALL_SIDE = 0.3;
+const BALL_ARC = 0.35;
+const OTHER_END = 0.5;
 
 function arm(person, side, shoulderX, elbowX, shoulderZ = 0) {
   const joint = person.arms[side];
@@ -142,6 +149,27 @@ export const POSES = {
     arm(person, 1, -2.9, -0.2, -0.3);
     person.head.rotation.x = -0.25;
   },
+  playing: (person, t) => {
+    person.upper.rotation.x = 0.15;
+    arm(person, 0, -0.5, -0.9);
+    person.head.rotation.x = -0.05 + Math.sin(t * 4) * 0.03;
+  },
+  gaming: (person, t) => {
+    person.upper.rotation.x = 0.08;
+    arm(person, 0, -1.05 + Math.sin(t * 9) * 0.08, -0.55, Math.sin(t * 7) * 0.12);
+    arm(person, 1, -1.05, -0.55 + (beat(t, 6) ? 0.14 : 0));
+    person.head.rotation.set(0.12, Math.sin(t * 1.4) * 0.08, 0);
+  },
+  lounging: (person, t) => {
+    person.upper.rotation.x = -0.35;
+    for (const leg of person.legs) {
+      leg.hip.rotation.x = -1.25;
+      leg.knee.rotation.x = 0.25;
+    }
+    arm(person, 0, -2.6, -2.2, 0.25);
+    arm(person, 1, -2.6, -2.2, -0.25);
+    person.head.rotation.x = -0.15 + Math.sin(t * 0.9) * 0.04;
+  },
   dozing: (person, t) => {
     person.upper.rotation.x = -0.12;
     arm(person, 0, 0, -0.3);
@@ -195,3 +223,14 @@ export const FIDGET_POSES = {
     person.head.rotation.x = 0.2 * amount;
   },
 };
+
+// The ball crosses the table and back in one rally, in the same place for both ends; the paddle swings as it arrives.
+export function rallyAt(person, seconds) {
+  const end = Math.sin(person.stop.facing) >= 0 ? 0 : OTHER_END;
+  const phase = (seconds / RALLY_SECONDS + end) % 1;
+  const travel = phase < OTHER_END ? phase * 2 : 2 - phase * 2;
+  const hit = Math.max(0, Math.cos(phase * Math.PI * 2)) ** 4;
+  person.ball.position.set(BALL_SIDE * (1 - 2 * travel), BALL_ARC * Math.sin(Math.PI * travel), BALL_REACH + travel * (RALLY_LENGTH - 2 * BALL_REACH));
+  arm(person, 1, -0.5 - 0.9 * hit, -0.5, -0.2 * hit);
+  person.head.rotation.y = (1 - 2 * travel) * 0.15;
+}
