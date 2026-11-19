@@ -33,6 +33,18 @@ test("the state file can be read and written only by its owner", { skip: process
   assert.equal((await stat(join(dir, STATE_FILE))).mode & PERMISSION_BITS, OWNER_ONLY_FILE);
 }));
 
+test("a temp file left by a crash does not hand its mode to the state file", { skip: process.platform === "win32" }, () => withDataDir(async (dir) => {
+  await writeFile(join(dir, `${STATE_FILE}.tmp`), "{}", { mode: 0o644 });
+  createPersistence(dir).saveNow(SAVED_STATE);
+  assert.equal((await stat(join(dir, STATE_FILE))).mode & PERMISSION_BITS, OWNER_ONLY_FILE);
+}));
+
+test("a temp file left by a crash is replaced by the new state", () => withDataDir(async (dir) => {
+  await writeFile(join(dir, `${STATE_FILE}.tmp`), "left over");
+  createPersistence(dir).saveNow(SAVED_STATE);
+  assert.deepEqual(JSON.parse(await readFile(join(dir, STATE_FILE), "utf8")), SAVED_STATE);
+}));
+
 test("with nothing saved yet the state loads as null", () => withDataDir(async (dir) => {
   assert.equal(createPersistence(dir).load(), null);
 }));
