@@ -1,62 +1,62 @@
-name: Sugerir uma funcionalidade
-description: Uma ideia nova ou uma melhoria no que já existe. (Suggest a feature.)
-title: "[ideia] "
+name: Suggest a feature
+description: A new idea or an improvement to something that already exists.
+title: "[idea] "
 labels: ["enhancement"]
 body:
   - type: markdown
     attributes:
       value: |
-        Obrigado pela sugestão. Issues em inglês também são bem-vindas (English is fine).
+        Thanks for the suggestion. You can write in English or Portuguese (pode escrever em português).
 
-        Antes de abrir, procure nas issues abertas e fechadas para ver se a ideia já apareceu. Lembre que esta issue é pública: não cole segredo, configuração real nem texto das suas sessões.
+        Before opening, search open and closed issues to see whether the idea has come up already. This issue is public: do not paste secrets, real configuration or text from your sessions.
 
   - type: textarea
     id: problem
     attributes:
-      label: Qual problema isso resolve
-      description: O que você tenta fazer hoje e onde o escritório atrapalha ou não ajuda.
-      placeholder: Quando tenho três sessões pedindo permissão ao mesmo tempo, não sei qual chegou primeiro.
+      label: What problem does this solve
+      description: What you try to do today and where the office gets in the way or does not help.
+      placeholder: When three sessions ask for permission at the same time, I cannot tell which one came first.
     validations:
       required: true
 
   - type: textarea
     id: proposal
     attributes:
-      label: O que você propõe
-      description: Como seria o comportamento, do ponto de vista de quem usa.
+      label: What you propose
+      description: How it would behave, from the user's point of view.
     validations:
       required: true
 
   - type: textarea
     id: alternatives
     attributes:
-      label: Alternativas que você considerou
+      label: Alternatives you considered
     validations:
       required: false
 
   - type: dropdown
     id: component
     attributes:
-      label: Parte envolvida
+      label: Part involved
       multiple: true
       options:
-        - Página do escritório (web)
-        - Coletor (porta 8420)
-        - Executor (127.0.0.1:8421)
-        - Hooks do Claude Code
-        - Notify do Codex
-        - Landing
-        - Não sei
+        - Office page (web)
+        - Collector (port 8420)
+        - Runner (127.0.0.1:8421)
+        - Claude Code hooks
+        - Codex notify hook
+        - Landing page
+        - Not sure
     validations:
       required: true
 
   - type: checkboxes
     id: constraints
     attributes:
-      label: Restrições do projeto
-      description: Veja o [CONTRIBUTING.md](https://github.com/lucascodev/orquestra-office/blob/main/CONTRIBUTING.md).
+      label: Project constraints
+      description: See [CONTRIBUTING.md](https://github.com/lucascodev/orquestra-office/blob/main/CONTRIBUTING.md).
       options:
-        - label: Entendo que o projeto não usa dependências npm e que a página não tem etapa de build.
+        - label: I understand that the project uses no npm dependencies and that the page has no build step.
           required: true
-        - label: Posso abrir um pull request com essa mudança.
+        - label: I can open a pull request with this change.
           required: false

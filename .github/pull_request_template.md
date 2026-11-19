@@ -1,37 +1,37 @@
-<!-- English is fine. Fill in each section; delete what does not apply. -->
+<!-- You can write in English or Portuguese (pode escrever em português). Fill in each section and delete what does not apply. -->
 
-## Resumo
+## Summary
 
-<!-- O que muda e por quê, em poucas frases. -->
+<!-- What changes and why, in a few sentences. -->
 
-Issue relacionada: <!-- Closes #123, ou "nenhuma" -->
+Related issue: <!-- Closes #123, or "none" -->
 
-## Como testar
+## How to test
 
-<!-- Passos para quem revisa ver a mudança funcionando. Para a página, diga se vale o ?modo=demo. -->
+<!-- Steps for the reviewer to see the change working. For the page, say whether ?modo=demo is enough. -->
 
 1.
 
-## Capturas
+## Screenshots
 
-<!-- Só para mudança visual. Use dados fictícios ou o ?modo=demo. -->
+<!-- Only for visual changes. Use fictional data or ?modo=demo. -->
 
 ## Checklist
 
-Testes dos pacotes tocados, rodados localmente e verdes:
+Tests for the packages you touched, run locally and passing:
 
-- [ ] `node --test site/test/*.test.mjs` (landing)
-- [ ] `node --test web/test/*.test.js` (página)
-- [ ] `npm test` em `collector/` (coletor)
-- [ ] `npm test` em `runner/` (executor)
+- [ ] `node --test site/test/*.test.mjs` (landing page)
+- [ ] `node --test web/test/*.test.js` (office page)
+- [ ] `npm test` in `collector/` (collector)
+- [ ] `npm test` in `runner/` (runner)
 - [ ] `node --test hooks/test/*.test.mjs` (hooks)
 
-Regras do projeto:
+Project rules:
 
-- [ ] Teste escrito antes do código, e visto falhar sem a mudança.
-- [ ] Os testes de camada continuam verdes sem terem sido afrouxados (`architecture.test.js` e `hook-imports.test.mjs`).
-- [ ] Nenhuma dependência npm nova e nenhuma etapa de build na página.
-- [ ] README, `docs/` ou um ADR atualizados, se a mudança altera uso, instalação, dados guardados ou arquitetura.
-- [ ] A landing mudou nas duas línguas, se mudou.
-- [ ] Commits em Conventional Commits, em português, sem `Co-Authored-By` e sem assinatura gerada por ferramenta.
-- [ ] Nenhum dado pessoal ou segredo em código, fixtures, logs ou capturas: caminho com nome de usuário, e-mail, token, conteúdo real de `settings.json` ou `config.toml`, texto real de sessões.
+- [ ] Test written before the code, and seen failing without the change.
+- [ ] Layer tests still pass without being loosened (`architecture.test.js` and `hook-imports.test.mjs`).
+- [ ] No new npm dependency and no build step for the page.
+- [ ] README (both languages), `docs/` or an ADR updated, if the change affects usage, installation, stored data or architecture.
+- [ ] Files that exist in English and Portuguese (README, CONTRIBUTING, landing page) changed in both languages, if they changed.
+- [ ] Commits follow Conventional Commits, without `Co-Authored-By` and without a tool-generated signature.
+- [ ] No personal data or secrets in code, fixtures, logs or screenshots: paths with a user name, email, tokens, real `settings.json` or `config.toml` content, real session text.
