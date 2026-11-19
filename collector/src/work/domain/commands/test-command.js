@@ -1,5 +1,4 @@
-import { redactSecrets } from "../values/redact-secrets.js";
-import { lineOf } from "../values/safe-text.js";
+import { cleanLineOf } from "../values/clean-text.js";
 import { commandSegmentsOf, positionalWordsOf, programOf } from "./command-segments.js";
 
 const COMMAND_LIMIT = 200;
@@ -104,7 +103,7 @@ const TEST_RUNNERS = {
   xcodebuild: whenAny("xcodebuild", (word) => word === "test"),
 };
 
-export const shownCommandOf = (segment) => lineOf(redactSecrets(segment.shown), COMMAND_LIMIT);
+export const shownCommandOf = (segment) => cleanLineOf(segment.shown, COMMAND_LIMIT);
 
 // The first command of the chain that runs tests: { framework, command } or null. The framework is null when only the
 // output can tell it, as with "npm test".
