@@ -1,56 +1,59 @@
 # Changelog
 
-> **English.** All notable changes to this project are documented in this file, following [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). The project has no released version yet, so everything is listed under `[Unreleased]`. Entries are written in Portuguese.
+All notable changes to this project are documented in this file, following [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). The project has no released version yet, so everything is listed under `[Unreleased]`.
 
-Todas as mudanças relevantes do projeto ficam neste arquivo, no formato [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/). O projeto ainda não tem versão publicada, então tudo está em `[Unreleased]`.
+> **Português.** O changelog fica só em inglês, que é o padrão para quem acompanha as versões. Os termos seguem o [glossário](docs/glossary.md).
 
 ## [Unreleased]
 
-### Adicionado
+### Added
 
-- **Escritório ao vivo.** Coletor em Node, sem dependências, que roda no Docker em `127.0.0.1:8420` e recebe os eventos do Claude Code pelos hooks e do Codex pelo `notify`. Cada sessão ganha um personagem, e cada subagente senta ao lado de quem o chamou.
-- **Sede.** O escritório virou um prédio térreo aberto em pixel art 3D, com uma ilha de 6 lugares por projeto, nas cores do tema dele, e áreas comuns para todos: reunião, copa, sala de jogos, lounge, recepção e quintal. A Sede é a única página do escritório.
-- **Câmera e navegação da Sede.** Câmera isométrica interativa, minimapa, seguir um agente e busca `Ctrl K` (`Cmd K` no Mac) de agentes, salas e ações.
-- **Interface da Sede.** Alerta de quem precisa de você, gaveta do agente com status, terminal ao vivo ou histórico e caixa de mensagem, ficha da ilha com quem está nela, os números do dia, o tema e "Nova sessão nesta pasta", contagem de mensagens na fila e etiquetas legíveis no zoom distante.
-- **Sede no celular.** Abaixo de 720 px, o mapa ocupa a tela e os painéis vão para uma folha de baixo com abas.
-- **Vida no escritório.** Bonecos que digitam, leem, levantam a mão e saem pela porta conforme o que o agente faz, com rotina de tempo livre, temperamento próprio, pensamentos, gestos e conversas de delegação e entrega. Caminham por um grafo de corredores sem atravessar os móveis.
-- **Decisões pelo navegador.** Aprovar ou recusar pedidos de permissão, responder perguntas do agente e mandar mensagens que chegam no fim do turno.
-- **Executor** em `127.0.0.1:8421`, fora do Docker, que abre sessões do Claude Code pelo escritório, com terminal ao vivo, "Interromper" e "Encerrar sessão".
-- **Uso, tokens e custo.** Linha de status do escritório que repassa ao coletor o uso das janelas de 5 h e semanal, os tokens e o custo do dia.
-- **Modo LAN** com `compose.lan.yaml`, para abrir o escritório no celular na mesma rede.
-- **Pareamento de aparelhos.** Cada navegador precisa estar pareado para ver ou decidir qualquer coisa. `node hooks/open-office.mjs` abre o escritório já pareado no navegador padrão, e o botão **Aparelhos** da Sede lista os aparelhos, pareia outro por QR ou link de uso único e revoga um aparelho ou o navegador atual ("Sair deste"). Sem pareamento, a Sede mostra "Este navegador não está pareado" com o comando a rodar.
-- **Aviso de hooks antigos** na Sede, enquanto um hook `http` de uma versão anterior continua mandando eventos, e aviso de segredo ausente.
-- **Modo demo** com `?modo=demo`, com agentes de exemplo e nenhuma requisição à API.
-- **Landing** em português e inglês, com a demo ao vivo dentro da página e uma prévia estática da Sede em telas estreitas, publicada no GitHub Pages pelo workflow `Pages`.
-- **CI** com as cinco suítes de teste (landing, página, coletor, executor e hooks) em todo pull request e push na `main`, actions fixadas por hash e Dependabot para elas.
-- Licença MIT.
-- ADR 0001, arquitetura em camadas, e ADR 0002, autenticação entre hooks, coletor e painel.
-- Arquivos de comunidade: guia de contribuição, código de conduta, política de segurança, modelos de issue e de pull request, `CODEOWNERS` e `.editorconfig`.
+- **Live office.** A Node collector with no dependencies, running in Docker on `127.0.0.1:8420`, that receives Claude Code events through hooks and Codex events through `notify`. Each session gets a character, and each subagent sits next to whoever started it.
+- **Sede (HQ).** The office became a single-storey open-plan building in 3D pixel art, with a 6-desk island per project in the colors of its theme, and common areas shared by everyone: meeting room, pantry, game room, lounge, reception and yard. The Sede is the office's only page.
+- **Camera and navigation in the Sede.** Interactive isometric camera, minimap, follow an agent with the camera, and search with `Ctrl K` (`Cmd K` on a Mac) for agents, rooms and actions.
+- **Sede interface.** Alert for whoever needs you, agent drawer with status, live terminal or history and message box, island sheet with who sits there, the day's numbers, the theme and "New session in this folder" (Nova sessão nesta pasta), queued message counts and labels that stay readable when zoomed out.
+- **Sede on phones.** Below 720 px, the map fills the screen and the panels move to a bottom sheet with tabs.
+- **Life in the office.** Characters that type, read, raise a hand and leave through the door depending on what the agent is doing, with a free-time routine, a temperament of their own, thought bubbles, gestures and delegation and hand-off conversations. They walk along a corridor graph without going through furniture.
+- **Decisions from the browser.** Approve or deny permission requests, answer the agent's questions and send messages that arrive at the end of the turn.
+- **Runner** on `127.0.0.1:8421`, outside Docker, that opens Claude Code sessions from the office, with a live terminal, Interrupt (Interromper) and End session (Encerrar sessão).
+- **Usage, tokens and cost.** An office status line that passes the 5-hour and weekly usage windows, tokens and the day's cost on to the collector.
+- **LAN mode** with `compose.lan.yaml`, to open the office on a phone on the same network.
+- **Device pairing.** Every browser must be paired to see or decide anything. `node hooks/open-office.mjs` opens the office, already paired, in the default browser, and the Devices (Aparelhos) button in the Sede lists devices, pairs another one with a single-use QR code or link, and revokes a device or the current browser (Sign out this one, "Sair deste"). Without pairing, the Sede shows "This browser is not paired" (Este navegador não está pareado) with the command to run.
+- **Old hooks warning** in the Sede while an `http` hook from an earlier version keeps sending events, and a warning when the secret is missing.
+- **Demo mode** with `?modo=demo`, with sample agents and no API requests.
+- **Landing page** in Portuguese and English, with the live demo inside the page and a static preview of the Sede on narrow screens, published to GitHub Pages by the `Pages` workflow.
+- **CI** with the five test suites (landing page, page, collector, runner and hooks) on every pull request and push to `main`, actions pinned by hash, and Dependabot for them.
+- MIT license.
+- ADR 0001, layered architecture, and ADR 0002, authentication between hooks, collector and panel.
+- Community files: contributing guide, code of conduct, security policy, issue and pull request templates, `CODEOWNERS` and `.editorconfig`.
+- Glossary of product terms in English and Portuguese (`docs/glossary.md`).
+- Usage guide in English and Portuguese (`docs/guide.md` and `docs/guia.md`), with the details that left the README: life in the office, the agent sheet's terminal, approving and answering, messages, the runner, usage and cost, and how the installers change your configuration.
 
-### Alterado
+### Changed
 
-- **Arquitetura em camadas** no coletor, no executor, na página e nos hooks: domínio sem I/O, casos de uso, adapters do Claude Code e do Codex separados, composição na borda e um teste de camadas por pacote que lê os imports.
-- O coletor e o executor passam a publicar campos estruturados (`actionId`, `subject`) no lugar de frases prontas, e a página monta as frases a partir deles.
-- Os instaladores dos hooks passam a separar a montagem do `settings.json` e do `config.toml` da leitura e da gravação dos arquivos, e anotam o que gravaram em `orquestra-office.json`.
-- A landing abre a instalação na aba do Docker. O `npx` aparece como "em breve" até o pacote ser publicado.
-- **Hooks `command` no lugar dos `http`.** A atividade vai pelo `curl` do sistema, em segundo plano e sem shell, e permissão, pergunta e fim do turno passam por `hooks/office-decision.mjs`. Reinstalar é obrigatório: o instalador troca as entradas `http` antigas e avisa que migrou. Veja "Atualizar de uma versão com hooks `http`" no README.
-- **Instalação.** Os instaladores vêm antes do `docker compose up`, porque criam o segredo em `~/.orquestra-office/secret` que o `compose.yaml` monta no container, e `node hooks/open-office.mjs` fecha a instalação.
-- O endereço do escritório fica gravado no comando de cada hook, e `localhost` vira `127.0.0.1`.
+- **Layered architecture** in the collector, the runner, the page and the hooks: domain without I/O, use cases, separate Claude Code and Codex adapters, composition at the edge, and a layer test per package that reads the imports.
+- The collector and the runner publish structured fields (`actionId`, `subject`) instead of ready-made sentences, and the page builds the sentences from them.
+- The hook installers separate building `settings.json` and `config.toml` from reading and writing the files, and record what they wrote in `orquestra-office.json`.
+- The landing page opens the install section on the Docker tab. `npx` shows as "coming soon" until the package is published.
+- **`command` hooks instead of `http` hooks.** Activity goes through the system `curl`, in the background and without a shell, and permission requests, questions and the end of a turn go through `hooks/office-decision.mjs`. Reinstalling is required: the installer replaces the old `http` entries and says it migrated. See "Updating from the `http` hooks" in the [README](README.md#updating-from-the-http-hooks).
+- **Install.** The installers run before `docker compose up`, because they create the secret in `~/.orquestra-office/secret` that `compose.yaml` mounts into the container, and `node hooks/open-office.mjs` completes the install.
+- The office address is written into each hook's command, and `localhost` becomes `127.0.0.1`.
+- **Documentation in English first.** The README, the contributing guide, the code of conduct and the security policy are in English, with the Portuguese version next to each one (`README.pt-BR.md`, `CONTRIBUTING.pt-BR.md`, `CODE_OF_CONDUCT.pt-BR.md`, `SECURITY.pt-BR.md`). The README gained badges, screenshots and an animation of the Sede in demo mode, and a diagram of how the parts connect.
 
-### Removido
+### Removed
 
-- A aba do time na nuvem, que obrigava o container a montar a raiz do projeto, com o `.env`.
-- A página da sala por projeto: a Sede passou a ser a única página, e `?vista=sede` continua aceito sem ser necessário.
-- Os hooks do tipo `http`. O coletor responde a eles sem efeito e mostra o aviso de hooks antigos.
+- The cloud team tab, which required the container to mount the project root, `.env` included.
+- The per-project room page: the Sede became the only page, and `?vista=sede` is still accepted but no longer needed.
+- Hooks of type `http`. The collector answers them without effect and shows the old hooks warning.
 
-### Segurança
+### Security
 
-- **Hooks.** Os instaladores gravam de forma atômica, preservam um `settings.json` que é symlink, mexem só no que o escritório gravou, recusam um `settings.json` que não é objeto e uma pasta com caractere que o shell interpreta, e guardam só os três backups mais recentes, sem sobrescrever o anterior.
-- **Endereço do escritório.** `OFFICE_URL` só aceita um endereço desta máquina. Endereço remoto exige `--allow-remote-office` e `https://`, e um valor recusado desliga o hook em vez de cair no padrão. Nenhum hook lê `OFFICE_URL` durante a sessão, porque o `.claude/settings.json` de um projeto pode defini-la.
-- **SessionStart** não executa um `git.exe` plantado no repositório aberto.
-- **Coletor.** Recusa leitura e ação vindas de outro site ou de outra porta local, impede que outra página enquadre o escritório, usa `Referrer-Policy: same-origin`, responde `413` e para de ler um corpo acima do limite, limita espectadores e derruba quem não lê o fluxo, corta `cwd` e ids longos, e não cai com chaves de protótipo nem com URL malformada.
-- **Executor.** Não cai com URL malformada.
-- **Fase S do ADR 0002.** Quem responder na porta 8420 com o coletor parado, outro usuário da máquina ou um `OFFICE_URL` remoto deixam de decidir permissões: o `office-decision.mjs` assina o pedido com HMAC-SHA256, só aceita resposta assinada e ligada ao nonce, e nunca devolve `updatedPermissions`, `additionalContext` nem `interrupt`. Todo `/api/*` exige um aparelho pareado, também em `127.0.0.1`, e um aparelho da rede sem pareamento recebe `401`. O agente não aprova mais os próprios pedidos com um `curl` liberado. O executor exige um token obtido com desafio assinado pelo coletor. `--rotate-secret` revoga aparelhos, tokens e hooks de uma vez.
-- **Landing.** Política de segurança de conteúdo própria nas páginas e na demo dentro do iframe, e a montagem recusa publicar uma página com o marcador `OWNER` ou apagar uma pasta que não montou.
+- **Hooks.** The installers write atomically, keep a `settings.json` that is a symlink, only touch what the office wrote, refuse a `settings.json` that is not an object and a folder with characters the shell interprets, and keep only the three latest backups, without overwriting the previous one.
+- **Office address.** `OFFICE_URL` only accepts an address on this machine. A remote address requires `--allow-remote-office` and `https://`, and a refused value turns the hook off instead of falling back to the default. No hook reads `OFFICE_URL` during the session, because a project's `.claude/settings.json` can set it.
+- **SessionStart** does not run a `git.exe` planted in the open repository.
+- **Collector.** It refuses reads and actions from another site or another local port, prevents other pages from framing the office, uses `Referrer-Policy: same-origin`, answers `413` and stops reading a body over the limit, limits viewers and drops those who do not read the stream, trims long `cwd` values and ids, and does not crash on prototype keys or malformed URLs.
+- **Runner.** It does not crash on malformed URLs.
+- **Phase S of ADR 0002.** Whoever answers on port 8420 while the collector is stopped, another user on the machine or a remote `OFFICE_URL` can no longer decide permissions: `office-decision.mjs` signs the request with HMAC-SHA256, only accepts a signed reply bound to the nonce, and never returns `updatedPermissions`, `additionalContext` or `interrupt`. Every `/api/*` route requires a paired device, on `127.0.0.1` too, and an unpaired device on the network gets `401`. The agent can no longer approve its own requests with an allowed `curl`. The runner requires a token obtained with a challenge signed by the collector. `--rotate-secret` revokes devices, tokens and hooks at once.
+- **Landing page.** Its own content security policy on the pages and on the demo inside the iframe, and the build refuses to publish a page with the `OWNER` placeholder or to delete a folder it did not build.
 
 [Unreleased]: https://github.com/lucascodev/orquestra-office/commits/main
