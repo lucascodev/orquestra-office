@@ -132,6 +132,18 @@ test("a question longer than the page shows keeps its whole text as the answer k
   viewer.abort();
 }));
 
+test("a question whose text is __proto__ keeps its answer on the way back to Claude Code", () => withOffice(async (base) => {
+  const viewer = await openOfficePage(base);
+  const questions = [{ question: "__proto__", header: "Odd", multiSelect: false, options: [{ label: "Yes", description: "" }] }];
+  const hook = postSigned(base, "/hooks/claude/question", { ...SESSION, hook_event_name: "PreToolUse", tool_name: "AskUserQuestion", tool_input: { questions } });
+  const request = await pendingRequest(base);
+
+  assert.equal((await post(`${base}/api/decisions/${request.id}`, { answers: { ["__proto__"]: "Yes" } })).status, 200);
+
+  assert.deepEqual(Object.entries((await hook).body.answers), [["__proto__", "Yes"]]);
+  viewer.abort();
+}));
+
 test("a question over 4 000 characters is not held and goes back to the terminal whole, without reaching the office state", { timeout: NO_VIEWER_TEST_TIMEOUT_MS }, () => withOffice(async (base) => {
   const viewer = await openOfficePage(base);
   const hugeQuestion = `Which one? ${"x".repeat(5_000)}`;
