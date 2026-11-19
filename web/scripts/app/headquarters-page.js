@@ -29,6 +29,7 @@ import { createPendingAlert } from "./pending-alert.js";
 const CENSUS_REFRESH_MS = 2_000;
 const ANNOUNCE_DELAY_MS = 100;
 const LOWERED_ALERT_GAP_PX = 8;
+const NOTICE_GAP_PX = 8;
 const DAY_REFRESH_MS = 30_000;
 const FOCUS_KEYS = ["project", "area", "frame"];
 const DOCKED_PANELS = {
@@ -135,6 +136,7 @@ export function createHeadquartersPage({ hud, headquarters, source, newSessionDi
     setHtml(notice, html);
     notice.hidden = html === "";
     notice.classList.toggle("is-blocking", state.mode === UNPAIRED_MODE);
+    placeNotice();
   }
 
   function renderRequestsButton() {
@@ -366,8 +368,17 @@ export function createHeadquartersPage({ hud, headquarters, source, newSessionDi
       : { top: "", left: `${placement.left}px`, width: `${placement.width}px`, translate: "none" });
   }
 
+  // Both live at the top centre; under a request the notice moves below it instead of hiding behind it.
+  function placeNotice() {
+    const alertElement = slot("alert");
+    const isUnderAlert = !notice.hidden && !alertElement.hidden && !phoneQuery.matches && state.mode !== UNPAIRED_MODE;
+    const alertBottom = alertElement.getBoundingClientRect().bottom - hud.getBoundingClientRect().top;
+    notice.style.top = isUnderAlert ? `${alertBottom + NOTICE_GAP_PX}px` : "";
+  }
+
   function fitMapBetweenPanels() {
     placeAlert();
+    placeNotice();
     if (!headquarters) return;
     const stage = headquarters.element.getBoundingClientRect();
     const panels = phoneQuery.matches ? PHONE_DOCKED_PANELS : DOCKED_PANELS;
