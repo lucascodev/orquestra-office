@@ -63,7 +63,7 @@ test("the history keeps both entries of a call that arrived out of order", () =>
   assert.deepEqual(history().map((entry) => entry.kind), ["error", "tool"]);
 });
 
-test("a PostToolUse of a call started before the turn ended does not bring the agent back to work", () => {
+test("a PostToolUse after the Stop keeps the break, since plain progress only ever clears needs_you", () => {
   const { send, agent } = office();
   send("UserPromptSubmit", { prompt: "go" });
   send("PreToolUse", { tool_use_id: "toolu_1", ...READ });
