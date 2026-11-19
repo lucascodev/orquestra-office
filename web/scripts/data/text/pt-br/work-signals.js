@@ -6,4 +6,11 @@ export const WORK_SIGNALS = {
     writing: "escrevendo teste",
     checklist: "{done}/{total}",
   },
+  legend: {
+    checklistSample: "4/7",
+    checklist: "checklist do agente",
+    testing: "rodando testes",
+    writing: "escrevendo",
+    results: "resultado dos testes",
+  },
 };

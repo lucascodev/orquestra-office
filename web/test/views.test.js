@@ -264,7 +264,7 @@ describe("headquarters island sheet", () => {
 });
 
 describe("headquarters legend", () => {
-  it("explains every status color in words", () => {
+  it("explains every status color and every mark of the tests and the checklist in words", () => {
     assertMatchesRecording("hq-legend", renderLegend());
   });
 });
