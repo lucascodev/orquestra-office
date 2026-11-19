@@ -161,7 +161,7 @@ describe("checklist, plan and tests in the demonstration", () => {
     assert.equal(agents["codex:b1"].checklist, undefined);
   });
 
-  it("notes approved plans and finished rounds in the log the timeline reads", () => {
+  it("notes approved plans and finished rounds in the agent's log, as the collector does", () => {
     const actions = agentsOf(demoState()).flatMap((agent) => agent.log.map((entry) => entry.actionId));
     for (const actionId of ["plan-approved", "tests-passed", "tests-failed"]) assert.ok(actions.includes(actionId), actionId);
   });

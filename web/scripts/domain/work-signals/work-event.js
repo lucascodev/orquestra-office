@@ -1,49 +1,37 @@
 import { WORK_MARKS } from "../../data/work-marks.js";
 import { WORK_SIGNALS } from "../../data/text/pt-br/work-signals.js";
-import { countOf } from "../shared/field-values.js";
-import { ownValueOf } from "../shared/own-value.js";
 import { countPhrase } from "../text/count-phrase.js";
 import { fillPhrase } from "../text/fill-phrase.js";
-import { lastTestRunOf, testRunsOfDay } from "../work-sheet/test-fields.js";
-
-// The log entry and the run it reports are written by the same hook, but not necessarily in the same millisecond.
-export const RUN_MATCH_MS = 5_000;
+import { planStatus } from "../work-sheet/plan-status.js";
+import { lastTestRunOf } from "../work-sheet/test-fields.js";
 
 const TEXT = WORK_SIGNALS.event;
+const APPROVED = "approved";
 
-function matchingRun(agent, entry, isOk) {
-  const lastRun = lastTestRunOf(agent?.tests);
-  const runsToday = testRunsOfDay(agent?.tests);
-  const runs = lastRun ? [lastRun, ...runsToday] : runsToday;
-  return runs.find((run) => run.isOk === isOk && run.finishedAt !== null && Math.abs(run.finishedAt - entry.at) <= RUN_MATCH_MS) ?? null;
-}
+const eventOf = (kind, at, text) => ({ kind, at, icon: WORK_MARKS[kind], text });
 
 function testsRunText(parts) {
   return fillPhrase(TEXT.testsRun, { result: parts.join(TEXT.resultSeparator) });
 }
 
-function failedText(entry, agent) {
-  const run = matchingRun(agent, entry, false);
-  const failed = countOf(entry.subject) ?? run?.failed ?? null;
-  const passed = run?.passed ?? 0;
-  return testsRunText(passed > 0 ? [countPhrase(TEXT.failed, failed), countPhrase(TEXT.passed, passed)] : [countPhrase(TEXT.failed, failed)]);
+function runText(run) {
+  if (run.isOk) return testsRunText([countPhrase(TEXT.passed, run.headlineCount)]);
+  const failed = countPhrase(TEXT.failed, run.headlineCount);
+  return testsRunText(run.passed > 0 ? [failed, countPhrase(TEXT.passed, run.passed)] : [failed]);
 }
 
-function passedText(entry, agent) {
-  const passed = countOf(entry.subject) ?? matchingRun(agent, entry, true)?.passed ?? null;
-  return testsRunText([countPhrase(TEXT.passed, passed)]);
+function lastRunEvent(agent) {
+  const run = lastTestRunOf(agent?.tests);
+  if (!run || run.finishedAt === null) return null;
+  return eventOf(run.isOk ? "tests-passed" : "tests-failed", run.finishedAt, runText(run));
 }
 
-const EVENT_TEXTS = {
-  "tests-failed": failedText,
-  "tests-passed": passedText,
-  "plan-approved": () => TEXT.planApproved,
-};
-
-// One line of the day's timeline from one entry of the agent's log, or null for the entries the timeline leaves out.
-// The number of the log entry wins; the run of the same moment adds what passed alongside what failed.
-export function workEventOf(entry, agent) {
-  const textOf = entry?.actionId ? ownValueOf(EVENT_TEXTS, entry.actionId) : undefined;
-  if (!textOf || !Number.isFinite(entry.at)) return null;
-  return { kind: entry.actionId, at: entry.at, icon: WORK_MARKS[entry.actionId], text: textOf(entry, agent) };
+function approvedPlanEvent(agent) {
+  const plan = planStatus(agent?.plan);
+  if (plan?.state !== APPROVED || plan.decidedAt === null) return null;
+  return eventOf("plan-approved", plan.decidedAt, TEXT.planApproved);
 }
+
+// The timeline's lines for one agent, read from its last test run and its approved plan, never from its log: the log keeps
+// only the last twenty actions, so a busy agent would push its own result out of it within a minute.
+export const workEventsOf = (agent) => [lastRunEvent(agent), approvedPlanEvent(agent)].filter(Boolean);
