@@ -82,6 +82,7 @@ export function createLiveBackend({ pairingCode = null, deviceLabel = "" } = {})
     decide: (requestId, body) => officeApi.decide(requestId, body),
     sendMessage: (agentKey, text, session) => (session ? runnerClient.send(session.id, text) : officeApi.sendMessage(agentKey, text)),
     loadHistory: (agent) => officeApi.loadHistory(agent.key),
+    loadPlan: (agent) => officeApi.loadPlan(agent.key),
     closeProject: (projectKey) => officeApi.closeProject(projectKey),
     openSession,
     watchTerminal: (agent, session, handlers) => runnerClient.watch(session.id, handlers),

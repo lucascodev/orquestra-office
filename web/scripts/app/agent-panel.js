@@ -5,6 +5,7 @@ import { renderPendingCard } from "../view/sheet/pending-request-view.js";
 import { renderEntries, renderHistory } from "../view/terminal/terminal-entries.js";
 import { submitDecision, toggleOption } from "./decision-form.js";
 import { createTerminalPane } from "./terminal-pane.js";
+import { createWorkTabs } from "./work-tabs.js";
 
 const MESSAGE_FAILED = "Não deu para enviar a mensagem.";
 const LIVE_STATUS = { starting: "abrindo a sessão…", working: "trabalhando…", idle: "aguardando sua mensagem", ended: "sessão encerrada" };
@@ -19,13 +20,14 @@ function queueStatus(queued) {
 
 // The agent's sheet, in the drawer over the map. The view draws it, onOpen and onClose place it on the page, and actions
 // answer the buttons a view adds with data-action.
-export function createAgentPanel({ sheet, control, view, onOpen = () => {}, onClose = () => {}, actions = {} }) {
+export function createAgentPanel({ sheet, control, view, clockNow = Date.now, onOpen = () => {}, onClose = () => {}, actions = {} }) {
   let agentKey = null;
   let isLive = false;
   let shownRequestId = null;
   let historyStamp = null;
   let terminal = null;
   let stopWatching = () => {};
+  const workTabs = createWorkTabs({ sheet, control, view, clockNow });
 
   const slot = (name) => sheet.querySelector(`[data-slot="${name}"]`);
 
@@ -34,6 +36,7 @@ export function createAgentPanel({ sheet, control, view, onOpen = () => {}, onCl
     const closedKey = agentKey;
     agentKey = null;
     stopWatching();
+    workTabs.close();
     sheet.hidden = true;
     onClose(closedKey);
   }
@@ -76,6 +79,7 @@ export function createAgentPanel({ sheet, control, view, onOpen = () => {}, onCl
     shownRequestId = null;
     historyStamp = null;
     sheet.innerHTML = view.shell(agent, { ...context, isLive });
+    workTabs.open(agent.key);
     terminal = createTerminalPane(sheet.querySelector("[data-pane]"));
     onOpen(agent);
     sheet.hidden = false;
@@ -97,6 +101,7 @@ export function createAgentPanel({ sheet, control, view, onOpen = () => {}, onCl
     slot("identity").innerHTML = view.identity(agent, context);
     slot("facts").innerHTML = view.facts(agent, context);
     showRequest(context.request, agent);
+    workTabs.render(agent);
     const status = sheet.querySelector(".composer-status");
     if (status && status.dataset.error !== "true") status.textContent = queueStatus(context.queued);
     if (isLive) {

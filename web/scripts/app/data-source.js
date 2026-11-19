@@ -42,6 +42,7 @@ export function createDataSource(onState) {
     decide: async (requestId, body) => backend.decide(requestId, body),
     sendMessage,
     loadHistory: async (agent) => backend.loadHistory(agent),
+    loadPlan: async (agent) => backend.loadPlan(agent),
     closeProject: async (projectKey) => backend.closeProject(projectKey),
     openSession: async (cwd, prompt) => backend.openSession(cwd, prompt),
     watchTerminal,

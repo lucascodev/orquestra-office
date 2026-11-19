@@ -5,7 +5,7 @@ import { createDemoBackend } from "../scripts/infra/backends/demo-backend.js";
 import { createLiveBackend } from "../scripts/infra/backends/live-backend.js";
 
 const BACKEND_METHODS = [
-  "closeProject", "decide", "interruptSession", "listDevices", "loadHistory", "openSession", "pairDevice", "revokeDevice", "sendMessage", "setTemplate",
+  "closeProject", "decide", "interruptSession", "listDevices", "loadHistory", "loadPlan", "openSession", "pairDevice", "revokeDevice", "sendMessage", "setTemplate",
   "start", "stopSession", "watchTerminal",
 ];
 const LIVE_SESSION = { id: "run-1", sessionId: "a1", cwd: "c:/demo", status: "working" };

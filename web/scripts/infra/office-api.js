@@ -41,6 +41,11 @@ export const officeApi = {
     const response = await fetch(`/api/agents/history?key=${encodeURIComponent(agentKey)}`, { cache: "no-store" });
     return response.ok ? (await response.json()).entries : [];
   },
+  async loadPlan(agentKey) {
+    const response = await fetch(`/api/agents/plan?key=${encodeURIComponent(agentKey)}`, { cache: "no-store" });
+    if (!response.ok) throw new Error(String(response.status));
+    return response.json();
+  },
   redeemPairing: (code, label) => postJson("/api/pairings/redeem", { code, label }),
   async pairDevice() {
     const response = await post("/api/pairings", {});

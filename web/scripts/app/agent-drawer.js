@@ -1,5 +1,13 @@
+import { checklistProgress } from "../domain/work-sheet/checklist-progress.js";
+import { planStatus } from "../domain/work-sheet/plan-status.js";
+import { testsOverview } from "../domain/work-sheet/tests-overview.js";
+import { hasWorkTabs } from "../domain/work-sheet/work-tabs.js";
 import { agentMark, originOf } from "../view/office/agent-badges.js";
 import { renderDrawerIdentity, renderDrawerShell, renderDrawerStatus } from "../view/sheet/agent-sheet-view.js";
+import { renderChecklistTab } from "../view/sheet/checklist-tab-view.js";
+import { renderPlanTab } from "../view/sheet/plan-tab-view.js";
+import { renderTestsTab } from "../view/sheet/tests-tab-view.js";
+import { renderWorkTabs } from "../view/sheet/work-tabs-view.js";
 import { createAgentPanel } from "./agent-panel.js";
 import { createIslandPanel } from "./island-panel.js";
 import { createPanelResizer } from "./panel-resizer.js";
@@ -11,11 +19,16 @@ const FOLLOW_ACTION = '[data-action="follow"]';
 const DRAWER_SHEET = {
   shell: (agent, context) => renderDrawerShell({
     agentName: agent.name, canReceiveMessages: context.canReceiveMessages, isLive: context.isLive, isFollowed: context.isFollowed,
+    hasWorkTabs: hasWorkTabs(agent),
   }),
   identity: (agent, context) => renderDrawerIdentity(agent, {
     mark: agentMark(agent), origin: originOf(agent), projectName: context.projectName, accountLabel: context.accountLabel,
   }),
   facts: (agent) => renderDrawerStatus(agent),
+  tabs: (tabs) => renderWorkTabs(tabs),
+  todos: (agent) => renderChecklistTab(checklistProgress(agent.checklist)),
+  plan: (agent, loaded) => renderPlanTab(planStatus(agent.plan), { text: loaded.text, loading: loaded.loading }),
+  tests: (agent) => renderTestsTab(testsOverview(agent.tests)),
 };
 
 const isFocusable = (element) => Boolean(element?.isConnected) && !element.closest("[hidden]") && element.getClientRects().length > 0;
@@ -27,7 +40,7 @@ const isKeepingDraft = (target) => Boolean(target.closest?.(TYPING_TARGETS)) && 
 // close button give the focus back to whoever opened it: the button pressed, the agent's tag on the map or the map itself.
 // A sheet opened from inside the other one keeps the first opener, since the button pressed leaves with the sheet it was on.
 // An opener may be a function that finds it again, for buttons in lists that are redrawn while the drawer is open.
-export function createAgentDrawer({ drawer, control, map, onResize, island }) {
+export function createAgentDrawer({ drawer, control, map, onResize, island, clockNow = Date.now }) {
   const sheet = drawer.querySelector('[data-slot="sheet"]');
   let returnTo = null;
   let isSwitching = false;
@@ -58,6 +71,7 @@ export function createAgentDrawer({ drawer, control, map, onResize, island }) {
     sheet,
     control,
     view: DRAWER_SHEET,
+    clockNow,
     onOpen: (agent) => show(`Ficha de ${agent.name}`),
     onClose: hide,
     actions: {
