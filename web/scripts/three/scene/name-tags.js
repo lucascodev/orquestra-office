@@ -1,7 +1,6 @@
 import { THREE } from "../kit.js";
 import { TAG_HEIGHT_ABOVE_HIP } from "../people/people.js";
 
-const NAMEPLATE_HEIGHT = 0.75;
 const VIEW_EDGE = 1;
 
 const anchor = new THREE.Vector3();
@@ -40,22 +39,6 @@ function createSignalLine() {
   const text = document.createElement("span");
   element.append(mark, text);
   return { element, mark, text };
-}
-
-export function placeNameplate(plate, { x, z, hipY }, camera) {
-  anchor.set(x, hipY + NAMEPLATE_HEIGHT, z);
-  const { left, top } = screenPositionOf(camera);
-  plate.style.left = left;
-  plate.style.top = top;
-}
-
-export function createNameplate(nameplate, camera) {
-  const plate = document.createElement("span");
-  plate.className = "name-tag reserved";
-  plate.textContent = nameplate.role;
-  plate.title = `Mesa de ${nameplate.role}: ninguém neste papel agora`;
-  placeNameplate(plate, nameplate, camera);
-  return plate;
 }
 
 export function headPositionOf(person, camera) {

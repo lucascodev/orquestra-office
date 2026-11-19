@@ -161,7 +161,7 @@ export function createHeadquartersRenderer({
     showIslands();
     const spots = headquartersSpots(layout);
     people.show({ layout, spots, routeFor: routesFor(), agents: agentsOf(projects), outbox }, performance.now() / 1000);
-    labels.show(layout, rig.camera);
+    labels.show(layout);
     isDirty = true;
   }
 
