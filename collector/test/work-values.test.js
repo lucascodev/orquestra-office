@@ -56,6 +56,21 @@ const secrets = [
   ["a Google API key", `key=${FAKE_GOOGLE_KEY}`, `key=${REDACTED}`],
   ["a private key block", `before\n${FAKE_PEM}\nafter`, `before\n${REDACTED}\nafter`],
   ["a private key block cut before its end", `key: ${FAKE_CUT_PEM}`, `key: ${REDACTED}`],
+  ["an OAuth answer", '{"access_token":"abc123","token_type":"bearer"}', `{"access_token":"${REDACTED}","token_type":"bearer"}`],
+  ["a client secret as a JSON key", '{"client_secret": "abc", "clientId": "x"}', `{"client_secret": "${REDACTED}", "clientId": "x"}`],
+  ["a camel case token as a JSON key", '"accessToken": "abc"', `"accessToken": "${REDACTED}"`],
+  ["an AWS credentials file line", "aws_secret_access_key = abcdEFGH", `aws_secret_access_key = ${REDACTED}`],
+  ["a YAML secret", "private_key: abc", `private_key: ${REDACTED}`],
+  ["a variable whose word is PWD", "MYSQL_PWD=abc mysql", `MYSQL_PWD=${REDACTED} mysql`],
+  ["a secret key flag", "--secret-key abc", `--secret-key ${REDACTED}`],
+  ["a short pass flag", "--pass abc", `--pass ${REDACTED}`],
+  ["a quoted password with spaces", '--password "a b c" next', `--password ${REDACTED} next`],
+  ["a quoted variable with spaces", 'PASSWORD="a b" npm test', `PASSWORD=${REDACTED} npm test`],
+  ["a secret after another assignment", "FOO=1;DB_PASS=abc", `FOO=1;DB_PASS=${REDACTED}`],
+  ["a PGP private key block", fake("-----BEGIN PGP PRIVATE ", "KEY BLOCK-----\nabc\n-----END PGP PRIVATE ", "KEY BLOCK-----"), REDACTED],
+  ["a URL with only a password", "redis://:abc@host", `redis://${REDACTED}@host`],
+  ["a token authorization header", "Authorization: Token abc", `Authorization: Token ${REDACTED}`],
+  ["a JWT with long parts", `jwt ${fake("eyJ", "a".repeat(5000), ".eyJ", "b".repeat(50), ".", "c".repeat(43))}`, `jwt ${REDACTED}`],
 ];
 
 for (const [what, text, expected] of secrets) {
@@ -74,6 +89,13 @@ const harmless = [
   "the --token-file flag reads the token from a file",
   "a basic test",
   '{"user": "x"}',
+  "## Basic\n\n- add login",
+  "Basic setup is done",
+  "tests passed: 3",
+  "max_tokens=100",
+  "token_count: 5",
+  "bypass=1",
+  "key: name",
 ];
 
 for (const text of harmless) {
@@ -102,6 +124,11 @@ const ADVERSARIAL_REDACTION_INPUTS = {
   "a password flag with no value": repeatedTo("--password "),
   "the start of a private key block": repeatedTo(fake("-----BEGIN ", "RSA ")),
   "basic with no credentials": repeatedTo("Basic "),
+  "JSON keys that never get a value": repeatedTo('"a": "'),
+  "assignments of harmless names": repeatedTo("a=b;"),
+  "flags without values": repeatedTo("-a "),
+  "an authorization header over and over": repeatedTo("Authorization: "),
+  "a quoted value that never closes": repeatedTo('PASSWORD="'),
 };
 
 function bestRedactionMs(text) {
