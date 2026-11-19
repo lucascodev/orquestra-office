@@ -201,7 +201,8 @@ const PHRASE_SETS = [
 ];
 
 const isFilledText = (text) => typeof text === "string" && text.trim() !== "";
-const isFilledPhrase = (phrase) => isFilledText(phrase) || (isFilledText(phrase?.withSubject) && isFilledText(phrase?.withoutSubject));
+const isCountedPhrase = (phrase) => ["one", "other", "unknown"].every((form) => isFilledText(phrase?.[form]));
+const isFilledPhrase = (phrase) => isFilledText(phrase) || (isFilledText(phrase?.withSubject) && isFilledText(phrase?.withoutSubject)) || isCountedPhrase(phrase);
 
 describe("ids the collector and the runner publish", () => {
   for (const { name, catalog, publishedIds } of PHRASE_SETS) {
@@ -223,14 +224,26 @@ describe("ids the collector and the runner publish", () => {
   });
 
   it("write the test and plan actions with and without their subject", () => {
-    const phrases = TESTS_AND_PLAN_ACTION_IDS.flatMap((actionId) => [agentActionText({ actionId, subject: "x" }), logEntryText({ at: 1, actionId, subject: null })]);
+    const subjects = { "running-tests": "vitest", "writing-tests": "a.test.js", "tests-passed": 2, "tests-failed": 2, "plan-approved": null };
+    const phrases = TESTS_AND_PLAN_ACTION_IDS.flatMap((actionId) => [
+      agentActionText({ actionId, subject: subjects[actionId] }), logEntryText({ at: 1, actionId, subject: null }),
+    ]);
     assert.deepEqual(phrases, [
-      "rodando os testes com x", "rodando os testes",
-      "escrevendo o teste x", "escrevendo um teste",
-      "rodou os testes: x passaram", "rodou os testes: todos passaram",
-      "rodou os testes: x falharam", "rodou os testes: houve falhas",
+      "rodando os testes com vitest", "rodando os testes",
+      "escrevendo o teste a.test.js", "escrevendo um teste",
+      "rodou os testes: 2 passaram", "rodou os testes: todos passaram",
+      "rodou os testes: 2 falharam", "rodou os testes: houve falhas",
       "teve o plano aprovado", "teve o plano aprovado",
     ]);
+  });
+
+  it("write a single test result in the singular, in the action and in the log", () => {
+    for (const write of [agentActionText, logEntryText]) {
+      assert.deepEqual(
+        [write({ actionId: "tests-passed", subject: 1 }), write({ actionId: "tests-failed", subject: 1 }), write({ actionId: "tests-passed", subject: 0 })],
+        ["rodou os testes: 1 passou", "rodou os testes: 1 falhou", "rodou os testes: 0 passaram"],
+      );
+    }
   });
 
   it("give every plan state the collector publishes a phrase in the Plano tab, and no state it does not publish", () => {
