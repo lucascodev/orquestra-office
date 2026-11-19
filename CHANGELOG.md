@@ -1,10 +1,14 @@
 # Changelog
 
-All notable changes to this project are documented in this file, following [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). The project has no released version yet, so everything is listed under `[Unreleased]`.
+All notable changes to this project are documented in this file, following [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 > **Português.** O changelog fica só em inglês, que é o padrão para quem acompanha as versões. Os termos seguem o [glossário](docs/glossary.md).
 
 ## [Unreleased]
+
+## [0.1.0] - 2026-11-19
+
+First public version.
 
 ### Added
 
@@ -56,4 +60,5 @@ All notable changes to this project are documented in this file, following [Keep
 - **Phase S of ADR 0002.** Whoever answers on port 8420 while the collector is stopped, another user on the machine or a remote `OFFICE_URL` can no longer decide permissions: `office-decision.mjs` signs the request with HMAC-SHA256, only accepts a signed reply bound to the nonce, and never returns `updatedPermissions`, `additionalContext` or `interrupt`. Every `/api/*` route requires a paired device, on `127.0.0.1` too, and an unpaired device on the network gets `401`. The agent can no longer approve its own requests with an allowed `curl`. The runner requires a token obtained with a challenge signed by the collector. `--rotate-secret` revokes devices, tokens and hooks at once.
 - **Landing page.** Its own content security policy on the pages and on the demo inside the iframe, and the build refuses to publish a page with the `OWNER` placeholder or to delete a folder it did not build.
 
-[Unreleased]: https://github.com/lucascodev/orquestra-office/commits/main
+[Unreleased]: https://github.com/lucascodev/orquestra-office/compare/v0.1.0...HEAD
+[0.1.0]: https://github.com/lucascodev/orquestra-office/releases/tag/v0.1.0
