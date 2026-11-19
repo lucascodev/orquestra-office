@@ -204,6 +204,19 @@ describe("checklist, plan and tests in the demonstration", () => {
     assert.deepEqual(nextVersionAfter("allow"), [2, "proposed"]);
   });
 
+  it("labels today's rounds with the command cut at 60 characters, as the collector does", () => {
+    const LABEL_LIMIT = 60;
+    const played = demoState();
+    for (let step = 0; step < 12; step += 1) tickDemo(played, step);
+    const tests = [...agentsOf(demoState()), ...agentsOf(played)].map((agent) => agent.tests).filter((value) => value?.runsToday?.length);
+    assert.ok(tests.length >= 3);
+    for (const { lastRun, runsToday } of tests) {
+      for (const run of runsToday) assert.ok(run.label.length <= LABEL_LIMIT, run.label);
+      assert.equal(runsToday.find((run) => run.finishedAt === lastRun.finishedAt).label, lastRun.command.slice(0, LABEL_LIMIT));
+    }
+    assert.ok(tests.flatMap(({ runsToday }) => runsToday).some((run) => run.label.length === LABEL_LIMIT), "one long command shows the cut");
+  });
+
   it("keeps the start of a running round across ticks, so the clock over the figure walks", () => {
     const state = demoState();
     const starts = [];
