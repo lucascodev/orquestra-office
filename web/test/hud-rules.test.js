@@ -10,7 +10,8 @@ import { dayTimeline } from "../scripts/domain/office/day-timeline.js";
 import { decisionForKey } from "../scripts/domain/office/decision-shortcuts.js";
 import { searchHeadquarters } from "../scripts/domain/office/headquarters-search.js";
 import { islandFacts } from "../scripts/domain/office/island-facts.js";
-import { movedCursor } from "../scripts/domain/office/option-cursor.js";
+import { movedCursor, TAB_KEYS } from "../scripts/domain/office/option-cursor.js";
+import { isDismissedByDrag } from "../scripts/domain/shared/drag-dismiss.js";
 import { searchEntries } from "../scripts/domain/office/search-entries.js";
 import { crossesWarning, newArrivals, pendingInFocus, requesterOf, serverClockNow } from "../scripts/domain/office/pending-queue.js";
 import { requestIntentText } from "../scripts/domain/office/request-intent-text.js";
@@ -453,6 +454,21 @@ describe("option cursor", () => {
     assert.equal(movedCursor({ count: 5, index: 2, key: "PageDown" }), 4);
     assert.equal(movedCursor({ count: 5, index: 2, key: "Enter" }), null);
     assert.equal(movedCursor({ count: 0, index: -1, key: "ArrowDown" }), null);
+  });
+
+  it("moves through tabs sideways with the arrows, Home and End", () => {
+    const tab = (index, key) => movedCursor({ count: 4, index, key, keys: TAB_KEYS });
+    assert.deepEqual([tab(0, "ArrowRight"), tab(3, "ArrowRight"), tab(0, "ArrowLeft"), tab(2, "Home"), tab(1, "End")], [1, 0, 3, 0, 3]);
+    assert.equal(tab(1, "ArrowDown"), null);
+  });
+});
+
+describe("bottom sheet drag", () => {
+  it("closes the sheet dragged down far enough, a quarter of its height or a fixed distance on a tall sheet", () => {
+    assert.equal(isDismissedByDrag({ distance: 50, sheetHeight: 400 }), false);
+    assert.equal(isDismissedByDrag({ distance: 100, sheetHeight: 400 }), true);
+    assert.equal(isDismissedByDrag({ distance: 120, sheetHeight: 1000 }), true);
+    assert.equal(isDismissedByDrag({ distance: -200, sheetHeight: 400 }), false);
   });
 });
 

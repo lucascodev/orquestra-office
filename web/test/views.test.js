@@ -19,7 +19,9 @@ import { renderAreaList } from "../scripts/view/hud/area-list-view.js";
 import { renderConnection } from "../scripts/view/hud/connection-view.js";
 import { renderDayTimeline } from "../scripts/view/hud/day-timeline-view.js";
 import { renderLegend } from "../scripts/view/hud/legend-view.js";
-import { arrivalsText, arrivalText, countdownText, renderAlertBody, renderAlertHead, warningText } from "../scripts/view/hud/pending-alert-view.js";
+import {
+  arrivalsText, arrivalText, countdownText, renderAlertBody, renderAlertHead, requestsButtonLabel, warningText,
+} from "../scripts/view/hud/pending-alert-view.js";
 import { renderPendingCard, renderPendingStrip } from "../scripts/view/sheet/pending-request-view.js";
 import { islandFacts } from "../scripts/domain/office/island-facts.js";
 import { followingStoppedText, renderCameraControls, renderFollowing } from "../scripts/view/hud/camera-controls-view.js";
@@ -448,5 +450,6 @@ describe("headquarters request alert", () => {
     assert.equal(arrivalText(null, "tem uma pergunta"), "Um agente tem uma pergunta.");
     assert.equal(arrivalsText([{ requester: vitor, intent: "quer rodar um comando" }, { requester: null, intent: "tem uma pergunta" }]), "2 pedidos novos. Vitor, em loja <online>, quer rodar um comando.");
     assert.equal(warningText(vitor), "Faltam 30 segundos para o pedido de Vitor voltar ao terminal.");
+    assert.deepEqual([0, 1, 3].map(requestsButtonLabel), ["Pedidos: nenhum esperando você", "Pedidos: 1 esperando você", "Pedidos: 3 esperando você"]);
   });
 });

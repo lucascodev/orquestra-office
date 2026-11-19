@@ -16,10 +16,12 @@ import { renderAreaList } from "../view/hud/area-list-view.js";
 import { followingStoppedText, renderCameraControls, renderFollowing } from "../view/hud/camera-controls-view.js";
 import { renderConnection } from "../view/hud/connection-view.js";
 import { renderDayTimeline } from "../view/hud/day-timeline-view.js";
+import { requestsButtonLabel } from "../view/hud/pending-alert-view.js";
 import { renderLegend } from "../view/hud/legend-view.js";
 import { createAgentDrawer } from "./agent-drawer.js";
 import { createCommandPalette } from "./command-palette.js";
 import { createMinimap } from "./minimap.js";
+import { createMobileSheet } from "./mobile-sheet.js";
 import { createPendingAlert } from "./pending-alert.js";
 
 const CENSUS_REFRESH_MS = 2_000;
@@ -33,6 +35,13 @@ const DOCKED_PANELS = {
   top: [".hq-capsule", ".hq-search-button", ".hq-alert", ".hq-accounts"],
   bottom: [".hq-day", ".hq-camera"],
 };
+// On a phone only the top bar and the request card stay over the map; the drawer and the open sheet cover it whole.
+const PHONE_DOCKED_PANELS = {
+  top: [".hq-capsule"],
+  bottom: [".hq-alert", ".hq-sheet-toggle"],
+};
+const PHONE_QUERY = "(max-width: 719px)";
+const FLOATING_PANELS = ".hq-panel, .hq-alert, .hq-sheet-panel";
 const EMPTY_STATE = {
   mode: "connecting", projects: {}, pending: [], outbox: {}, usage: null, accounts: null, timeline: null, generatedAt: null,
   runner: { isAvailable: false, liveAgents: {} },
@@ -66,6 +75,8 @@ export function createHeadquartersPage({ hud, headquarters, source, newSessionDi
   const rooms = slot("rooms");
   const newSessionButton = hud.querySelector("[data-new-session]");
   const runnerOff = hud.querySelector("[data-runner-off]");
+  const requestsButton = hud.querySelector("[data-requests]");
+  const phoneQuery = window.matchMedia(PHONE_QUERY);
   const renderedHtml = new WeakMap();
   let state = EMPTY_STATE;
   let receivedAt = null;
@@ -106,8 +117,16 @@ export function createHeadquartersPage({ hud, headquarters, source, newSessionDi
     setHtml(slot("day"), renderDayTimeline(dayTimeline(state.timeline, { now, dayStart: startOfDay(now) })));
   }
 
+  function renderRequestsButton() {
+    const count = state.pending.length;
+    requestsButton.querySelector("[data-requests-count]").textContent = String(count);
+    requestsButton.setAttribute("aria-label", requestsButtonLabel(count));
+    requestsButton.setAttribute("aria-disabled", String(count === 0));
+  }
+
   function render() {
     setHtml(slot("connection"), renderConnection(state.mode));
+    renderRequestsButton();
     setHtml(slot("accounts"), renderAccounts(accountUsage(state)));
     newSessionButton.hidden = !state.runner.isAvailable;
     runnerOff.hidden = state.mode !== "live" || state.runner.isAvailable;
@@ -222,6 +241,7 @@ export function createHeadquartersPage({ hud, headquarters, source, newSessionDi
     if (room.kind === "whole") focusedProjectKey = null;
     renderRooms();
     if (room.kind === "project") openIsland(room.id, opener ?? (() => rooms.querySelector(roomSelectorOf(room))));
+    else mobileSheet.close();
     frameRoom(room);
   }
 
@@ -306,9 +326,14 @@ export function createHeadquartersPage({ hud, headquarters, source, newSessionDi
   }
 
   // Placed from the brand and the accounts alone, which never move with it, so this never flips back and forth.
+  // On a phone the style sheet keeps it as a card at the bottom.
   function placeAlert() {
     const alertElement = slot("alert");
     if (alertElement.hidden) return;
+    if (phoneQuery.matches) {
+      Object.assign(alertElement.style, { top: "", left: "", width: "", translate: "" });
+      return;
+    }
     const [capsule = null] = visibleRectsOf([".hq-capsule"]);
     const [besideAccounts = null] = visibleRectsOf([".hq-accounts"]);
     const accounts = besideAccounts && capsule && besideAccounts.top < capsule.bottom ? besideAccounts : null;
@@ -323,7 +348,8 @@ export function createHeadquartersPage({ hud, headquarters, source, newSessionDi
     placeAlert();
     if (!headquarters) return;
     const stage = headquarters.element.getBoundingClientRect();
-    const docked = Object.fromEntries(Object.entries(DOCKED_PANELS).map(([edge, selectors]) => [edge, visibleRectsOf(selectors)]));
+    const panels = phoneQuery.matches ? PHONE_DOCKED_PANELS : DOCKED_PANELS;
+    const docked = Object.fromEntries(Object.entries(panels).map(([edge, selectors]) => [edge, visibleRectsOf(selectors)]));
     headquarters.setFrameInsets(insetsAroundPanels({ width: stage.width, height: stage.height }, docked));
   }
 
@@ -347,11 +373,18 @@ export function createHeadquartersPage({ hud, headquarters, source, newSessionDi
   });
   newSessionButton.addEventListener("click", () => newSessionDialog.show(suggestedFolder()));
   hud.querySelector("[data-open-search]").addEventListener("click", palette.open);
+  const mobileSheet = createMobileSheet({ hud, phoneQuery, onChange: () => fitMapBetweenPanels() });
+  requestsButton.addEventListener("click", () => {
+    const alertElement = slot("alert");
+    if (alertElement.hidden) return;
+    mobileSheet.close();
+    alertElement.focus();
+  });
   if (isApplePlatform()) hud.querySelector("[data-search-keys]").textContent = APPLE_SEARCH_KEYS;
 
   setHtml(slot("legend"), renderLegend());
   const panelWatcher = new ResizeObserver(fitMapBetweenPanels);
-  for (const element of [hud, ...hud.querySelectorAll(".hq-panel, .hq-alert")]) panelWatcher.observe(element);
+  for (const element of [hud, ...hud.querySelectorAll(FLOATING_PANELS)]) panelWatcher.observe(element);
   setInterval(renderRooms, CENSUS_REFRESH_MS);
   setInterval(renderDay, DAY_REFRESH_MS);
   render();
