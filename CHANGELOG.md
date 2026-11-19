@@ -6,6 +6,10 @@ All notable changes to this project are documented in this file, following [Keep
 
 ## [Unreleased]
 
+### Changed
+
+- **Codex with another `notify`.** The Codex installer no longer gives up when `config.toml` already has a `notify`, such as the Codex app's for computer use: it chains it, so `hooks/office-codex-notify.mjs` reports the turn to the office and then hands it to your command, and `--remove` gives your command back.
+
 ## [0.1.0] - 2026-11-19
 
 First public version.
