@@ -21,9 +21,12 @@ export function createDevicesDialog({ dialog, control }) {
 
   pairButton.addEventListener("click", async () => {
     pairButton.disabled = true;
-    pairing.innerHTML = renderPairingCode(await control.pairDevice());
-    pairing.hidden = false;
-    pairButton.disabled = false;
+    try {
+      pairing.innerHTML = renderPairingCode(await control.pairDevice());
+      pairing.hidden = false;
+    } finally {
+      pairButton.disabled = false;
+    }
   });
 
   list.addEventListener("click", async (event) => {
