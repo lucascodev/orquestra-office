@@ -45,6 +45,7 @@ const headquarters = createHeadquartersRenderer({
   onPickIsland: (projectKey) => page.openIslandFromMap(projectKey),
   onFollowChange: (key) => page.showFollowing(key),
   onManualMove: () => page.cameraMovedByHand(),
+  onView: (view) => page.showView(view),
 });
 if (headquarters) office.prepend(headquarters.element);
 else office.textContent = NO_WEBGL;

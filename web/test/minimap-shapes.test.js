@@ -1,9 +1,11 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import { HEADQUARTERS_PALETTE } from "../scripts/data/headquarters-palette.js";
-import { frameBounds, zoomAt } from "../scripts/domain/camera/viewpoint.js";
+import { centerBetweenPanels, frameBounds, zoomAt } from "../scripts/domain/camera/viewpoint.js";
 import { layoutHeadquarters } from "../scripts/domain/headquarters/headquarters-layout.js";
-import { cameraFootprint, fromMinimap, MINIMAP_SIZE, minimapShapes, toMinimap } from "../scripts/domain/headquarters/minimap-shapes.js";
+import {
+  cameraFootprint, fromMinimap, MINIMAP_SIZE, minimapFootprint, minimapShapes, toMinimap,
+} from "../scripts/domain/headquarters/minimap-shapes.js";
 
 const NOW = 1_800_000_000_000;
 const VIEWPORT = { width: 1440, height: 900 };
@@ -76,6 +78,25 @@ describe("camera footprint on the ground", () => {
     for (const x of [bounds.minX, bounds.maxX]) for (const z of [bounds.minZ, bounds.maxZ]) assert.ok(isInsidePolygon(inPixels, { x, y: z }), `${x},${z}`);
     const center = footprint.reduce((sum, point) => ({ x: sum.x + point.x / 4, z: sum.z + point.z / 4 }), { x: 0, z: 0 });
     assert.ok(Math.abs(center.x - whole.target.x) < 1e-9 && Math.abs(center.z - whole.target.z) < 1e-9);
+  });
+
+  it("covers only what the panels leave free, centered where a click on the minimap brings the camera", () => {
+    const insets = { left: 252, right: 16, top: 158, bottom: 156 };
+    const point = { x: 12, z: 7 };
+    const viewpoint = { target: centerBetweenPanels({ point, scale: whole.scale * 2, viewport: VIEWPORT, insets }), scale: whole.scale * 2 };
+    const footprint = cameraFootprint(viewpoint, VIEWPORT, insets);
+    const center = footprint.reduce((sum, corner) => ({ x: sum.x + corner.x / 4, z: sum.z + corner.z / 4 }), { x: 0, z: 0 });
+    assert.ok(Math.abs(center.x - point.x) < 1e-9 && Math.abs(center.z - point.z) < 1e-9);
+    const free = areaOf(footprint.map(({ x, z }) => ({ x, y: z })));
+    const full = areaOf(cameraFootprint(viewpoint, VIEWPORT).map(({ x, z }) => ({ x, y: z })));
+    const freeShare = ((VIEWPORT.width - 268) * (VIEWPORT.height - 314)) / (VIEWPORT.width * VIEWPORT.height);
+    assert.ok(Math.abs(free / full - freeShare) < 1e-9);
+  });
+
+  it("is drawn on the minimap in its pixels", () => {
+    const { frame } = minimapShapes(layout);
+    const onMinimap = minimapFootprint(frame, whole, VIEWPORT);
+    assert.deepEqual(onMinimap, cameraFootprint(whole, VIEWPORT).map((corner) => toMinimap(frame, corner)));
   });
 
   it("shrinks to a quarter of the ground when the camera comes twice as close", () => {

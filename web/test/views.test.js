@@ -22,6 +22,7 @@ import { renderLegend } from "../scripts/view/hud/legend-view.js";
 import { arrivalsText, arrivalText, countdownText, renderAlertBody, renderAlertHead, warningText } from "../scripts/view/hud/pending-alert-view.js";
 import { renderPendingCard, renderPendingStrip } from "../scripts/view/sheet/pending-request-view.js";
 import { islandFacts } from "../scripts/domain/office/island-facts.js";
+import { followingStoppedText, renderCameraControls, renderFollowing } from "../scripts/view/hud/camera-controls-view.js";
 import { renderIslandDay, renderIslandIdentity, renderIslandShell, renderIslandTeam } from "../scripts/view/sheet/island-sheet-view.js";
 
 // ago(), clockTime() and resetTime() print in the machine's time zone; the recorded pages are in UTC.
@@ -306,6 +307,17 @@ describe("headquarters room list", () => {
     assert.deepEqual(currentOf(renderAreaList(census, { kind: "project", id: "c:/orquestra" })), ["project:c:/orquestra"]);
     assert.deepEqual(currentOf(renderAreaList(census, { kind: "area", id: "pantry" })), ["area:pantry"]);
     assert.deepEqual(currentOf(renderAreaList(census, null)), []);
+  });
+});
+
+describe("headquarters camera controls", () => {
+  it("has the minimap hidden from screen readers, zoom in and out, framing the whole building and room to say who is followed", () => {
+    assertMatchesRecording("hq-camera", renderCameraControls());
+  });
+
+  it("says who the camera follows, with a button to stop, and announces when it stops", () => {
+    assertMatchesRecording("hq-camera-following", renderFollowing("Heitor <dev>"));
+    assert.equal(followingStoppedText("Heitor"), "A câmera parou de seguir Heitor.");
   });
 });
 

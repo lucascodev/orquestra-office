@@ -11,10 +11,12 @@ import { islandFacts } from "../domain/office/island-facts.js";
 import { serverClockNow } from "../domain/office/pending-queue.js";
 import { renderAccounts } from "../view/hud/accounts-view.js";
 import { renderAreaList } from "../view/hud/area-list-view.js";
+import { followingStoppedText, renderCameraControls, renderFollowing } from "../view/hud/camera-controls-view.js";
 import { renderConnection } from "../view/hud/connection-view.js";
 import { renderDayTimeline } from "../view/hud/day-timeline-view.js";
 import { renderLegend } from "../view/hud/legend-view.js";
 import { createAgentDrawer } from "./agent-drawer.js";
+import { createMinimap } from "./minimap.js";
 import { createPendingAlert } from "./pending-alert.js";
 
 const CENSUS_REFRESH_MS = 2_000;
@@ -226,7 +228,28 @@ export function createHeadquartersPage({ hud, headquarters, source, newSessionDi
     in: () => headquarters?.zoomAtCenter(KEY_ZOOM_FACTOR),
     out: () => headquarters?.zoomAtCenter(1 / KEY_ZOOM_FACTOR),
     whole: () => goToRoom(WHOLE_ROOM),
+    unfollow: () => headquarters?.stopFollowing(),
   };
+
+  const cameraPanel = slot("camera");
+  cameraPanel.innerHTML = renderCameraControls();
+  const following = cameraPanel.querySelector('[data-slot="following"]');
+  const minimap = createMinimap({ canvas: cameraPanel.querySelector("[data-minimap]"), onPick: (point) => headquarters?.centerOn(point) });
+  let followedName = null;
+
+  // Says who the camera follows next to its buttons, and out loud when it stops, since a drag or a room button ends it.
+  function showFollowing(followedKey) {
+    drawer.showFollowing(followedKey);
+    if (followedKey) cameraMovedByHand();
+    const name =followedKey ? findAgent(followedKey)?.agent.name ?? null : null;
+    if (name === followedName) return;
+    if (!name && followedName) announce(followingStoppedText(followedName));
+    followedName = name;
+    const hadFocus = following.contains(document.activeElement);
+    following.innerHTML = name ? renderFollowing(name) : "";
+    following.hidden = !name;
+    if (hadFocus) headquarters?.element.focus();
+  }
 
   function visibleRectsOf(selectors) {
     return selectors.map((selector) => hud.querySelector(selector))
@@ -270,7 +293,7 @@ export function createHeadquartersPage({ hud, headquarters, source, newSessionDi
     const button = event.target.closest("[data-project], [data-area], [data-frame]");
     if (button) goToRoom(roomOfButton(button));
   });
-  hud.querySelector(".hq-camera").addEventListener("click", (event) => {
+  cameraPanel.addEventListener("click", (event) => {
     const button = event.target.closest("[data-camera]");
     if (button) CAMERA_ACTIONS[button.dataset.camera]?.();
   });
@@ -284,7 +307,7 @@ export function createHeadquartersPage({ hud, headquarters, source, newSessionDi
   render();
 
   return {
-    receive, awaitAgent, openAgentFromMap, showFollowing: (followedKey) => drawer.showFollowing(followedKey),
+    receive, awaitAgent, openAgentFromMap, showFollowing, showView: minimap.draw,
     openIslandFromMap: (projectKey) => goToRoom({ kind: "project", id: projectKey }, headquarters?.element),
     cameraMovedByHand, refitMap: fitMapBetweenPanels, clockNow, state: () => state,
   };

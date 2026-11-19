@@ -60,7 +60,7 @@ const islandPiece = (island) => batchStatic(buildIsland(new THREE.Group(), islan
 // theme, occupants or screens change, and the people on top, who live through every rebuild.
 // While measuring, each frame waits for the GPU to finish, so the time read is the whole frame and not only the commands sent.
 export function createHeadquartersRenderer({
-  onFrame = () => {}, onPick = () => {}, onPickIsland = () => {}, onFollowChange = () => {}, onManualMove = () => {},
+  onFrame = () => {}, onPick = () => {}, onPickIsland = () => {}, onFollowChange = () => {}, onManualMove = () => {}, onView = () => {},
   describeStatus = (status) => status, isMeasuring = false,
 } = {}) {
   const stage = document.createElement("div");
@@ -209,9 +209,17 @@ export function createHeadquartersRenderer({
       rig.retarget(target);
       return;
     }
-    const current = rig.viewpoint().target;
-    if (Math.hypot(current.x - target.x, current.z - target.z) < FOLLOW_STILL) return;
-    rig.jumpTo({ ...rig.viewpoint(), target });
+    const current = rig.viewpoint();
+    const isStill = Math.hypot(current.target.x - target.x, current.target.z - target.z) < FOLLOW_STILL && current.scale === followScale;
+    if (isStill) return;
+    rig.jumpTo({ target, scale: followScale });
+    isDirty = true;
+  }
+
+  // Zooming keeps following, around the agent; only moving the camera away stops it.
+  function zoomFollowing(factor) {
+    const { min, max } = rig.limits();
+    followScale = Math.min(max, Math.max(min, followScale * factor));
     isDirty = true;
   }
 
@@ -239,6 +247,7 @@ export function createHeadquartersRenderer({
     people.follow(rig.camera, now / 1000, scale);
     labels.place(rig.camera, areaLabelDetail(scale));
     renderer.render(scene, rig.camera);
+    onView({ layout, viewpoint: rig.viewpoint(), viewport: rig.viewport(), insets: rig.insets() });
     if (isMeasuring) renderer.getContext().finish();
     onFrame({ calls: renderer.info.render.calls, triangles: renderer.info.render.triangles, scale, at: now, workMs: performance.now() - workStart });
   }
@@ -268,7 +277,16 @@ export function createHeadquartersRenderer({
   }
 
   const center = () => ({ x: rig.viewport().width / 2, y: rig.viewport().height / 2 });
-  const zoomBy = (factor, at) => moveCamera((viewpoint) => zoomAt(viewpoint, { factor, at, viewport: rig.viewport(), limits: rig.limits() }));
+
+  function zoomBy(factor, at) {
+    if (followedKey) {
+      zoomFollowing(factor);
+      return;
+    }
+    moveCamera((viewpoint) => zoomAt(viewpoint, { factor, at, viewport: rig.viewport(), limits: rig.limits() }));
+  }
+
+  const centerOn = (point) => moveCamera(({ scale }) => ({ target: centerBetweenPanels({ point, scale, viewport: rig.viewport(), insets: rig.insets() }), scale }));
 
   const zoomAtCenter = (factor) => zoomBy(factor, center());
 
@@ -319,7 +337,7 @@ export function createHeadquartersRenderer({
   const invalidate = () => { isDirty = true; };
 
   return {
-    element: stage, show, resize, invalidate, follow, stopFollowing, scene, rig, frame, frameWhole, zoomAtCenter, setFrameInsets,
+    element: stage, show, resize, invalidate, follow, stopFollowing, scene, rig, frame, frameWhole, zoomAtCenter, centerOn, setFrameInsets,
     layoutShown: () => layout, followedKey: () => followedKey, destinations: () => people.destinations(), tagOf: (key) => people.tagOf(key),
   };
 }
