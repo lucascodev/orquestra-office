@@ -167,7 +167,7 @@ Para usar no celular, pareie o aparelho pelo QR (**Aparelhos**, **Parear aparelh
 - O modo rede é HTTP: quem escuta o tráfego da rede consegue copiar o cookie de um aparelho pareado. Só ligue em rede em que você confia.
 - Só páginas pareadas contam como espectador; uma página qualquer aberta na rede não segura pedidos de permissão longe do terminal.
 - Se o IP da máquina mudar, atualize `OFFICE_LAN_IP` no `.env` e suba de novo.
-- O executor continua só em `127.0.0.1`. "Abrir sessão…", terminal ao vivo, interromper e encerrar não funcionam pelo celular.
+- O executor continua só em `127.0.0.1`. "Nova sessão", terminal ao vivo, interromper e encerrar não funcionam pelo celular.
 
 ## Instalar
 
@@ -188,7 +188,7 @@ Depois de atualizar esta pasta, rode de novo os dois instaladores e `docker comp
 
 Os hooks antigos do tipo `http` deixam de valer: o coletor novo responde a eles sem efeito, e a página avisa "Há hooks de uma versão antiga neste computador". O aviso some 10 minutos depois do último pedido de um hook antigo. Para migrar:
 
-1. Rode `node hooks/install-claude-hooks.mjs` uma vez para cada pasta de configuração do Claude Code que você usa (com `CLAUDE_CONFIG_DIR` apontando para ela) e `node hooks/install-codex-notify.mjs`. O instalador troca as entradas `http` pelas novas, cria o segredo e avisa que migrou.
+1. Rode `node hooks/install-claude-hooks.mjs` uma vez para cada pasta de configuração do Claude Code que você usa (com `CLAUDE_CONFIG_DIR` apontando para ela) e `node hooks/install-codex-notify.mjs`. O instalador troca as entradas `http` pelas novas, cria o segredo e avisa que migrou. Se já existe um `~/.orquestra-office/secret` que você não criou com o instalador, ou de que não tem certeza de onde veio, rode o primeiro instalador com `--rotate-secret`: ele troca a chave por uma nova antes de o coletor passar a usá-la.
 2. Reconstrua o coletor com `docker compose up -d --build`. Ele lê o segredo de `~/.orquestra-office/secret`; se o arquivo não existir, rode o instalador antes.
 3. Rode `node hooks/open-office.mjs` para parear o navegador. Pareie o celular pelo QR em **Aparelhos**.
 4. Reinicie o executor, se você usa: `node runner/src/main.js`.
