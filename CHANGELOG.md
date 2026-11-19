@@ -8,6 +8,7 @@ All notable changes to this project are documented in this file, following [Keep
 
 ### Added
 
+- **Today's timeline from the collector.** The Today (Hoje) panel shows, hour by hour, how long agents worked, how long someone waited for you, the requests that came in and the cost, with the day's totals. The collector keeps 48 hours of these totals on disk, with no text. Until now only demo mode had them.
 - **Checklist, plan and tests in the agent sheet.** The sheet has four tabs: Now (Agora), Tasks (Tarefas), Plan (Plano) and Tests (Testes). Tasks shows the agent's checklist and its count, Plan the latest version of the plan with its state, and Tests the run in progress, the last run with up to 10 failures by name, today's runs and the session's test files. The Tests tab gets a red dot when the last run failed. Claude Code only: Codex does not report any of it.
 - **Test runs in any language.** The collector recognizes test commands (jest, vitest, mocha, `node --test`, playwright, pytest, `go test`, `cargo test`, `dotnet test`, maven, gradle, rspec, phpunit, `mix test` and others), reads the summary of 15 frameworks from the output and spots test files by their names. Without a summary it knows, the exit code decides whether the run passed.
 - **Plan approval in the permission alert.** The alert shows the plan the agent wants to carry out, with Approve plan (Aprovar plano), by click only, and Keep planning (Continuar planejando), which sends what you wrote to the agent.
