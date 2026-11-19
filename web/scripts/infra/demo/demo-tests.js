@@ -23,14 +23,14 @@ const todayRun = (finishedAt, label, framework, counts) => ({ finishedAt, framew
 // An agent on the main project that already ran its suite and has not touched a test in a while.
 export function testsDoneLongAgo(now) {
   const lastRun = {
-    command: HOOKS_COMMAND, framework: "node:test", startedAt: now - 19 * MIN, finishedAt: now - 19 * MIN + 4_100, durationMs: 4_100,
+    command: HOOKS_COMMAND, framework: "node-test", startedAt: now - 19 * MIN, finishedAt: now - 19 * MIN + 4_100, durationMs: 4_100,
     isOk: true, passed: 242, failed: 0, skipped: 0, failures: [],
   };
   return {
     running: null,
     lastRun,
     runsToday: [
-      todayRun(lastRun.finishedAt, "hooks · node --test", "node:test", { isOk: true, passed: 242, failed: 0, skipped: 0 }),
+      todayRun(lastRun.finishedAt, "hooks · node --test", "node-test", { isOk: true, passed: 242, failed: 0, skipped: 0 }),
       todayRun(now - 70 * MIN, "web · npm run check", null, { isOk: true, passed: 461, failed: 0, skipped: 0 }),
       todayRun(now - 95 * MIN, "api · pytest", "pytest", { isOk: true, passed: 290, failed: 0, skipped: 3 }),
     ],
@@ -46,14 +46,14 @@ export function testsDoneLongAgo(now) {
 // An agent whose last round failed and stays failed until it runs again, with an exit code and no counts in one older round.
 export function testsThatFailed(now) {
   const lastRun = {
-    command: HOOKS_COMMAND, framework: "node:test", startedAt: now - 6 * MIN, finishedAt: now - 6 * MIN + 4_100, durationMs: 4_100,
+    command: HOOKS_COMMAND, framework: "node-test", startedAt: now - 6 * MIN, finishedAt: now - 6 * MIN + 4_100, durationMs: 4_100,
     isOk: false, passed: 248, failed: 2, skipped: 7, failures: HOOKS_FAILURES,
   };
   return {
     running: null,
     lastRun,
     runsToday: [
-      todayRun(lastRun.finishedAt, "hooks · node --test", "node:test", { isOk: false, passed: 248, failed: 2, skipped: 7 }),
+      todayRun(lastRun.finishedAt, "hooks · node --test", "node-test", { isOk: false, passed: 248, failed: 2, skipped: 7 }),
       todayRun(now - 40 * MIN, "make test", null, { isOk: false, passed: null, failed: null, skipped: null }),
     ],
     files: [
