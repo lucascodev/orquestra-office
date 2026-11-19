@@ -1,7 +1,7 @@
 import { crossesWarning, newArrivals, pendingInFocus, requesterOf } from "../domain/office/pending-queue.js";
 import { requestIntentText } from "../domain/office/request-intent-text.js";
 import { arrivalsText, arrivalText, countdownText, renderAlertBody, renderAlertHead, warningText } from "../view/hud/pending-alert-view.js";
-import { submitDecision, toggleOption } from "./decision-form.js";
+import { submitDecision } from "./decision-form.js";
 import { listenForDecisionKeys } from "./keyboard-shortcuts.js";
 
 const COUNTDOWN_TICK_MS = 1_000;
@@ -10,8 +10,8 @@ const SHORTCUT_GRACE_MS = 700;
 const NEXT_REQUEST = "Próximo pedido:";
 
 // The most urgent request floats over the map; the head (who, 1 of N, time left) and the body (command or question) are redrawn
-// apart, so the counter can change without wiping an answer being typed.
-export function createPendingAlert({ element, announce, control, clockNow, onLeave }) {
+// apart, so the counter can change without moving the focus. A question is answered in the drawer of the agent who asks.
+export function createPendingAlert({ element, announce, control, clockNow, onLeave, onOpenAgent }) {
   const head = element.querySelector('[data-part="head"]');
   const body = element.querySelector('[data-part="body"]');
   let pending = [];
@@ -45,12 +45,12 @@ export function createPendingAlert({ element, announce, control, clockNow, onLea
     (stepButton ?? element).focus();
   }
 
-  function showBody(request, about) {
+  function showBody(request) {
     if (request.id === bodyId) return;
     const hadFocus = body.contains(document.activeElement);
     bodyId = request.id;
     lastRemaining = null;
-    body.innerHTML = renderAlertBody(request, about.requester);
+    body.innerHTML = renderAlertBody(request);
     shortcutsFrom = Date.now() + SHORTCUT_GRACE_MS;
     if (hadFocus) element.focus();
   }
@@ -77,7 +77,7 @@ export function createPendingAlert({ element, announce, control, clockNow, onLea
     shownId = focus.request.id;
     element.hidden = false;
     showHead(focus, about);
-    showBody(focus.request, about);
+    showBody(focus.request);
     showCountdown(focus.remainingMs, about);
   }
 
@@ -101,14 +101,6 @@ export function createPendingAlert({ element, announce, control, clockNow, onLea
     if (button && !button.disabled) button.click();
   }
 
-  function toggleQuestion(button) {
-    const panel = body.querySelector(`#${CSS.escape(button.getAttribute("aria-controls"))}`);
-    const isOpen = button.getAttribute("aria-expanded") === "true";
-    button.setAttribute("aria-expanded", String(!isOpen));
-    panel.hidden = isOpen;
-    if (!isOpen) panel.querySelector("[data-option], input")?.focus();
-  }
-
   function step(direction) {
     const focus = focusNow();
     shownId = (direction === "next" ? focus?.nextId : focus?.previousId) ?? shownId;
@@ -118,10 +110,8 @@ export function createPendingAlert({ element, announce, control, clockNow, onLea
   element.addEventListener("click", (event) => {
     const stepButton = event.target.closest("[data-step]");
     if (stepButton) return step(stepButton.dataset.step);
-    const expand = event.target.closest("[data-expand]");
-    if (expand) return toggleQuestion(expand);
-    const option = event.target.closest("[data-option]");
-    if (option) return toggleOption(option);
+    const openAgent = event.target.closest("[data-open-agent]");
+    if (openAgent) return onOpenAgent(openAgent.dataset.openAgent, openAgent);
     const decide = event.target.closest("[data-decide]");
     if (decide) return submitDecision(control, decide.closest("[data-pending]"), decide.dataset.decide);
     return undefined;

@@ -45,16 +45,23 @@ export function createEmote(parent) {
   sprite.visible = false;
   parent.add(sprite);
   let drawn = "";
+  let isWanted = false;
+  let isMuted = false;
 
   return {
     sprite,
     show(name, frame) {
-      sprite.visible = Boolean(name && ICONS[name]);
+      isWanted = Boolean(name && ICONS[name]);
+      sprite.visible = isWanted && !isMuted;
       const key = `${name}|${frame}`;
-      if (!sprite.visible || key === drawn) return;
+      if (!isWanted || key === drawn) return;
       drawn = key;
       drawEmote(canvas, name, frame);
       texture.needsUpdate = true;
+    },
+    mute(shouldMute) {
+      isMuted = shouldMute;
+      sprite.visible = isWanted && !isMuted;
     },
     dispose() {
       texture.dispose();

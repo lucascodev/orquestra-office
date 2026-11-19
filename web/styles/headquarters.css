@@ -24,6 +24,7 @@
 .name-tag[data-detail="dot"]:is(:hover, :focus-visible) > span { display: grid; }
 .name-tag[data-detail="name"]:is(:hover, :focus-visible) small { display: block; }
 .name-tag.is-figurant[data-detail="dot"] { display: none; }
+.hq-tags .thought.is-compact { --thought-lift: 18px; padding: 0 5px 1px; font-size: 10px; line-height: 1.1; }
 .hq-labels[data-detail="compact"] :is(.area-label.is-area, .area-label.is-free-island, .area-label-detail, .name-tag.reserved) { display: none; }
 .hq-labels[data-detail="compact"] .area-label { padding: 0 4px; font-size: 9px; opacity: 0.85; }
 
@@ -122,10 +123,39 @@
 .hq-alert-summary { margin: 0; color: var(--muted); font-size: 12px; }
 .hq-alert kbd { margin-left: var(--space-2); color: inherit; opacity: 0.7; font: 10px var(--font-mono); }
 .hq-alert .pending-error { margin: 0; color: var(--danger); font-size: 12px; }
-.hq-alert-question { position: absolute; left: calc(-1 * var(--space-5) - 1px); right: calc(-1 * var(--space-5) - 1px); top: calc(100% + 14px); max-height: 60dvh; overflow-y: auto; border: 1px solid var(--warning-edge); border-radius: var(--radius-lg); background: var(--bg-floating-strong); box-shadow: var(--shadow-dialog); }
-.hq-alert-question .pending-card { margin: 0; }
+
+/* The agent's drawer, on the right as in the mock-up; the grip on its left edge drags the width and a double click resets it. */
+.hq-hud { --hq-drawer-top: 80px; }
+.hq-drawer { position: absolute; z-index: 3; right: var(--hq-gap); top: var(--hq-drawer-top); bottom: var(--hq-gap); width: min(var(--panel-width), calc(100vw - var(--hq-gap) * 2)); box-sizing: border-box; display: flex; background: var(--bg-floating-strong); box-shadow: var(--shadow-dialog); }
+.hq-drawer[hidden] { display: none; }
+.hq-drawer .hq-sheet { flex: 1; min-width: 0; max-height: none; }
+.hq-drawer-resizer { display: block; left: calc(var(--space-6) * -1 + 2px); }
+.hq-drawer-resizer::before { content: ""; position: absolute; top: 50%; left: 50%; width: 4px; height: 40px; translate: -50% -50%; border-radius: var(--radius-full); background: var(--border-control); }
+.hq-drawer-resizer:hover::before, .hq-drawer-resizer:focus-visible::before, .is-resizing-panel .hq-drawer-resizer::before { background: var(--accent); }
+.hq-drawer-resizer:focus-visible { outline: 2px solid var(--focus); outline-offset: -4px; border-radius: var(--radius-md); }
+.hq-drawer-head { justify-content: space-between; padding: var(--space-5); }
+.hq-drawer-head .icon-btn:focus-visible, .hq-drawer .pane .icon-btn:focus-visible { outline: 2px solid var(--focus); outline-offset: 1px; }
+.hq-drawer-body { flex: 1; gap: 10px; padding: var(--space-5); }
+.hq-drawer-status { display: flex; align-items: flex-start; gap: var(--space-4); margin: 0; padding: var(--space-4) 10px; border-radius: var(--radius-md); background: var(--bg-raised); line-height: 1.4; }
+.hq-drawer-glyph { flex: none; width: 1em; text-align: center; }
+.hq-drawer-when { display: block; color: var(--muted); font-size: 12px; }
+.hq-drawer-actions { display: flex; gap: var(--space-3); }
+.hq-drawer-actions .btn { flex: 1; height: 30px; }
+.hq-drawer-actions .btn[aria-pressed="true"] { border-color: var(--accent); background: var(--bg-selected); color: var(--text); }
+.hq-drawer-actions .btn[aria-pressed="true"]::before { content: "●"; color: var(--accent); font-size: 9px; }
+.hq-drawer-actions .btn:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+.hq-drawer .pane { flex: 1 0 220px; }
+.hq-drawer .pane-body { flex: 1; max-height: none; }
+.hq-drawer .composer textarea { min-height: 56px; }
+.hq-drawer-note { margin: 0; font-size: 12px; }
+.hq-drawer .pending-card { margin: 0; }
+.hq-alert-foot { display: flex; align-items: center; justify-content: space-between; gap: var(--space-4); }
+.hq-alert-foot .btn-ghost { margin-left: auto; }
+.hq-alert-foot .btn:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
 
 @media (max-width: 719px) {
+  .hq-drawer { inset: 0; width: auto; border-radius: 0; background: var(--bg-surface); }
+  .hq-drawer-resizer { display: none; }
   .hq-hud { --hq-gap: var(--space-4); --hq-left-width: min(220px, 46vw); }
   .hq-capsule { width: auto; right: var(--hq-gap); }
   .hq-accounts { top: auto; left: var(--hq-gap); right: var(--hq-gap); bottom: calc(var(--hq-gap) * 2 + 72px); justify-content: space-between; }

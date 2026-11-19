@@ -55,7 +55,16 @@ export function frameBounds({ bounds, viewport, insets = NO_INSETS, view = ISOME
   return { target: groundOffsetOf({ u: centerU, v: centerV }, view), scale };
 }
 
-export const zoomLimits = (wholeScale) => ({ min: wholeScale, max: wholeScale * CLOSEST_ZOOM });
+// The target that shows the point in the middle of what the panels leave free: the screen center mirrored across the free center.
+export function centerBetweenPanels({ point, scale, viewport, insets = NO_INSETS, view = ISOMETRIC_VIEW }) {
+  const freeCenter = {
+    x: insets.left + (viewport.width - insets.left - insets.right) / 2,
+    y: insets.top + (viewport.height - insets.top - insets.bottom) / 2,
+  };
+  return screenToGround({ target: point, scale }, { x: viewport.width - freeCenter.x, y: viewport.height - freeCenter.y }, viewport, view);
+}
+
+export const zoomLimits =(wholeScale) => ({ min: wholeScale, max: wholeScale * CLOSEST_ZOOM });
 
 const clamp = (value, min, max) => Math.min(max, Math.max(min, value));
 

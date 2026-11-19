@@ -9,7 +9,9 @@ import { describeStatus } from "../scripts/view/office/status-display.js";
 import { renderTabs } from "../scripts/view/office/tabs-view.js";
 import { renderTeam } from "../scripts/view/office/team-view.js";
 import { renderUsage } from "../scripts/view/office/usage-view.js";
-import { renderAgentFacts, renderAgentIdentity, renderSheetShell } from "../scripts/view/sheet/agent-sheet-view.js";
+import {
+  renderAgentFacts, renderAgentIdentity, renderDrawerIdentity, renderDrawerShell, renderDrawerStatus, renderSheetShell,
+} from "../scripts/view/sheet/agent-sheet-view.js";
 import { accountUsage } from "../scripts/domain/office/account-usage.js";
 import { dayTimeline } from "../scripts/domain/office/day-timeline.js";
 import { renderAccounts } from "../scripts/view/hud/accounts-view.js";
@@ -190,6 +192,33 @@ describe("agent sheet", () => {
   });
 });
 
+describe("headquarters agent drawer", () => {
+  it("follows the mock-up for a live session: who, what now, follow and interrupt, the live terminal, then the message by name", () => {
+    assertMatchesRecording("hq-drawer-live", renderDrawerShell({ agentName: "Heitor <dev>", canReceiveMessages: true, isLive: true, isFollowed: true }));
+  });
+
+  it("drops interrupting and says when a message arrives for a session that takes queued messages", () => {
+    assertMatchesRecording("hq-drawer-queued", renderDrawerShell({ agentName: "Ana", canReceiveMessages: true, isLive: false, isFollowed: false }));
+  });
+
+  it("explains why an agent that cannot receive messages has no message box", () => {
+    assertMatchesRecording("hq-drawer-read-only", renderDrawerShell({ agentName: "Ana", canReceiveMessages: false, isLive: false, isFollowed: false }));
+  });
+
+  it("names the agent with its role, origin and project", () => {
+    const agent = busyTeam()[1];
+    assertMatchesRecording("hq-drawer-identity", renderDrawerIdentity(agent, { mark: agentMark(agent), origin: originOf(agent), projectName: "loja <online>" }));
+  });
+
+  it("writes the status out in words with what the agent is doing and since when", () => {
+    assertMatchesRecording("hq-drawer-status", renderDrawerStatus(agentOf("claude:a1", { status: "needs_you", action: undefined, actionId: "permission-requested", subject: "Bash" })));
+  });
+
+  it("writes an unknown status as free and one tool in the singular", () => {
+    assertMatchesRecording("hq-drawer-status-unknown", renderDrawerStatus(agentOf("claude:a1", { status: "mystery", action: "", tools: 1 })));
+  });
+});
+
 describe("status names", () => {
   it("names each known status", () => {
     assert.deepEqual(["working", "needs_you", "break"].map(describeStatus), ["digitando", "precisa de você", "pausa"]);
@@ -322,17 +351,17 @@ describe("headquarters request alert", () => {
     assertMatchesRecording("hq-alert-head-single", renderAlertHead({ requester: null, intent: "tem uma pergunta", position: 1, total: 1, previousId: null, nextId: null }));
   });
 
-  it("shows the command with allow and deny and their keys, and the error to fill when sending fails", () => {
-    assertMatchesRecording("hq-alert-command", renderAlertBody(withFields(permission, { summaryId: "run-command", subject: "Aplicar as migrações <db>" }), vitor));
+  it("shows the command with allow and deny and their keys, the way back to the terminal and the error to fill when sending fails", () => {
+    assertMatchesRecording("hq-alert-command", renderAlertBody(withFields(permission, { summaryId: "run-command", subject: "Aplicar as migrações <db>" })));
   });
 
   it("shows what a tool without a command wants", () => {
     const edit = { ...permission, id: "req-edit", toolName: "Edit", detail: "", summaryId: "edit-file", subject: "people.js" };
-    assertMatchesRecording("hq-alert-tool", renderAlertBody(edit, vitor));
+    assertMatchesRecording("hq-alert-tool", renderAlertBody(edit));
   });
 
-  it("offers to answer a question in a panel with the same card as the room", () => {
-    assertMatchesRecording("hq-alert-question", renderAlertBody(question, { name: "Duda <dev>", projectName: "jogo" }));
+  it("sends a question to the drawer of the agent who asks, where the room's card answers it", () => {
+    assertMatchesRecording("hq-alert-question", renderAlertBody({ ...question, agentKey: "claude:<d1>" }));
   });
 
   it("counts down in minutes and seconds, and says when the request is going back", () => {

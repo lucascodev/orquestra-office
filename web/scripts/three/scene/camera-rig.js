@@ -122,6 +122,6 @@ export function createCameraRig({ view = ISOMETRIC_VIEW, isMotionReduced = false
 
   return {
     camera, sun, setMap, setViewport, setInsets, apply, jumpTo, glideTo, glideToBounds, retarget, step, frameWhole, limits,
-    isGliding: () => glide !== null, viewpoint: () => viewpoint, viewport: () => viewport,
+    isGliding: () => glide !== null, viewpoint: () => viewpoint, viewport: () => viewport, insets: () => insets,
   };
 }
