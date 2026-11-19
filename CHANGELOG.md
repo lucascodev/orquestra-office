@@ -20,7 +20,7 @@ All notable changes to this project are documented in this file, following [Keep
 
 ### Security
 
-- **Test output, checklist and plan.** The collector never stores the whole test output: only the counts and up to 10 failures, each field cut to 300 characters, and the test command cut to 200. It masks tokens, keys, JWTs, credentials in URLs and `password=` or `token=` values in the command, the failures, the plan and the checklist. The checklist, the failures and the plan text stay in memory and never reach the disk. The page shows the plan without raw HTML, images, styles or form elements, and only with `http`, `https` and `mailto` links.
+- **Test output, checklist and plan.** The collector never stores the whole test output: only the counts and up to 10 failures, each field cut to 300 characters, and the test command cut to 200. It masks tokens, keys, JWTs, credentials in URLs and `password=` or `token=` values in the command, the failures, the plan and the checklist. The test command, the checklist, the failures and the plan text stay in memory and never reach the disk, and the state file can be read only by its owner. The page shows the plan without raw HTML, images, styles or form elements, and only with `http`, `https` and `mailto` links.
 
 ## [0.1.0] - 2026-11-19
 

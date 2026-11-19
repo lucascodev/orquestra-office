@@ -165,13 +165,13 @@ Sessions that are already open keep the old hooks until they are closed.
 
 ## What is stored
 
-**On disk** (the `office-data` volume), only what is needed to draw the office: project folder, session id, subagent name, tool name, file name (without the path), the first word of a command (for example `cargo`, never the arguments) and the token and cost totals. For tests, it also keeps the counts of each run (passed, failed and skipped), the framework, the test command cut to 200 characters with secrets masked, and the test files' paths relative to the project. For the plan, only its version, state and times.
+**On disk** (the `office-data` volume), only what is needed to draw the office: project folder, session id, subagent name, tool name, file name (without the path), the first word of a command (for example `cargo`, never the arguments) and the token and cost totals. For tests, it also keeps the counts of each run (passed, failed and skipped), the framework and the test files' paths relative to the project, never the test command. For the plan, only its version, state and times.
 
 **Paired devices** (`devices.json`, in the same volume): the browser name, the address it was opened from, the dates and the SHA-256 hash of the cookie, never the cookie itself. A device unused for 30 days drops off the list.
 
 **Only in the collector's memory**, for the history and so you can decide with context: the text of your prompts, full commands, the agent's last reply in each turn, pending permission requests, queued messages, unused pairing codes, the agent's checklist, the text of its plan and up to 10 failures of the last test run. None of this goes to disk, and all of it is lost when the container restarts. The history keeps at most 200 entries per session.
 
-**Test output is never stored whole.** The collector reads the counts and up to 10 failures (name, place and message, each cut to 300 characters) and drops the rest. Before it keeps the test command, the failures, the plan or the checklist, it masks tokens, keys, JWTs, credentials in URLs and `password=` or `token=` values.
+**Test output is never stored whole.** The collector reads the counts and up to 10 failures (name, place and message, each cut to 300 characters) and drops the rest. Before it keeps the test command (in memory only), the failures, the plan or the checklist, it masks tokens, keys, JWTs, credentials in URLs and `password=` or `token=` values.
 
 **In your home folder** (`~/.orquestra-office`, created by the installer and readable only by your user): `secret`, the key shared by hooks, collector and runner, and `activity.header`, the header with the activity token that `curl` reads. The token lives in a file, not on the command line, because on macOS and Linux any user can see the command line of running processes.
 

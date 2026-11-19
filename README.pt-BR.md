@@ -165,13 +165,13 @@ As sessões já abertas continuam com os hooks antigos até serem fechadas.
 
 ## O que fica guardado
 
-**No disco** (volume `office-data`), só o necessário para desenhar o escritório: pasta do projeto, id da sessão, nome do subagente, nome da ferramenta, nome do arquivo (sem o caminho), o primeiro termo do comando (por exemplo `cargo`, nunca os argumentos) e os totais de tokens e custo. Dos testes, ficam também os números de cada rodada (passaram, falharam e pulados), o framework, o comando de teste cortado em 200 caracteres e com segredos mascarados, e o caminho dos arquivos de teste a partir da pasta do projeto. Do plano, só a versão, o estado e os horários.
+**No disco** (volume `office-data`), só o necessário para desenhar o escritório: pasta do projeto, id da sessão, nome do subagente, nome da ferramenta, nome do arquivo (sem o caminho), o primeiro termo do comando (por exemplo `cargo`, nunca os argumentos) e os totais de tokens e custo. Dos testes, ficam também os números de cada rodada (passaram, falharam e pulados), o framework e o caminho dos arquivos de teste a partir da pasta do projeto, nunca o comando de teste. Do plano, só a versão, o estado e os horários.
 
 **Aparelhos pareados** (`devices.json`, no mesmo volume): o nome do navegador, o endereço por onde foi aberto, as datas e o hash SHA-256 do cookie, nunca o cookie. Um aparelho sem uso por 30 dias sai da lista.
 
 **Só na memória do coletor**, para o histórico e para você decidir com contexto: o texto dos seus pedidos, os comandos completos, a última resposta do agente em cada turno, os pedidos de permissão pendentes, as mensagens na fila, os códigos de pareamento ainda não usados, a checklist do agente, o texto do plano e até 10 falhas da última rodada de testes. Nada disso vai para o disco, e tudo se perde quando o container reinicia. O histórico guarda no máximo 200 registros por sessão.
 
-**A saída dos testes nunca é guardada inteira.** O coletor lê os números e até 10 falhas (nome, local e mensagem, cada um cortado em 300 caracteres) e descarta o resto. Antes de guardar o comando de teste, as falhas, o plano ou a checklist, ele mascara tokens, chaves, JWT, credenciais em URL e valores de `password=` ou `token=`.
+**A saída dos testes nunca é guardada inteira.** O coletor lê os números e até 10 falhas (nome, local e mensagem, cada um cortado em 300 caracteres) e descarta o resto. Antes de guardar o comando de teste (só em memória), as falhas, o plano ou a checklist, ele mascara tokens, chaves, JWT, credenciais em URL e valores de `password=` ou `token=`.
 
 **Na sua pasta pessoal** (`~/.orquestra-office`, criada pelo instalador e legível só pelo seu usuário): `secret`, a chave que hooks, coletor e executor compartilham, e `activity.header`, o cabeçalho com o token de atividade que o `curl` lê. O token fica num arquivo, e não na linha de comando, porque no macOS e no Linux qualquer usuário vê a linha de comando dos processos.
 
