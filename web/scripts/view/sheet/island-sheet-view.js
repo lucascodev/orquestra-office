@@ -78,14 +78,18 @@ function workChip(className, { kind = null, icon, text, spoken }) {
   return `<span class="${className}"${signal}><span aria-hidden="true">${shown}</span>${heard}</span>`;
 }
 
+function workChips(work) {
+  if (!work) return "";
+  return `\n      ${workChip("hq-member-checklist", work.checklist)}${workChip("hq-member-tests", work.lastRun)}`;
+}
+
 function memberItem(member) {
   const { glyph, color, sentence } = STATUS[member.status];
   const role = member.kind === "subagent" ? `${member.label} · ${SUBAGENT}` : member.label;
   return `<li><button type="button" class="hq-member" data-agent="${esc(member.key)}">
       <span class="hq-glyph" style="color:${esc(color)}" aria-hidden="true">${esc(glyph)}</span>
       <span class="hq-member-name"><b>${esc(member.name)}</b> <span class="muted">${esc(role)}</span></span>
-      <span class="hq-member-status">${esc(sentence)}</span>${queueChip(member.queued)}
-      ${workChip("hq-member-checklist", member.work.checklist)}${workChip("hq-member-tests", member.work.lastRun)}
+      <span class="hq-member-status">${esc(sentence)}</span>${queueChip(member.queued)}${workChips(member.work)}
     </button></li>`;
 }
 

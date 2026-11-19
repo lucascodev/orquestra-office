@@ -12,6 +12,7 @@ import { group } from "../kit.js";
 import { createCrowd } from "../people/crowd.js";
 import { createPerson, isWalking, placeAt, removePerson, setReaction, standAt, stepPerson, walkTo } from "../people/people.js";
 import { createNameTag, headPositionOf } from "./name-tags.js";
+import { refreshSignal } from "./signal-refresh.js";
 import { createThoughtBubble } from "./thought-bubble.js";
 
 const HURRYING_THOUGHTS = "hurrying";
@@ -170,12 +171,7 @@ export function createHeadquartersPeople({ scene, tagLayer, onPick, describeStat
     for (const agent of agents) {
       const entry = people.get(agent.key);
       if (!entry) continue;
-      const signal = agentWorkSignalOf(agent, now);
-      if (signal.kind !== entry.signal.kind) label(agent);
-      else if (signal.text !== entry.signal.text) {
-        entry.signal = signal;
-        entry.tag.signal.text.textContent = signal.text;
-      }
+      refreshSignal(entry, agentWorkSignalOf(agent, now), () => label(agent));
     }
   }
 

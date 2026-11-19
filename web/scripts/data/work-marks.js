@@ -6,4 +6,5 @@ export const WORK_MARKS = {
   "writing-tests": "✎",
   checklist: "☰",
   "plan-approved": "✓",
+  "no-result": "—",
 };

@@ -12,3 +12,7 @@ export function planOfRequest(request) {
   if (!isPlanRequest(request) || typeof request.plan !== "string" || request.plan === "") return null;
   return { text: request.plan, isTruncated: request.isPlanTruncated === true };
 }
+
+// Approving means approving what was read. A plan cut by the collector, or one that never reached the office, can still be
+// sent back to planning from here, but only the terminal, which shows it whole, can approve it.
+export const canApprovePlan = (request) => planOfRequest(request)?.isTruncated === false;

@@ -13,8 +13,6 @@ describe("agent's work in the island's sheet", () => {
       ["—", ""], ["tests-failed", "✕", "1", "na última rodada, 1 teste falhou"]],
     ["a run without counts", agentWith({ tests: testsWith({ lastRun: passedRun(null) }) }),
       ["—", ""], ["tests-passed", "✓", "", "a última rodada de testes passou"]],
-    ["nothing, as for Codex", agentWith({ source: "codex" }),
-      ["—", ""], [null, "", "—", ""]],
     ["malformed fields as nothing", agentWith({ checklist: { items: [null] }, tests: { lastRun: { isOk: 1 } } }),
       ["—", ""], [null, "", "—", ""]],
   ];
@@ -25,4 +23,9 @@ describe("agent's work in the island's sheet", () => {
       assert.deepEqual([lastRun.kind, lastRun.icon, lastRun.text, lastRun.spoken], [kind, icon, runText, runSpoken]);
     });
   }
+
+  it("has no summary for an agent without tabs, as Codex, which only reports the end of a turn", () => {
+    assert.equal(agentWorkSummaryOf(agentWith({ source: "codex" })), null);
+    assert.equal(agentWorkSummaryOf(agentWith({ source: "codex", checklist: checklistOf("pending"), tests: testsWith({ lastRun: failedRun(2, 1) }) })), null);
+  });
 });

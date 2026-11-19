@@ -13,7 +13,7 @@ import { islandFacts } from "../scripts/domain/office/island-facts.js";
 import { movedCursor, TAB_KEYS } from "../scripts/domain/office/option-cursor.js";
 import { isDismissedByDrag } from "../scripts/domain/shared/drag-dismiss.js";
 import { searchEntries } from "../scripts/domain/office/search-entries.js";
-import { crossesWarning, newArrivals, pendingInFocus, requesterOf, serverClockNow } from "../scripts/domain/office/pending-queue.js";
+import { crossesWarning, newArrivals, pendingInFocus, requesterOf } from "../scripts/domain/office/pending-queue.js";
 import { queuedCountOf, queuedText } from "../scripts/domain/office/queued-messages.js";
 import { requestIntentText } from "../scripts/domain/office/request-intent-text.js";
 
@@ -77,13 +77,6 @@ describe("pending queue", () => {
     const ids = queue.map((request) => request.id);
     pendingInFocus(queue, { now: NOW });
     assert.deepEqual(queue.map((request) => request.id), ids);
-  });
-
-  it("counts down with the collector's clock when the state says what time it was there", () => {
-    const localNow = NOW + 5_000;
-    assert.equal(serverClockNow({ localNow, generatedAt: NOW - 40_000, receivedAt: NOW }), NOW - 35_000);
-    assert.equal(serverClockNow({ localNow, generatedAt: null, receivedAt: NOW }), localNow);
-    assert.equal(serverClockNow({ localNow }), localNow);
   });
 
   it("finds the requests that were not there before, most urgent first", () => {
@@ -326,13 +319,15 @@ describe("island sheet facts", () => {
   it("sums up each person's checklist and last test run, and nothing for a state saved before those fields", () => {
     const project = projectOf("c:/office", "orquestra-office", [
       agentOf("claude:Heitor", "working", {
+        source: "claude",
         checklist: { items: [{ status: "completed" }, { status: "in_progress" }, { status: "pending" }], updatedAt: NOW },
         tests: { running: null, lastRun: { isOk: false, passed: 248, failed: 2, finishedAt: NOW }, runsToday: [], files: [], lastTestFileAt: null },
       }),
-      agentOf("claude:Bia", "working"),
+      agentOf("claude:Bia", "working", { source: "claude" }),
+      agentOf("codex:Tomas", "working", { source: "codex" }),
     ]);
-    const work = Object.fromEntries(islandFacts(project).team.map(({ name, work: { checklist, lastRun } }) => [name, [checklist.text, lastRun.icon, lastRun.text]]));
-    assert.deepEqual(work, { Heitor: ["1/3", "✕", "2"], Bia: ["—", "", "—"] });
+    const work = Object.fromEntries(islandFacts(project).team.map(({ name, work }) => [name, work && [work.checklist.text, work.lastRun.icon, work.lastRun.text]]));
+    assert.deepEqual(work, { Heitor: ["1/3", "✕", "2"], Bia: ["—", "", "—"], Tomas: null });
   });
 
   it("counts the messages waiting in each person's queue, none for a key only the prototype knows", () => {

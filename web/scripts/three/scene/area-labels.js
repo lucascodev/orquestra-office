@@ -1,6 +1,5 @@
 import { ISLAND_SEATS } from "../../domain/headquarters/island-grid.js";
-import { seatStop } from "../../domain/room/room-spots.js";
-import { createNameplate, placeNameplate, worldPointOnScreen } from "./name-tags.js";
+import { worldPointOnScreen } from "./name-tags.js";
 
 const LABELED_AREAS = new Set(["meeting", "pantry", "games", "lounge", "work", "reception"]);
 const AREA_LABEL_INSET = 0.7;
@@ -23,10 +22,6 @@ function islandEntries(layout) {
   }));
 }
 
-function reservedDesks(layout) {
-  return layout.islands.flatMap((island) => island.seats.filter((seat) => !seat.agent && seat.role).map((seat) => ({ role: seat.role, ...seatStop(island, seat) })));
-}
-
 function labelOf({ kind, text, detail = "" }) {
   const label = document.createElement("span");
   label.className = `area-label is-${kind}`;
@@ -40,24 +35,20 @@ function labelOf({ kind, text, detail = "" }) {
   return label;
 }
 
-const signatureOf = (entries, plates) => JSON.stringify([entries, plates.map(({ role, x, z }) => [role, x, z])]);
-
-// Names of the common rooms, of each island and of the desks reserved for a role, kept on their spot as the camera moves.
-// From afar only the project names stay, without their theme.
+// Names of the common rooms and of each island, kept on their spot as the camera moves. From afar only the project names
+// stay, without their theme. A chair reserved for a role keeps its place for whoever has the role, but has no plate: a name
+// over an empty chair read as someone missing.
 export function createAreaLabels(layer) {
   let labels = [];
-  let plates = [];
   let signature = "";
 
-  function show(layout, camera) {
+  function show(layout) {
     const entries = [...areaEntries(layout), ...islandEntries(layout)];
-    const reserved = reservedDesks(layout);
-    const next = signatureOf(entries, reserved);
+    const next = JSON.stringify(entries);
     if (next === signature) return;
     signature = next;
     labels = entries.map((entry) => ({ element: labelOf(entry), point: entry.point }));
-    plates = reserved.map((desk) => ({ element: createNameplate(desk, camera), desk }));
-    layer.replaceChildren(...labels.map(({ element }) => element), ...plates.map(({ element }) => element));
+    layer.replaceChildren(...labels.map(({ element }) => element));
   }
 
   function place(camera, detail) {
@@ -68,7 +59,6 @@ export function createAreaLabels(layer) {
       element.style.top = top;
       element.hidden = !isInView;
     }
-    for (const { element, desk } of plates) placeNameplate(element, desk, camera);
   }
 
   return { show, place };

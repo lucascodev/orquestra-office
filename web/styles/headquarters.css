@@ -24,7 +24,7 @@
 .name-tag[data-detail="name"]:is(:hover, :focus-visible) small { display: block; }
 .name-tag.is-figurant[data-detail="dot"] { display: none; }
 .hq-tags .thought.is-compact { --thought-lift: 18px; padding: 0 5px 1px; font-size: 10px; line-height: 1.1; }
-.hq-labels[data-detail="compact"] :is(.area-label.is-area, .area-label.is-free-island, .area-label-detail, .name-tag.reserved) { display: none; }
+.hq-labels[data-detail="compact"] :is(.area-label.is-area, .area-label.is-free-island, .area-label-detail) { display: none; }
 .hq-labels[data-detail="compact"] .area-label { padding: 0 4px; font-size: 9px; opacity: 0.85; }
 
 /* Floating panels. The layer lets the map take every press that does not land on a panel. */
@@ -359,6 +359,7 @@
 .plan-link-target { color: var(--muted); font: 11px var(--font-mono); }
 .plan-plain { white-space: pre-wrap; }
 .plan-cut { margin: var(--space-4) 0 0; color: var(--warning); font-size: 12px; }
+.plan-why { margin: 0; color: var(--muted); font-size: 12px; }
 
 .work-card { display: flex; flex-direction: column; gap: var(--space-4); padding: 10px; border: 1px solid var(--border-strong); border-radius: 8px; background: var(--bg-raised); }
 .work-card.is-running { border-color: color-mix(in srgb, var(--info) 40%, transparent); background: color-mix(in srgb, var(--info) 7%, transparent); }

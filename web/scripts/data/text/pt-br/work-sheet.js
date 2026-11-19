@@ -32,7 +32,7 @@ export const PLAN_LOADING = {
 export const PLAN_STATES = {
   proposed: { withSubject: "Esperando sua aprovação desde {subject}", withoutSubject: "Esperando sua aprovação" },
   approved: { withSubject: "Aprovado às {subject}", withoutSubject: "Aprovado" },
-  revised: { withSubject: "Trocado por uma versão nova às {subject}", withoutSubject: "Trocado por uma versão nova" },
+  revised: { withSubject: "Versão nova, esperando sua aprovação desde {subject}", withoutSubject: "Versão nova, esperando sua aprovação" },
 };
 
 export const TESTS_TEXT = {

@@ -6,7 +6,8 @@ import { planDocument } from "../scripts/domain/work-sheet/plan-document.js";
 import { planStatus } from "../scripts/domain/work-sheet/plan-status.js";
 import { runningElapsedMs } from "../scripts/domain/work-sheet/running-elapsed.js";
 import { testFileState } from "../scripts/domain/work-sheet/test-file-state.js";
-import { hasFailedLastRun, testRunSummary } from "../scripts/domain/work-sheet/test-run-summary.js";
+import { hasFailedLastRun } from "../scripts/domain/work-sheet/test-fields.js";
+import { testRunSummary } from "../scripts/domain/work-sheet/test-run-summary.js";
 import { testsOverview } from "../scripts/domain/work-sheet/tests-overview.js";
 import { hasWorkTabs, shownTabOf, workTabs } from "../scripts/domain/work-sheet/work-tabs.js";
 
@@ -44,7 +45,7 @@ describe("checklist progress", () => {
 
 describe("test rounds", () => {
   it("counts the failures in the headline of a bad round and the passes in a good one", () => {
-    assert.deepEqual(pick(testRunSummary(failedRun), ["verdict", "headlineCount", "hasCounts", "framework"]), ["failed", 2, true, "vitest"]);
+    assert.deepEqual(pick(testRunSummary(failedRun), ["verdict", "headlineCount", "hasCounts", "frameworkName"]), ["failed", 2, true, "Vitest"]);
     assert.deepEqual(pick(testRunSummary(passedRun), ["verdict", "headlineCount", "isOk"]), ["passed", 250, true]);
   });
 
@@ -54,9 +55,10 @@ describe("test rounds", () => {
     assert.equal(testRunSummary({ isOk: false, passed: 3, failed: 0 }).headlineCount, null);
   });
 
-  it("drops counts that are not whole numbers and treats anything but isOk true as failed", () => {
-    const summary = testRunSummary({ isOk: "yes", passed: -1, failed: 1.5, skipped: "7" });
+  it("drops counts that are not whole numbers and takes a round that does not say whether it passed as no round", () => {
+    const summary = testRunSummary({ isOk: false, passed: -1, failed: 1.5, skipped: "7" });
     assert.deepEqual(pick(summary, ["verdict", "passed", "failed", "skipped", "hasCounts"]), ["failed", null, null, null, false]);
+    for (const isOk of ["yes", "false", 1, null, undefined]) assert.equal(testRunSummary({ isOk, passed: 3, failed: 0 }), null);
   });
 
   it("marks the tests as failed only while the last round really failed", () => {
@@ -78,8 +80,8 @@ describe("test rounds", () => {
       lastRun: { ...failedRun, failures: [{ name: "x", location: "a.test.js:3", message: "boom" }, null, "texto"] },
       runsToday: [{ finishedAt: NOW, label: "web", isOk: true, passed: 3 }, null, 7],
       files: [{ path: "a.test.js", action: "edited", failed: 1 }, { path: 3 }, "b.test.js"],
-    });
-    assert.deepEqual(overview.running, { command: "npx vitest", framework: "vitest", startedAt: NOW - 12_000 });
+    }, { dayStart: NOW - MINUTE });
+    assert.deepEqual(overview.running, { command: "npx vitest", frameworkName: "Vitest", startedAt: NOW - 12_000 });
     assert.deepEqual(overview.lastRun.failures, [{ name: "x", location: "a.test.js:3", message: "boom" }]);
     assert.deepEqual(overview.runsToday.map((run) => [run.label, run.verdict, run.passed]), [["web", "passed", 3]]);
     assert.deepEqual(overview.files.map((file) => file.path), ["a.test.js"]);
@@ -102,10 +104,14 @@ describe("test rounds", () => {
 describe("plans", () => {
   it("reads the state of the latest plan without its text, dating it by its decision or its proposal", () => {
     const approved = planStatus({ version: 2, state: "approved", proposedAt: NOW - 2 * MINUTE, decidedAt: NOW - MINUTE, length: 900 });
-    assert.deepEqual(pick(approved, ["state", "version", "at", "isApproved", "isWaiting"]), ["approved", 2, NOW - MINUTE, true, false]);
+    assert.deepEqual(pick(approved, ["state", "version", "at", "decidedAt"]), ["approved", 2, NOW - MINUTE, NOW - MINUTE]);
     const proposed = planStatus({ version: 3, state: "proposed", proposedAt: NOW, decidedAt: null });
-    assert.deepEqual(pick(proposed, ["state", "at", "isWaiting"]), ["proposed", NOW, true]);
-    assert.equal(planStatus({ version: 1, state: "revised", proposedAt: NOW, decidedAt: null }).at, NOW);
+    assert.deepEqual(pick(proposed, ["state", "at"]), ["proposed", NOW]);
+  });
+
+  it("dates a revised plan, the new version still waiting for approval, by when it arrived", () => {
+    const revised = planStatus({ version: 2, state: "revised", proposedAt: NOW - 2 * MINUTE, decidedAt: NOW - MINUTE });
+    assert.deepEqual(pick(revised, ["state", "version", "at"]), ["revised", 2, NOW - 2 * MINUTE]);
   });
 
   it("changes its stamp when the version or the state changes, so the sheet fetches the text again", () => {

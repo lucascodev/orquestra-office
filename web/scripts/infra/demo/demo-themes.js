@@ -19,7 +19,7 @@ function crewMember(projectIndex, memberIndex, [label, status, action]) {
   };
 }
 
-// Each project brings a different number of people, so lit screens, empty chairs and reserved desks show on every theme.
+// Each project brings a different number of people, so lit screens and empty chairs show on every theme.
 function themeProject(theme, index) {
   const key = `${ROOT}/${theme.id}`;
   const crew = CREW.slice(0, 1 + (index % CREW.length)).map((member, memberIndex) => crewMember(index, memberIndex, member));

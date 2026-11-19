@@ -11,6 +11,7 @@ import { agentActionText, logEntryText } from "../scripts/domain/office/agent-ac
 import { terminalEntryText } from "../scripts/domain/terminal/terminal-entry-text.js";
 import { describeToolEntry } from "../scripts/domain/terminal/terminal-format.js";
 import { toolSummaryText } from "../scripts/domain/terminal/tool-summary-text.js";
+import { localDayStart } from "../scripts/domain/shared/local-day-start.js";
 import { checklistProgress } from "../scripts/domain/work-sheet/checklist-progress.js";
 import { planDocument } from "../scripts/domain/work-sheet/plan-document.js";
 import { planOfRequest } from "../scripts/domain/work-sheet/plan-request.js";
@@ -161,7 +162,7 @@ describe("checklist, plan and tests in the demonstration", () => {
     assert.equal(agents["codex:b1"].checklist, undefined);
   });
 
-  it("notes approved plans and finished rounds in the log the timeline reads", () => {
+  it("notes approved plans and finished rounds in the agent's log, as the collector does", () => {
     const actions = agentsOf(demoState()).flatMap((agent) => agent.log.map((entry) => entry.actionId));
     for (const actionId of ["plan-approved", "tests-passed", "tests-failed"]) assert.ok(actions.includes(actionId), actionId);
   });
@@ -189,6 +190,45 @@ describe("checklist, plan and tests in the demonstration", () => {
     assert.equal(asked.plan, demoPlanDocument(planner).text);
   });
 
+  it("marks the next version revised when the one before was sent back, and proposed when it was approved", () => {
+    const nextVersionAfter = (behavior) => {
+      const state = demoState();
+      const start = Date.now();
+      const askAgain = createDemoAsker(state.pending);
+      resolveDemoRequest(state, "demo-plan", { behavior });
+      for (let tick = 1; tick <= 3; tick += 1) askAgain(state, start + tick * 4_000);
+      const { version, state: planState } = agentByKey(state)[PLANNER].plan;
+      return [version, planState];
+    };
+    assert.deepEqual(nextVersionAfter("deny"), [2, "revised"]);
+    assert.deepEqual(nextVersionAfter("allow"), [2, "proposed"]);
+  });
+
+  it("labels today's rounds with the command cut at 60 characters, as the collector does", () => {
+    const LABEL_LIMIT = 60;
+    const played = demoState();
+    for (let step = 0; step < 12; step += 1) tickDemo(played, step);
+    const tests = [...agentsOf(demoState()), ...agentsOf(played)].map((agent) => agent.tests).filter((value) => value?.runsToday?.length);
+    assert.ok(tests.length >= 3);
+    for (const { lastRun, runsToday } of tests) {
+      for (const run of runsToday) assert.ok(run.label.length <= LABEL_LIMIT, run.label);
+      assert.equal(runsToday.find((run) => run.finishedAt === lastRun.finishedAt).label, lastRun.command.slice(0, LABEL_LIMIT));
+    }
+    assert.ok(tests.flatMap(({ runsToday }) => runsToday).some((run) => run.label.length === LABEL_LIMIT), "one long command shows the cut");
+  });
+
+  it("keeps the start of a running round across ticks, so the clock over the figure walks", () => {
+    const state = demoState();
+    const starts = [];
+    for (let step = 0; step < 5; step += 1) {
+      tickDemo(state, step);
+      starts.push(agentByKey(state)[RUNNER].tests.running?.startedAt ?? null);
+    }
+    const [, , first, second, third] = starts;
+    assert.ok(Number.isFinite(first));
+    assert.deepEqual([second, third], [first, first]);
+  });
+
   it("runs the tests of the platformer round and round: writes, runs, fails, fixes and passes", () => {
     const state = demoState();
     const seen = [];
@@ -204,6 +244,6 @@ describe("checklist, plan and tests in the demonstration", () => {
     assert.deepEqual(seen[3], ["running-tests", true, null]);
     assert.deepEqual(seen[5], ["tests-failed", false, false]);
     assert.deepEqual(seen[11], ["tests-passed", false, true]);
-    assert.equal(testsOverview(agentByKey(state)[RUNNER].tests).runsToday.length, 2);
+    assert.equal(testsOverview(agentByKey(state)[RUNNER].tests, { dayStart: localDayStart(Date.now()) }).runsToday.length, 2);
   });
 });

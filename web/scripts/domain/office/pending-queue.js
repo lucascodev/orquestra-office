@@ -6,12 +6,6 @@ function byDeadline(a, b) {
   return deadlineOf(a) - deadlineOf(b) || (a.createdAt ?? 0) - (b.createdAt ?? 0) || a.id.localeCompare(b.id);
 }
 
-// The phone or the laptop may run minutes off the collector; the deadline was set by the collector's clock.
-export function serverClockNow({ localNow, generatedAt = null, receivedAt = null }) {
-  if (!generatedAt || !receivedAt) return localNow;
-  return localNow + (generatedAt - receivedAt);
-}
-
 const remainingOf = (request, now) => (request.expiresAt ? Math.max(0, request.expiresAt - now) : null);
 
 export function pendingInFocus(pending, { shownId = null, now }) {

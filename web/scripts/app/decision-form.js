@@ -12,11 +12,12 @@ const ownChildOf = (card, isWanted) => [...(card?.children ?? [])].find(isWanted
 // bring a button or a field of its own into the decision.
 export const decisionBarOf = (card) => ownChildOf(card, (child) => child.hasAttribute(DECISION_BAR));
 
-// The decide button that was pressed, with its card, when it really belongs to that card's bar; null for anything else.
+// The decide button that was pressed, with its card, when it really belongs to that card's bar and is on; null for anything
+// else, so a disabled Aprovar plano answers nothing even if an event reaches it.
 export function decisionOf(button) {
   const card = button?.closest(PENDING_CARD);
   const bar = decisionBarOf(card);
-  if (!bar || button.tagName !== "BUTTON" || !bar.contains(button)) return null;
+  if (!bar || button.tagName !== "BUTTON" || button.disabled || !bar.contains(button)) return null;
   return { card, action: button.dataset.decide };
 }
 
@@ -57,7 +58,8 @@ export async function submitDecision(control, card, action) {
     showError(card, MISSING_ANSWER);
     return;
   }
-  const buttons = [...bar.querySelectorAll("button")];
+  // Only the buttons that were on come back after a failed send: Aprovar plano stays off for a plan that was cut.
+  const buttons = [...bar.querySelectorAll("button")].filter((button) => !button.disabled);
   buttons.forEach((button) => { button.disabled = true; });
   const wasSent = await control.decide(card.dataset.pending, body).catch(() => false);
   if (wasSent) return;

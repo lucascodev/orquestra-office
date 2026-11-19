@@ -228,7 +228,7 @@ Regras de `project-islands.js` e `island-grid.js`, todas puras e testadas:
 1. **Ordem estável.** Projetos em ordem de `createdAt` e depois de chave. Não uso `sortedProjects`, porque ele reordena por "precisa de você" e por atualização, e as ilhas pulariam de lugar o tempo todo.
 2. **Ilhas por projeto.** O número sai da distribuição dos times: cada time vai inteiro para a primeira ilha do projeto com lugar para ele e, se nenhuma tiver, o projeto ganha mais uma ilha. O piso é `max(1, ceil(agentes presentes / 6))`, contando sessões e subagentes, inclusive quem está saindo (hoje quem sai também guarda a mesa até o coletor esquecer o agente). Só um time com mais de 6 pessoas se espalha pelas cadeiras livres: um time de 8 ocupa 2 ilhas, e times de 4, 4 e 3 ocupam 3. As ilhas de um projeto ficam em lugares seguidos da grade, em ordem de leitura.
 3. **Quem senta onde.** `teamsOf` e `islandsOf` de hoje: a sessão e os subagentes dela juntos, em ordem de início, 6 por ilha; assento `i` na coluna `floor(i / 2)`, alternando os lados, como `podAt` já faz.
-4. **Papéis de `.claude/agents`.** Ocupam só as cadeiras vazias das ilhas do projeto, como placa de mesa reservada. Hoje cada grupo de 6 papéis cria uma ilha a mais; na Sede isso faria um projeto com 40 papéis ocupar 7 ilhas. Papel que não cabe não aparece. É barato de reverter (uma regra pura).
+4. **Papéis de `.claude/agents`.** Ocupam só as cadeiras vazias das ilhas do projeto, como mesa reservada para quem tem o papel. A cadeira vazia não ganha placa com o nome do papel: em 19/11/2026 a placa saiu, porque lia como alguém que faltava. Hoje cada grupo de 6 papéis cria uma ilha a mais; na Sede isso faria um projeto com 40 papéis ocupar 7 ilhas. Papel que não cabe não aparece. É barato de reverter (uma regra pura).
 5. **Toda sala aberta tem ilha.** O mesmo conjunto das abas de hoje: um projeto some quando o usuário fecha a sala ou depois de 30 dias parado (`isRoomAbandoned`). Pergunta P2.
 6. **Fechar um projeto** desloca as ilhas seguintes um lugar. Quem estava sentado aparece sentado na mesa nova, sem levantar (regra da seção 5.8).
 7. **Tema.** A ilha leva o `themeById(project.template)` inteiro; o 3D lê `rug`, `divider` (a divisória, como na maquete), `desk`, `leg`, `cabinet`, `chair`, `screen`, `keyboard`, `items` e `accent`; a lista de salas usa `floor` com `divider` na amostra. O catálogo `data/themes.js` não muda e o teste de contrato dos 7 ids continua.
@@ -336,7 +336,7 @@ export function assignPlaces({ agents, now, spots, freeSince, previous }) {
 | Números do dia por projeto | `project.stats` (pedidos, ferramentas, turnos, tokens, custo), com o dia em UTC | ficha da ilha |
 | Uso do plano | `usage.rateLimits` de uma conta só | substituído por `accounts` |
 | Tema | `project.template` | ilha |
-| Papéis | `project.team` | placas de mesa reservada |
+| Papéis | `project.team` | mesas reservadas, sem placa |
 
 ### 6.2 O que entra no collector
 

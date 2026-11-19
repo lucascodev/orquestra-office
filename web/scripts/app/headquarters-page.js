@@ -6,10 +6,11 @@ import { accountUsage, agentAccountLabel } from "../domain/office/account-usage.
 import { withBuildingAgentNames } from "../domain/office/agent-names.js";
 import { areaCensus } from "../domain/office/area-census.js";
 import { canReceiveMessages } from "../domain/office/can-receive-messages.js";
+import { createCollectorClock } from "../domain/office/collector-clock.js";
 import { dayTimeline } from "../domain/office/day-timeline.js";
 import { islandFacts } from "../domain/office/island-facts.js";
-import { serverClockNow } from "../domain/office/pending-queue.js";
 import { searchEntries } from "../domain/office/search-entries.js";
+import { localDayStart } from "../domain/shared/local-day-start.js";
 import { ownValueOf } from "../domain/shared/own-value.js";
 import { latestWorkEvent } from "../domain/work-signals/latest-work-event.js";
 import { renderAccounts } from "../view/hud/accounts-view.js";
@@ -60,8 +61,6 @@ const ROOM_ATTRIBUTE = { whole: "frame", project: "project", area: "area" };
 const APPLE_PLATFORM = /mac|iphone|ipad/i;
 const APPLE_SEARCH_KEYS = "⌘ K";
 
-const startOfDay = (ms) => new Date(ms).setHours(0, 0, 0, 0);
-
 function focusSelectorOf(element) {
   const key = FOCUS_KEYS.find((name) => element.dataset[name] !== undefined);
   return key ? `[data-${key}="${CSS.escape(element.dataset[key])}"]` : null;
@@ -90,7 +89,7 @@ export function createHeadquartersPage({ hud, headquarters, source, newSessionDi
   const phoneQuery = window.matchMedia(PHONE_QUERY);
   const renderedHtml = new WeakMap();
   let state = EMPTY_STATE;
-  let receivedAt = null;
+  const collectorClock = createCollectorClock();
   let awaitedAgentKey = null;
   // Redrawing the list between press and release would swap the button under the pointer and swallow the click.
   let isPressing = false;
@@ -98,7 +97,7 @@ export function createHeadquartersPage({ hud, headquarters, source, newSessionDi
   let currentRoom = WHOLE_ROOM;
   let focusedProjectKey = null;
 
-  const clockNow = () => serverClockNow({ localNow: Date.now(), generatedAt: state.generatedAt, receivedAt });
+  const clockNow = () => collectorClock.now(Date.now());
   const layoutNow = () => headquarters?.layoutShown() ?? layoutHeadquarters(state.projects);
   const censusNow = () => areaCensus({ layout: layoutNow(), projects: state.projects, stops: headquarters?.destinations() ?? new Map() });
 
@@ -125,7 +124,7 @@ export function createHeadquartersPage({ hud, headquarters, source, newSessionDi
 
   function renderDay() {
     const now = clockNow();
-    const dayStart = startOfDay(now);
+    const dayStart = localDayStart(now);
     keepingFocus(dayPanel, () => setHtml(dayPanel, renderDayTimeline(dayTimeline(state.timeline, { now, dayStart }), latestWorkEvent(state.projects, { dayStart }))));
   }
 
@@ -220,7 +219,7 @@ export function createHeadquartersPage({ hud, headquarters, source, newSessionDi
   }
 
   function receive(next) {
-    receivedAt = Date.now();
+    collectorClock.observe(next, Date.now());
     state = { ...next, projects: withBuildingAgentNames(next.projects) };
     headquarters?.show(state.projects, state.outbox);
     render();

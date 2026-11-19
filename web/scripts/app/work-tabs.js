@@ -1,14 +1,16 @@
 import { movedCursor, TAB_KEYS } from "../domain/office/option-cursor.js";
+import { localDayStart } from "../domain/shared/local-day-start.js";
 import { planDocument } from "../domain/work-sheet/plan-document.js";
 import { planStatus } from "../domain/work-sheet/plan-status.js";
 import { runningElapsedMs } from "../domain/work-sheet/running-elapsed.js";
 import { FIRST_TAB, workTabs } from "../domain/work-sheet/work-tabs.js";
-import { formatCountdown } from "../view/shared/format.js";
+import { clockText } from "../domain/work-signals/clock-text.js";
 
 const CLOCK_TICK_MS = 1_000;
 const PLAN_TAB = "plan";
 const LOAD = { loading: "loading", failed: "failed", missing: "missing", ready: "ready" };
 const NO_PLAN_LOADED = { agentKey: null, stamp: null, loading: LOAD.loading, text: null };
+const NO_PLAN_DRAWN = { element: null, agentKey: null, stamp: null, loaded: null };
 const TAB_SELECTOR = "[data-work-tab]";
 
 // The tabs of the agent's sheet: which one is open, the panels drawn from the agent, the plan text fetched only when its tab
@@ -19,6 +21,8 @@ export function createWorkTabs({ sheet, control, view, clockNow }) {
   let shownAgentKey = null;
   let agent = null;
   let plan = NO_PLAN_LOADED;
+  let selectedTab = FIRST_TAB;
+  let drawnPlan = NO_PLAN_DRAWN;
   let clock = 0;
 
   const slot = (name) => sheet.querySelector(`[data-slot="${name}"]`);
@@ -34,7 +38,7 @@ export function createWorkTabs({ sheet, control, view, clockNow }) {
     const now = clockNow();
     for (const shown of sheet.querySelectorAll("[data-elapsed-since]")) {
       const elapsed = runningElapsedMs(Number(shown.dataset.elapsedSince), now);
-      shown.textContent = elapsed === null ? "" : formatCountdown(elapsed);
+      shown.textContent = elapsed === null ? "" : clockText(elapsed);
     }
   }
 
@@ -49,10 +53,22 @@ export function createWorkTabs({ sheet, control, view, clockNow }) {
     return selected;
   }
 
+  // The plan goes through Marked and DOMPurify, up to 20 KB of it, so it is drawn only while its tab is open and only when the
+  // slot, the plan the stream tells or the text fetched for it changed, never on every update of the stream.
+  function showPlan(current) {
+    const element = slot("plan");
+    const loaded = plan.agentKey === current.key ? plan : NO_PLAN_LOADED;
+    const stamp = planStatus(current.plan)?.stamp ?? null;
+    const isDrawn = drawnPlan.element === element && drawnPlan.agentKey === current.key && drawnPlan.stamp === stamp && drawnPlan.loaded === loaded;
+    if (selectedTab !== PLAN_TAB || isDrawn) return;
+    drawnPlan = { element, agentKey: current.key, stamp, loaded };
+    setHtml(element, view.plan(current, loaded));
+  }
+
   function showPanels(current) {
     setHtml(slot("todos"), view.todos(current));
-    setHtml(slot("plan"), view.plan(current, plan.agentKey === current.key ? plan : NO_PLAN_LOADED));
-    setHtml(slot("tests"), view.tests(current));
+    showPlan(current);
+    setHtml(slot("tests"), view.tests(current, { dayStart: localDayStart(clockNow()) }));
     showElapsed();
   }
 
@@ -75,12 +91,13 @@ export function createWorkTabs({ sheet, control, view, clockNow }) {
     if (agent?.key === asked.agentKey) showPanels(agent);
   }
 
+  // The fetch starts first: it marks the plan as loading at once, so the panel is drawn a single time for this update.
   function render(current) {
     agent = current;
     if (!slot("work-tabs")) return;
-    const selected = showTabs(current);
+    selectedTab = showTabs(current);
+    if (selectedTab === PLAN_TAB) refreshPlan(current);
     showPanels(current);
-    if (selected === PLAN_TAB) refreshPlan(current);
   }
 
   function select(id) {

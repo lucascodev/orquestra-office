@@ -104,6 +104,19 @@ describe("decision form", () => {
     assert.deepEqual([deny.disabled, allow.disabled, smuggledButton.disabled], [true, true, false]);
   });
 
+  it("never answers through a disabled button, as Aprovar plano on a plan that was cut", () => {
+    const { allow } = planCard();
+    allow.disabled = true;
+    assert.equal(decisionOf(allow), null);
+  });
+
+  it("gives back only the buttons that were enabled when sending fails, so a disabled approve stays disabled", async () => {
+    const { card, deny, allow } = planCard();
+    allow.disabled = true;
+    await submitDecision(recordingControl(false), card, "deny");
+    assert.deepEqual([deny.disabled, allow.disabled], [false, true]);
+  });
+
   it("gives the buttons back and says so when sending fails", async () => {
     const { card, allow, error } = planCard();
     await submitDecision(recordingControl(false), card, "allow");

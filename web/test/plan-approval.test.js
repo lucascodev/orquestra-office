@@ -2,8 +2,9 @@ import assert from "node:assert/strict";
 import { after, before, describe, it, mock } from "node:test";
 import { decisionForKey } from "../scripts/domain/office/decision-shortcuts.js";
 import { requestIntentText } from "../scripts/domain/office/request-intent-text.js";
-import { isPlanRequest, planOfRequest } from "../scripts/domain/work-sheet/plan-request.js";
+import { canApprovePlan, isPlanRequest, planOfRequest } from "../scripts/domain/work-sheet/plan-request.js";
 import { renderAlertBody } from "../scripts/view/hud/pending-alert-view.js";
+import { renderPlanContent } from "../scripts/view/shared/plan-content.js";
 import { renderPendingCard } from "../scripts/view/sheet/pending-request-view.js";
 
 process.env.TZ = "UTC";
@@ -94,6 +95,39 @@ describe("plan waiting for approval", () => {
     assert.ok(renderAlertBody(planRequest({ isPlanTruncated: true })).includes("Plano cortado, veja o resto no terminal."));
     assert.ok(!renderAlertBody(planRequest()).includes("Plano cortado"));
     assert.ok(renderAlertBody(planRequest({ plan: undefined })).includes("O plano não chegou à Sede."));
+  });
+
+  it("writes the plan of the alert and of the sheet's card in one place, whole, cut or missing", () => {
+    for (const request of [planRequest(), planRequest({ isPlanTruncated: true }), planRequest({ plan: undefined })]) {
+      const content = renderPlanContent(planOfRequest(request));
+      assert.ok(renderAlertBody(request).includes(`tabindex="0">${content}</article>`));
+      assert.ok(renderPendingCard(request, "Heitor").includes(`tabindex="0">${content}</article>`));
+    }
+  });
+
+  it("lets the office approve only a plan that arrived whole", () => {
+    assert.equal(canApprovePlan(planRequest()), true);
+    assert.equal(canApprovePlan(planRequest({ isPlanTruncated: true })), false);
+    assert.equal(canApprovePlan(planRequest({ plan: null })), false);
+    assert.equal(canApprovePlan(planRequest({ plan: undefined, isPlanTruncated: false })), false);
+    assert.equal(canApprovePlan({ kind: "permission", toolName: "Bash" }), false);
+  });
+
+  it("disables Aprovar plano for a plan cut or missing, says why, and keeps Continuar planejando and the terminal", () => {
+    const allowOf = (html) => /<button[^>]*data-decide="allow"[^>]*>/.exec(html)[0];
+    for (const request of [planRequest({ isPlanTruncated: true }), planRequest({ plan: null }), planRequest({ plan: undefined })]) {
+      for (const [html, whyId] of [[renderAlertBody(request), "hq-plan-why"], [renderPendingCard(request, "Heitor"), "plan-why"]]) {
+        const bar = decisionBarOf(html);
+        assert.ok(allowOf(bar).includes(" disabled"), "approve disabled");
+        assert.ok(allowOf(bar).includes(`aria-describedby="${whyId}"`));
+        assert.ok(bar.includes(`<p class="plan-why" id="${whyId}">Para aprovar, leia o plano inteiro no terminal e decida lá. Daqui dá para continuar planejando.</p>`));
+        assert.ok(!/data-decide="deny"[^>]*disabled/.test(bar) && !/data-decide="terminal"[^>]*disabled/.test(bar));
+      }
+    }
+    for (const html of [renderAlertBody(planRequest()), renderPendingCard(planRequest(), "Heitor")]) {
+      assert.ok(!allowOf(html).includes("disabled"));
+      assert.ok(!html.includes("plan-why"));
+    }
   });
 
   it("titles the card in the sheet with who planned, escaped", () => {

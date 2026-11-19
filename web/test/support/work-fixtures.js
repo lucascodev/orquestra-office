@@ -11,4 +11,4 @@ export const run = (fields) => ({ command: "npx vitest run", framework: "vitest"
 export const failedRun = (failed, passed, finishedAt = NOW - MINUTE) => run({ isOk: false, failed, passed, finishedAt });
 export const passedRun = (passed, finishedAt = NOW - 10 * SECOND) => run({ isOk: true, failed: 0, passed, finishedAt });
 export const testsWith = (fields) => ({ running: null, lastRun: null, runsToday: [], files: [], lastTestFileAt: null, ...fields });
-export const agentWith = (fields = {}) => ({ key: "claude:h1", name: "Heitor", status: "working", log: [], ...fields });
+export const agentWith = (fields = {}) => ({ key: "claude:h1", name: "Heitor", source: "claude", status: "working", log: [], ...fields });

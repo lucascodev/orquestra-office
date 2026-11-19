@@ -5,6 +5,8 @@ const RUNS_TODAY = 20;
 
 const HOOKS_COMMAND = "node --test hooks/test/*.test.mjs";
 const PHYSICS_COMMAND = "npx vitest run src/physics";
+// Longer than the 60 characters the collector keeps, so the demo shows a cut label too.
+const WEB_CHECK_COMMAND = "npm run check -- --reporter=dot --test-concurrency=4 --experimental-test-coverage";
 const PHYSICS_TEST = "src/physics/collision.test.ts";
 const JUMP_TEST = "src/physics/jump.test.ts";
 
@@ -18,7 +20,9 @@ const HOOKS_FAILURES = [
   failure("refuses a notify that cannot be chained", "hooks/test/install-codex-notify.test.mjs:190", "The input did not match the regular expression"),
 ];
 
-const todayRun = (finishedAt, label, framework, counts) => ({ finishedAt, framework, label, ...counts });
+// As the collector writes it: the label of a round of today is its command, cut at 60 characters.
+const LABEL_LIMIT = 60;
+const todayRun = (finishedAt, command, framework, counts) => ({ finishedAt, framework, label: command.slice(0, LABEL_LIMIT), ...counts });
 
 // An agent on the main project that already ran its suite and has not touched a test in a while.
 export function testsDoneLongAgo(now) {
@@ -30,9 +34,9 @@ export function testsDoneLongAgo(now) {
     running: null,
     lastRun,
     runsToday: [
-      todayRun(lastRun.finishedAt, "hooks · node --test", "node-test", { isOk: true, passed: 242, failed: 0, skipped: 0 }),
-      todayRun(now - 70 * MIN, "web · npm run check", null, { isOk: true, passed: 461, failed: 0, skipped: 0 }),
-      todayRun(now - 95 * MIN, "api · pytest", "pytest", { isOk: true, passed: 290, failed: 0, skipped: 3 }),
+      todayRun(lastRun.finishedAt, HOOKS_COMMAND, "node-test", { isOk: true, passed: 242, failed: 0, skipped: 0 }),
+      todayRun(now - 70 * MIN, WEB_CHECK_COMMAND, null, { isOk: true, passed: 461, failed: 0, skipped: 0 }),
+      todayRun(now - 95 * MIN, "pytest api/tests -q", "pytest", { isOk: true, passed: 290, failed: 0, skipped: 3 }),
     ],
     files: [
       { path: "hooks/test/office-codex-notify.test.mjs", action: "created", at: now - 25 * MIN, failed: 0 },
@@ -53,7 +57,7 @@ export function testsThatFailed(now) {
     running: null,
     lastRun,
     runsToday: [
-      todayRun(lastRun.finishedAt, "hooks · node --test", "node-test", { isOk: false, passed: 248, failed: 2, skipped: 7 }),
+      todayRun(lastRun.finishedAt, HOOKS_COMMAND, "node-test", { isOk: false, passed: 248, failed: 2, skipped: 7 }),
       todayRun(now - 40 * MIN, "make test", null, { isOk: false, passed: null, failed: null, skipped: null }),
     ],
     files: [
@@ -98,7 +102,7 @@ function finishRun(agent, now, isOk) {
     isOk, ...counts, failures: isOk ? [] : PHYSICS_FAILURES,
   };
   const files = tests.files.map((file) => (file.action === "read" ? file : { ...file, failed: isOk ? 0 : 1 }));
-  const runsToday = [todayRun(now, "vitest · física", "vitest", { isOk, ...counts }), ...tests.runsToday].slice(0, RUNS_TODAY);
+  const runsToday = [todayRun(now, PHYSICS_COMMAND, "vitest", { isOk, ...counts }), ...tests.runsToday].slice(0, RUNS_TODAY);
   agent.tests = { ...tests, running: null, lastRun, runsToday, files };
   Object.assign(agent, { status: "working", activity: isOk ? "editing" : "failed" });
   note(agent, now, isOk ? "tests-passed" : "tests-failed", isOk ? counts.passed : counts.failed);
