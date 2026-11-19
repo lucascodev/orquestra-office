@@ -1,5 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
+import { performance } from "node:perf_hooks";
 import { countOf } from "../src/work/domain/values/count.js";
 import { frameworkOf } from "../src/work/domain/values/frameworks.js";
 import { redactSecrets } from "../src/work/domain/values/redact-secrets.js";
@@ -15,6 +16,13 @@ const FAKE_GITHUB_SERVER_TOKEN = fake("gh", "s_", "abcdefghijklmnopqrstuvwxyz012
 const FAKE_OPENAI_KEY = fake("sk", "-proj-", "abcdefghijklmnop1234");
 const FAKE_SLACK_TOKEN = fake("xo", "xb-", "123-456-abc");
 const FAKE_JWT = fake("ey", "JhbGciOiJIUzI1NiJ9", ".", "eyJzdWIiOiIxIn0", ".", "c2lnbmF0dXJl");
+const FAKE_STRIPE_LIVE_KEY = fake("sk", "_live_", "51Habcdefghijklmnop");
+const FAKE_STRIPE_TEST_KEY = fake("sk", "_test_", "51Habcdefghijklmnop");
+const FAKE_GITHUB_PAT = fake("github", "_pat_", "11ABCDEFG0123456789_abcdef");
+const FAKE_GOOGLE_KEY = fake("AI", "za", "SyA-1234567890abcdefghijklmnopqrstu");
+const PEM_LABEL = fake("RSA PRIVATE ", "KEY");
+const FAKE_PEM = fake("-----BEGIN ", PEM_LABEL, "-----\nMIIEowIBAAKCAQEA\nabcdef\n-----END ", PEM_LABEL, "-----");
+const FAKE_CUT_PEM = fake("-----BEGIN ", PEM_LABEL, "-----MIIEowIBAAKCAQEA");
 
 const secrets = [
   ["a bearer token", "curl -H 'Authorization: Bearer abc.def-123'", `curl -H 'Authorization: Bearer ${REDACTED}`],
@@ -31,6 +39,23 @@ const secrets = [
   ["a token inside a longer variable", "API_TOKEN=abc npm test", `API_TOKEN=${REDACTED} npm test`],
   ["a secret in any case", "Secret: xyz", `Secret: ${REDACTED}`],
   ["a passwd", "passwd=abc", `passwd=${REDACTED}`],
+  ["a password as a JSON key", '{"password": "hunter2", "user": "x"}', `{"password": "${REDACTED}", "user": "x"}`],
+  ["an api key as a JSON key with an escaped quote", '{"api_key":"ab\\"cd"}', `{"api_key":"${REDACTED}"}`],
+  ["a token as a JSON key in any case", '{"Token" : "abc"}', `{"Token" : "${REDACTED}"}`],
+  ["an environment variable with SECRET in its name", "AWS_SECRET_ACCESS_KEY=abcdEFGH1234 npm test", `AWS_SECRET_ACCESS_KEY=${REDACTED} npm test`],
+  ["an environment variable with PASS in its name", "DB_PASS=abc pytest", `DB_PASS=${REDACTED} pytest`],
+  ["an environment variable with KEY in its name", "export STRIPE_KEY=abc", `export STRIPE_KEY=${REDACTED}`],
+  ["a password flag with its value after a space", "pytest --db-password Sentinel123", `pytest --db-password ${REDACTED}`],
+  ["a token flag with its value after a space", "npx playwright test --token abc", `npx playwright test --token ${REDACTED}`],
+  ["a single dash apitoken flag", "go test ./... -args -apitoken Sentinel123", `go test ./... -args -apitoken ${REDACTED}`],
+  ["a secret flag with an equals sign", "npm test -- --secret=Sentinel123", `npm test -- --secret=${REDACTED}`],
+  ["basic credentials", "Authorization: Basic dXNlcjpwYXNz", `Authorization: Basic ${REDACTED}`],
+  ["a Stripe live key", `use ${FAKE_STRIPE_LIVE_KEY} now`, `use ${REDACTED} now`],
+  ["a Stripe test key", FAKE_STRIPE_TEST_KEY, REDACTED],
+  ["a GitHub fine-grained token", `token ${FAKE_GITHUB_PAT}`, `token ${REDACTED}`],
+  ["a Google API key", `key=${FAKE_GOOGLE_KEY}`, `key=${REDACTED}`],
+  ["a private key block", `before\n${FAKE_PEM}\nafter`, `before\n${REDACTED}\nafter`],
+  ["a private key block cut before its end", `key: ${FAKE_CUT_PEM}`, `key: ${REDACTED}`],
 ];
 
 for (const [what, text, expected] of secrets) {
@@ -45,11 +70,54 @@ const harmless = [
   "expected 3 to be 4",
   "sk-short",
   "https://github.com/x.git",
+  "NODE_ENV=test npm test",
+  "the --token-file flag reads the token from a file",
+  "a basic test",
+  '{"user": "x"}',
 ];
 
 for (const text of harmless) {
   test(`redaction leaves "${text}" alone`, () => {
     assert.equal(redactSecrets(text), text);
+  });
+}
+
+const REDACTION_INPUT_LENGTH = 100_000;
+const REDACTION_BUDGET_MS = 50;
+// The best of a few runs measures the patterns, not a garbage collection or another test process taking the CPU.
+const REDACTION_ATTEMPTS = 5;
+const repeatedTo = (unit) => unit.repeat(Math.ceil(REDACTION_INPUT_LENGTH / unit.length)).slice(0, REDACTION_INPUT_LENGTH);
+
+// Each input almost matches one pattern over and over, so a pattern that backtracks on it would blow the budget.
+const ADVERSARIAL_REDACTION_INPUTS = {
+  "the start of a JWT": repeatedTo("eyJ"),
+  "the start of a JWT after dashes": repeatedTo("eyJ-"),
+  "a JWT missing its signature": repeatedTo("eyJa."),
+  "a JWT made of dots": repeatedTo("eyJa.b"),
+  "credentials in a URL with no @": repeatedTo("//a:"),
+  "a token with no value": repeatedTo("token = "),
+  "a long upper case name with no equals sign": repeatedTo("A"),
+  "a secret name with no equals sign": repeatedTo("PASS_"),
+  "a password JSON key that never closes": repeatedTo('"password": "\\'),
+  "a password flag with no value": repeatedTo("--password "),
+  "the start of a private key block": repeatedTo(fake("-----BEGIN ", "RSA ")),
+  "basic with no credentials": repeatedTo("Basic "),
+};
+
+function bestRedactionMs(text) {
+  let best = Infinity;
+  for (let attempt = 0; attempt < REDACTION_ATTEMPTS; attempt += 1) {
+    const start = performance.now();
+    redactSecrets(text);
+    best = Math.min(best, performance.now() - start);
+  }
+  return best;
+}
+
+for (const [shape, text] of Object.entries(ADVERSARIAL_REDACTION_INPUTS)) {
+  test(`redaction reads 100 KB of ${shape} in under ${REDACTION_BUDGET_MS} ms`, () => {
+    const ms = bestRedactionMs(text);
+    assert.ok(ms < REDACTION_BUDGET_MS, `${ms.toFixed(1)} ms`);
   });
 }
 

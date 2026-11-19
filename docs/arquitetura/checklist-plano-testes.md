@@ -79,7 +79,7 @@ Tudo no domínio, em funções puras com testes de tabela:
 
 ## 4. Privacidade
 
-A saída dos testes nunca é guardada inteira: só os números, até 10 falhas com nome, local e mensagem cortados em 300 caracteres, e o comando cortado em 200, a partir do programa (sem `cd …` nem `X=…` no começo). Todo texto livre (comando, falhas, plano e checklist) passa por `redactSecrets`, que mascara tokens, chaves, JWT, credenciais em URL e `password=`/`token=`, e perde caracteres de controle e de bidi.
+A saída dos testes nunca é guardada inteira: só os números, até 10 falhas com nome, local e mensagem cortados em 300 caracteres, e o comando cortado em 200, a partir do programa (sem `cd …` nem `X=…` no começo). Todo texto livre (comando, falhas, plano e checklist) passa por `redactSecrets`, que mascara tokens, chaves (Stripe, GitHub, Google, AWS, blocos PEM de chave privada), JWT, credenciais em URL e em `Basic`, `password=`/`token=`, chaves JSON como `"password": "…"`, variáveis de ambiente com PASS, SECRET, TOKEN ou KEY no nome e flags como `--password valor`, com regex de tempo linear, e perde caracteres de controle e de bidi.
 
 O arquivo de estado em disco não guarda texto livre: sai a checklist, as falhas, o texto do plano e os comandos de teste (`lastRun.command`, `runsToday[].label` e a rodada em curso, gravada como `running: null`). Eles ficam em memória, como o histórico do terminal, e somem quando o coletor reinicia. O arquivo é gravado só para o dono (`0o600`), como o de aparelhos pareados.
 
