@@ -12,6 +12,7 @@ const VENDOR_DIR = join(WEB_DIR, "vendor");
 const FIXTURES_DIR = join(TEST_DIR, "fixtures");
 const STYLES_DIR = join(WEB_DIR, "styles");
 const INDEX_PAGE = join(WEB_DIR, "index.html");
+const PAGE_ENTRY = join(SCRIPTS_DIR, "app", "main.js");
 const DEFAULT_EXPORT = "default";
 
 const STATIC_IMPORT = /\b(import|export)\s+(?:([\w*{}\s,$]+?)\s+from\s+)?["']([^"']+)["']/g;
@@ -119,6 +120,19 @@ describe("web module graph", () => {
       .filter(({ target }) => !isExistingFile(target))
       .map(({ file, specifier }) => `${shown(file)} -> ${specifier}`);
     assert.deepEqual(broken, []);
+  });
+
+  it("reaches every module in scripts from the page entry, so no file is left behind that nothing loads", () => {
+    const reached = new Set();
+    const pending = [PAGE_ENTRY];
+    while (pending.length > 0) {
+      const file = pending.pop();
+      if (reached.has(file) || !isInside(SCRIPTS_DIR, file)) continue;
+      reached.add(file);
+      pending.push(...relativeImportsOf(file).map(({ target }) => target));
+    }
+    const unreachable = scriptsUnder(SCRIPTS_DIR).filter((file) => !reached.has(file)).map(shown);
+    assert.deepEqual(unreachable, []);
   });
 
   it("imports only names that the target module exports, leaving the minified vendor builds unread", () => {
