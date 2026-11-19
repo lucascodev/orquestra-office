@@ -14,7 +14,7 @@ const HOLD_MS = 5_000;
 const NINETY_DAYS_SECONDS = 7_776_000;
 const LAN_HOST = "192.168.0.50";
 const API_ROUTES = [
-  ["GET", "/api/state"], ["GET", "/api/stream"], ["GET", "/api/agents/history?key=claude:s1"], ["GET", "/api/devices"], ["GET", "/api/anything"],
+  ["GET", "/api/state"], ["GET", "/api/stream"], ["GET", "/api/agents/history?key=claude:s1"], ["GET", "/api/agents/plan?key=claude:s1"], ["GET", "/api/devices"], ["GET", "/api/anything"],
   ["POST", "/api/decisions/x"], ["POST", "/api/agents/message"], ["POST", "/api/projects/p/template"], ["POST", "/api/projects/p/close"],
   ["POST", "/api/pairings"], ["POST", "/api/devices/x/revoke"],
 ];

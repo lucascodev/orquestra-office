@@ -186,6 +186,31 @@ test("history keeps the conversation text, the office state never does", () => w
   assert.ok(!state.includes("Renamed it."));
 }));
 
+const PLAN_TEXT = "# Plan\n1. Move the billing worker";
+const planOf = async (base, key) => (await fetchPage(`${base}/api/agents/plan?key=${encodeURIComponent(key)}`)).json();
+
+test("the plan text is read through its own route, never through the office state", () => withOffice(async (base) => {
+  await postActivity(base, "/events/claude", { ...SESSION, hook_event_name: "PreToolUse", tool_name: "ExitPlanMode", tool_use_id: "p1", tool_input: { plan: PLAN_TEXT } });
+  const plan = await planOf(base, "claude:s1");
+  assert.deepEqual({ text: plan.text, version: plan.version, state: plan.state, decidedAt: plan.decidedAt }, { text: PLAN_TEXT, version: 1, state: "proposed", decidedAt: null });
+  assert.equal(typeof plan.proposedAt, "number");
+
+  const state = await stateOf(base);
+  assert.ok(!JSON.stringify(state).includes("billing"));
+  assert.deepEqual(state.projects["/tmp/demo"].agents["claude:s1"].plan.version, 1);
+}));
+
+test("an agent without a plan, or one nobody knows, has no plan through the route", () => withOffice(async (base) => {
+  await postActivity(base, "/events/claude", { ...SESSION, hook_event_name: "SessionStart" });
+  assert.deepEqual(await planOf(base, "claude:s1"), { plan: null });
+  assert.deepEqual(await planOf(base, "claude:nobody"), { plan: null });
+  assert.deepEqual(await (await fetchPage(`${base}/api/agents/plan`)).json(), { plan: null });
+}));
+
+test("a page from another site cannot read a plan", () => withOffice(async (base) => {
+  assert.equal((await fetchPage(`${base}/api/agents/plan?key=claude:s1`, { headers: CROSS_SITE })).status, 403);
+}));
+
 test("a room can be closed from the office and comes back with new activity", () => withOffice(async (base) => {
   await postActivity(base, "/events/claude", { ...SESSION, hook_event_name: "SessionStart" });
   const [key] = Object.keys((await stateOf(base)).projects);
