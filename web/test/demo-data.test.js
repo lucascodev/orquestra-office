@@ -204,6 +204,18 @@ describe("checklist, plan and tests in the demonstration", () => {
     assert.deepEqual(nextVersionAfter("allow"), [2, "proposed"]);
   });
 
+  it("keeps the start of a running round across ticks, so the clock over the figure walks", () => {
+    const state = demoState();
+    const starts = [];
+    for (let step = 0; step < 5; step += 1) {
+      tickDemo(state, step);
+      starts.push(agentByKey(state)[RUNNER].tests.running?.startedAt ?? null);
+    }
+    const [, , first, second, third] = starts;
+    assert.ok(Number.isFinite(first));
+    assert.deepEqual([second, third], [first, first]);
+  });
+
   it("runs the tests of the platformer round and round: writes, runs, fails, fixes and passes", () => {
     const state = demoState();
     const seen = [];

@@ -4,7 +4,7 @@ import { planDocument } from "../domain/work-sheet/plan-document.js";
 import { planStatus } from "../domain/work-sheet/plan-status.js";
 import { runningElapsedMs } from "../domain/work-sheet/running-elapsed.js";
 import { FIRST_TAB, workTabs } from "../domain/work-sheet/work-tabs.js";
-import { formatCountdown } from "../view/shared/format.js";
+import { clockText } from "../domain/work-signals/clock-text.js";
 
 const CLOCK_TICK_MS = 1_000;
 const PLAN_TAB = "plan";
@@ -35,7 +35,7 @@ export function createWorkTabs({ sheet, control, view, clockNow }) {
     const now = clockNow();
     for (const shown of sheet.querySelectorAll("[data-elapsed-since]")) {
       const elapsed = runningElapsedMs(Number(shown.dataset.elapsedSince), now);
-      shown.textContent = elapsed === null ? "" : formatCountdown(elapsed);
+      shown.textContent = elapsed === null ? "" : clockText(elapsed);
     }
   }
 
