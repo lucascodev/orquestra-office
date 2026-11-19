@@ -1,9 +1,10 @@
 // "no-referrer" would also make browsers send "Origin: null" on the office's own POSTs, and isSameOrigin refuses that.
 // img-src keeps an image in a plan or a failure message from calling another site; there is no default-src, which
-// would also block the scripts and styles the page loads today.
+// would also block the scripts and styles the page loads today. object-src, base-uri and form-action do not fall back to
+// a default-src anyway: they keep injected markup from loading a plugin, moving relative URLs or posting elsewhere.
 const SECURITY_HEADERS = Object.freeze({
   "X-Frame-Options": "DENY",
-  "Content-Security-Policy": "frame-ancestors 'none'; img-src 'self' data: blob:",
+  "Content-Security-Policy": "frame-ancestors 'none'; img-src 'self' data: blob:; object-src 'none'; base-uri 'none'; form-action 'self'",
   "X-Content-Type-Options": "nosniff",
   "Cross-Origin-Resource-Policy": "same-origin",
   "Referrer-Policy": "same-origin",

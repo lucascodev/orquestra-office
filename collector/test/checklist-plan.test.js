@@ -65,7 +65,7 @@ test("the checklist is a list even for a task id like __proto__", () => {
 
 test("creating a task adds a pending item to the checklist", () => {
   const checklist = withTaskCreated(null, { id: "1", text: "Write tests", activeText: "Writing tests" }, AT);
-  assert.deepEqual(checklist, { items: [{ id: "1", text: "Write tests", status: "pending", activeText: "Writing tests" }], updatedAt: AT });
+  assert.deepEqual(checklist, { items: [{ id: "1", text: "Write tests", status: "pending", activeText: "Writing tests" }], updatedAt: AT, highestTaskNumber: 1 });
 });
 
 test("tasks created in parallel keep the order of their ids", () => {
@@ -77,6 +77,20 @@ test("tasks created in parallel keep the order of their ids", () => {
 test("a task created without a known id takes the next number", () => {
   const checklist = withTaskCreated(withTaskCreated(null, { id: "3", text: "a" }, AT), { id: null, text: "b" }, AT);
   assert.deepEqual(checklist.items.map((item) => item.id), ["3", "4"]);
+});
+
+const createdTasks = (...ids) => ids.reduce((checklist, id) => withTaskCreated(checklist, { id, text: `task ${id}` }, AT), null);
+const deleted = (checklist, ...ids) => ids.reduce((list, id) => withTaskUpdated(list, { id, status: "deleted" }, LATER), checklist);
+
+// Claude Code numbers tasks itself and never reuses a number, so the next real task would be mistaken for the new one.
+test("a task created without a known id never takes the id of a deleted task", () => {
+  const checklist = withTaskCreated(deleted(createdTasks("1", "2", "3"), "3"), { id: null, text: "d" }, LATER);
+  assert.deepEqual(checklist.items.map((item) => item.id), ["1", "2", "4"]);
+});
+
+test("a task created without a known id after every task was deleted follows the highest id seen", () => {
+  const checklist = withTaskCreated(deleted(createdTasks("1", "2"), "1", "2"), { id: null, text: "d" }, LATER);
+  assert.deepEqual(checklist.items.map((item) => item.id), ["3"]);
 });
 
 test("the same task created twice stays one item", () => {
@@ -91,7 +105,7 @@ test("a task without text is not added", () => {
 test("updating a task changes its status and text", () => {
   const created = withTaskCreated(null, { id: "1", text: "a" }, AT);
   const updated = withTaskUpdated(created, { id: "1", status: "completed", text: "a, done" }, LATER);
-  assert.deepEqual(updated, { items: [{ id: "1", text: "a, done", status: "completed", activeText: null }], updatedAt: LATER });
+  assert.deepEqual(updated, { items: [{ id: "1", text: "a, done", status: "completed", activeText: null }], updatedAt: LATER, highestTaskNumber: 1 });
 });
 
 test("a task updated as deleted leaves the checklist", () => {

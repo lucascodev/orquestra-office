@@ -1,4 +1,4 @@
-import { dayOf } from "../../../office/domain/daily-stats.js";
+import { dayOf } from "../../../shared/time/day.js";
 import { cleanLineOf } from "../values/clean-text.js";
 import { isWriting, strongestAction } from "./file-actions.js";
 

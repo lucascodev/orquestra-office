@@ -1,9 +1,11 @@
 import { countOf, remainderOf, sumOf } from "../count.js";
+import { isSummaryCandidate } from "../summary-line.js";
 import { TEST_FRAMEWORK } from "../test-framework.js";
 
 const ALL_PASSED = /^OK \((\d+) tests?, \d+ assertions?\)$/;
 const RESULT = /^Tests: \d+, Assertions: \d+[A-Za-z0-9:, ]*\.$/;
-const RESULT_FIELD = /([A-Za-z]+): (\d+)/g;
+// \b starts a match only at the first letter of a word, so a long word is not read again from each of its letters.
+const RESULT_FIELD = /\b([A-Za-z]+): (\d+)/g;
 
 function fieldsOf(line) {
   const fields = {};
@@ -19,6 +21,7 @@ function countsOfResult(line) {
 }
 
 function countsOfLine(line) {
+  if (!isSummaryCandidate(line)) return null;
   const allPassed = ALL_PASSED.exec(line);
   if (allPassed) return { passed: countOf(allPassed[1]), failed: 0, skipped: 0 };
   return RESULT.test(line) ? countsOfResult(line) : null;

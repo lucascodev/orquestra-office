@@ -63,6 +63,20 @@ test("a failure outside the project keeps only the file name in its location", (
   assert.equal(testResultOf({ test: JEST, summary: summary({ failures: [outside] }), isCallOk: false, root: ROOT }).failures[0].location, "x.test.js:3");
 });
 
+const locations = [
+  ["a file URL outside the project", "file:///home/x/a.test.js:3:1", "a.test.js:3:1"],
+  ["a file URL inside the project", `file://${ROOT}/src/a.test.js:3:1`, "src/a.test.js:3:1"],
+  ["a relative path that climbs out of the project", "../../outro/x_test.py:7", "x_test.py:7"],
+  ["a path that climbs out of the root", `${ROOT}/../../Users/a.js:2`, "a.js:2"],
+];
+
+for (const [what, location, expected] of locations) {
+  test(`the location of a failure at ${what} is ${expected}`, () => {
+    const failure = { ...FAILURE, location };
+    assert.equal(testResultOf({ test: JEST, summary: summary({ failures: [failure] }), isCallOk: false, root: ROOT }).failures[0].location, expected);
+  });
+}
+
 const run = (result, finishedAt = DAY, startedAt = DAY - 12_000) => ({ result, startedAt, finishedAt });
 const failingRun = () => testResultOf({ test: JEST, summary: summary(), isCallOk: false, root: ROOT });
 const passingRun = () => testResultOf({ test: JEST, summary: summary({ failed: 0, failures: [] }), isCallOk: true, root: ROOT });

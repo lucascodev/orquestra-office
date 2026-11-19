@@ -26,6 +26,7 @@ Campos novos no registro do agente, todos opcionais (ausentes em estado salvo an
 agent.checklist = {
   items: [{ id, text, status: "pending" | "in_progress" | "completed", activeText }], // até 50 itens, texto até 200
   updatedAt,
+  highestTaskNumber, // só com TaskCreate: maior id numérico já visto, contando os apagados, para numerar sem reaproveitar
 } | null;
 
 agent.plan = {
@@ -64,7 +65,7 @@ As entradas `tests-passed`, `tests-failed` e `plan-approved` vão para `agent.lo
 
 O pedido pendente de `ExitPlanMode`, montado a partir do `PermissionRequest` assinado, leva `plan` (até 20 000 caracteres, com segredos mascarados), `planLength` e `isPlanTruncated`. É esse texto que o alerta mostra, nunca o do `PreToolUse`, que chega pela via de atividade. O texto da versão mais recente fica só em memória e sai por `GET /api/agents/plan?key=<agentKey>`, com pareamento, devolvendo `{ text, version, state, proposedAt, decidedAt }` ou `{ plan: null }`.
 
-Os ids de framework são um enum fixo; o de `node --test` é `node-test`, e uma saída com vários frameworks dá `mixed`.
+Os ids de framework são um enum fixo, exportado como `FRAMEWORK_IDS` em `collector/src/work/domain/values/frameworks.js`: os do leitor de saída (`TEST_FRAMEWORK`) mais os que só o comando nomeia (`COMMAND_FRAMEWORK`). O de `node --test` é `node-test`, e uma saída com vários frameworks dá `mixed`.
 
 ## 3. Como o coletor reconhece
 
@@ -79,11 +80,11 @@ Tudo no domínio, em funções puras com testes de tabela:
 
 ## 4. Privacidade
 
-A saída dos testes nunca é guardada inteira: só os números, até 10 falhas com nome, local e mensagem cortados em 300 caracteres, e o comando cortado em 200, a partir do programa (sem `cd …` nem `X=…` no começo). Todo texto livre (comando, falhas, plano e checklist) passa por `redactSecrets`, que mascara tokens, chaves, JWT, credenciais em URL e `password=`/`token=`, e perde caracteres de controle e de bidi.
+A saída dos testes nunca é guardada inteira: só os números, até 10 falhas com nome, local e mensagem cortados em 300 caracteres, e o comando cortado em 200, a partir do programa (sem `cd …` nem `X=…` no começo). Todo texto livre (comando, falhas, plano e checklist) passa por `redactSecrets`, que mascara tokens, chaves (Stripe, GitHub, Google, AWS, blocos PEM de chave privada), JWT, credenciais em URL e em `Basic`, `password=`/`token=`, chaves JSON como `"password": "…"`, variáveis de ambiente com PASS, SECRET, TOKEN ou KEY no nome e flags como `--password valor`, com regex de tempo linear, e perde caracteres de controle e de bidi.
 
-O arquivo de estado em disco não guarda texto livre: sai a checklist, as falhas e o texto do plano. Eles ficam em memória, como o histórico do terminal, e somem quando o coletor reinicia.
+O arquivo de estado em disco não guarda texto livre: sai a checklist, as falhas, o texto do plano e os comandos de teste (`lastRun.command`, `runsToday[].label` e a rodada em curso, gravada como `running: null`). Eles ficam em memória, como o histórico do terminal, e somem quando o coletor reinicia. O arquivo é gravado só para o dono (`0o600`), como o de aparelhos pareados.
 
-A página mostra o plano com um renderizador próprio, sem HTML cru, imagens, estilos nem elementos de formulário, e só com links `http`, `https` e `mailto`. As decisões só leem botões e o campo de dentro da barra de decisão. A CSP ganhou `img-src 'self' data: blob:`.
+A página mostra o plano com um renderizador próprio, sem HTML cru, imagens, estilos nem elementos de formulário, e só com links `http`, `https` e `mailto`. As decisões só leem botões e o campo de dentro da barra de decisão. A CSP ganhou `img-src 'self' data: blob:`, `object-src 'none'`, `base-uri 'none'` e `form-action 'self'`.
 
 ## 5. Divisão do trabalho
 

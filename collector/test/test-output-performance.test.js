@@ -34,6 +34,12 @@ const ADVERSARIAL_INPUTS = {
   "many cargo failure headers": fill("---- x stdout ----\n"),
   "many pytest sections": fill("____ test_x ____\n"),
   "many go runs": fill("=== RUN   TestX/y\n    x_test.go:1: m\n"),
+  "lines of a count and a long word": fill(`1 ${"a".repeat(2_040)}\n`),
+  "almost jest summaries with a long number": fill(`Tests: 1${"1".repeat(2_000)}, 1 total\n`),
+  "almost vitest summaries with a long number": fill(`      Tests  1${"1".repeat(2_000)} (1)\n`),
+  "almost pytest summaries with a long number": fill(`1 a${"1".repeat(2_000)}, in 1s\n`),
+  "almost mix summaries with a long number": fill(`1 tests, ${"1".repeat(2_000)},\n`),
+  "phpunit results with a long word": fill(`Tests: 1, Assertions: 1, ${"A".repeat(2_000)}.\n`),
 };
 
 function bestTimeMs(run) {

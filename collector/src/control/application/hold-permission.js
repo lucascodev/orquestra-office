@@ -1,10 +1,10 @@
 import { AGENT_ACTION } from "../../office/domain/agent-actions.js";
 import { summarizeTool } from "../../shared/claude/summarize-tool.js";
+import { PLAN_TOOL } from "../../shared/claude/tool-names.js";
 import { TOOL_SUMMARY } from "../../shared/claude/tool-summary-ids.js";
 import { ENTRY_TEXT } from "../../shared/terminal/entry-text-ids.js";
 import { planTextOf } from "../../work/domain/plan-text.js";
 
-const PLAN_TOOL = "ExitPlanMode";
 const NO_PLAN = Object.freeze({ text: "", length: 0, isTruncated: false });
 
 function requestedTool(toolName, toolInput) {

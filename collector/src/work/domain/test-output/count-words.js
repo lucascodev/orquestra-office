@@ -1,6 +1,7 @@
 import { countOf, sumOf } from "./count.js";
 
-const NUMBER_AND_WORD = /(\d+) ([a-z]+)/gi;
+// \b starts a match only at the first digit of a number, so a long number is not read again from each of its digits.
+const NUMBER_AND_WORD = /\b(\d+) ([a-z]+)/gi;
 
 // Reads "2 failed, 5 passed | 1 skipped" into { failed: 2, passed: 5, skipped: 1 }, whatever the separator.
 export function countWordsOf(text) {

@@ -2,6 +2,8 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { scriptCommandOf } from "../src/work/domain/commands/script-command.js";
 import { testCommandOf } from "../src/work/domain/commands/test-command.js";
+import { TEST_FRAMEWORK } from "../src/work/domain/test-output/test-framework.js";
+import { FRAMEWORK_IDS } from "../src/work/domain/values/frameworks.js";
 
 const COMMAND_LIMIT = 200;
 
@@ -111,6 +113,14 @@ for (const [what, command] of notTests) {
     assert.equal(testCommandOf(command), null);
   });
 }
+
+// The page keeps a phrase for each id, so the list holds only names something can produce.
+test("the framework ids are exactly the ones the output parser and the command reader give", () => {
+  const fromCommands = recognized.map(([, command]) => testCommandOf(command).framework).filter(Boolean);
+  const produced = new Set([...Object.values(TEST_FRAMEWORK), ...fromCommands]);
+  assert.ok(Object.isFrozen(FRAMEWORK_IDS));
+  assert.deepEqual([...FRAMEWORK_IDS].sort(), [...produced].sort());
+});
 
 test("the command of a test run starts at the test program, without the cd before it or the variables set for it", () => {
   assert.equal(testCommandOf("cd collector && API_TOKEN=abc npm test -- --reporter=dot 2>&1 | tail -5").command, "npm test -- --reporter=dot 2>&1");

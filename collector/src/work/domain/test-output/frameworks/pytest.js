@@ -1,10 +1,11 @@
 import { sumOf } from "../count.js";
 import { countOrZero, countWordsOf } from "../count-words.js";
 import { locationOf } from "../failure-fields.js";
+import { isSummaryCandidate } from "../summary-line.js";
 import { TEST_FRAMEWORK } from "../test-framework.js";
 
 const BANNER_CHARACTERS = "= ";
-const SUMMARY = /^(?:\d+ [a-z]+|no tests ran)[a-z0-9, ]* in \d+(?:\.\d+)?s(?: \([0-9:]+\))?$/;
+const SUMMARY = /^(?:\d+ [a-z]+(?:,? \d+ [a-z]+)*|no tests ran) in \d+(?:\.\d+)?s(?: \([0-9:]+\))?$/;
 const SECTION_HEADER = /^_+ (.+) _+$/;
 const SECTION_END = "=";
 const ERROR_LINE = /^E\s+(.+)$/;
@@ -23,7 +24,7 @@ function withoutBanner(line) {
 }
 
 function countsOf(lines) {
-  const summaries = lines.map(withoutBanner).filter((line) => SUMMARY.test(line)).map(countWordsOf);
+  const summaries = lines.map(withoutBanner).filter((line) => isSummaryCandidate(line) && SUMMARY.test(line)).map(countWordsOf);
   if (summaries.length === 0) return null;
   const total = (...words) => sumOf(summaries.map((counts) => countOrZero(counts, ...words)));
   return {

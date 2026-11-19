@@ -63,6 +63,16 @@ const projectPaths = [
   ["a sibling folder that starts like the root", "/home/dev/app-old/a.js", "/home/dev/app", "a.js"],
   ["a path with no root known", "/home/dev/app/a.js", "", "a.js"],
   ["no path", undefined, "/home/dev/app", ""],
+  ["a file URL inside the root", "file:///home/dev/app/src/a.test.js", "/home/dev/app", "src/a.test.js"],
+  ["a file URL outside the root", "file:///home/x/a.test.js", "/home/dev/app", "a.test.js"],
+  ["a Windows file URL inside the root", "file:///C:/Projetos/App/web/a.test.js", "c:/projetos/app", "web/a.test.js"],
+  ["a file URL with an escaped space inside the root", "file:///home/dev/my%20app/src/a.js", "/home/dev/my app", "src/a.js"],
+  ["a file URL on another host", "file://server/share/a.js", "/home/dev/app", "a.js"],
+  ["a relative path that climbs out of the project", "../../outro/x_test.py", "/home/dev/app", "x_test.py"],
+  ["a relative path that climbs back inside itself", "./src/../lib/a.js", "/home/dev/app", "lib/a.js"],
+  ["a Windows path that climbs out of the root", "C:/root/../../Users/a.js", "C:/root", "a.js"],
+  ["a path that climbs out of the root to a sibling", "/home/dev/app/../other/secret/a.js", "/home/dev/app", "a.js"],
+  ["a path with dots that stays inside the root", "/home/dev/app/src/./b/../a.js", "/home/dev/app", "src/a.js"],
 ];
 
 for (const [what, path, root, expected] of projectPaths) {

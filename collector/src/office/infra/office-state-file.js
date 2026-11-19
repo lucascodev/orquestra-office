@@ -4,6 +4,7 @@ import { savedOfficeStateOf } from "../domain/saved-office-state.js";
 
 const SAVE_DELAY_MS = 2_000;
 const MISSING_FILE = "ENOENT";
+const OWNER_ONLY_FILE = 0o600;
 
 export function createOfficeStateFile(dataDir) {
   const file = join(dataDir, "office.json");
@@ -15,7 +16,7 @@ export function createOfficeStateFile(dataDir) {
     try {
       mkdirSync(dataDir, { recursive: true });
       const temp = `${file}.tmp`;
-      writeFileSync(temp, JSON.stringify(savedOfficeStateOf(state)));
+      writeFileSync(temp, JSON.stringify(savedOfficeStateOf(state)), { mode: OWNER_ONLY_FILE });
       renameSync(temp, file);
     } catch (error) {
       console.error(`could not save office state: ${error.code ?? error.message}`);

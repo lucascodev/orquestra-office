@@ -1,10 +1,9 @@
 import { projectPathOf } from "../../../shared/path/project-path.js";
+import { FAILURE_FIELD_LIMIT, MAX_FAILURES } from "../test-output/limits.js";
 import { cleanLineOf } from "../values/clean-text.js";
 import { countOf } from "../values/count.js";
 import { frameworkOf } from "../values/frameworks.js";
 
-const FAILURE_LIMIT = 10;
-const FAILURE_FIELD_LIMIT = 300;
 const LOCATION_SCAN_LIMIT = 2 * FAILURE_FIELD_LIMIT;
 const LINE_AND_COLUMN_PARTS = 2;
 
@@ -26,7 +25,7 @@ function failuresOf(failures, root) {
   if (!Array.isArray(failures)) return [];
   return failures
     .filter((failure) => failure !== null && typeof failure === "object")
-    .slice(0, FAILURE_LIMIT)
+    .slice(0, MAX_FAILURES)
     .map((failure) => ({ name: fieldOf(failure.name), location: fieldOf(projectLocationOf(failure.location, root)), message: fieldOf(failure.message) }));
 }
 

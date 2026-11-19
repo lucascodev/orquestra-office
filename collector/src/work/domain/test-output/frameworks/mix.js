@@ -1,5 +1,6 @@
 import { remainderOf, sumOf } from "../count.js";
 import { countOrZero, countWordsOf } from "../count-words.js";
+import { isSummaryCandidate } from "../summary-line.js";
 import { TEST_FRAMEWORK } from "../test-framework.js";
 
 const SUMMARY = /^\d+ (?:doctests?|tests?|properties|property|features?),[a-z0-9, ]*$/;
@@ -15,7 +16,7 @@ function countsOf(counts) {
 
 function parse(lines) {
   const summaries = lines
-    .filter((line) => SUMMARY.test(line))
+    .filter((line) => isSummaryCandidate(line) && SUMMARY.test(line))
     .map(countWordsOf)
     .filter((counts) => FAILURE_WORDS.some((word) => word in counts))
     .map(countsOf);

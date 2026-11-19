@@ -104,6 +104,36 @@ test("each layer imports only the layers the architecture allows", () => {
   assert.deepEqual(violations, []);
 });
 
+function contextOf(path) {
+  const [top, second] = pathInSrc(path).split("/");
+  return CONTEXT_LAYERS.has(second) ? top : null;
+}
+
+test("no two contexts import each other, so the arrows between contexts point one way", () => {
+  const edges = new Set(scriptsUnder(SRC_DIR)
+    .flatMap(relativeImportsOf)
+    .map(({ file, target }) => [contextOf(file), contextOf(target)])
+    .filter(([from, to]) => from && to && from !== to)
+    .map(([from, to]) => `${from} -> ${to}`));
+  const mutual = [...edges].filter((edge) => edges.has(edge.split(" -> ").reverse().join(" -> ")));
+  assert.deepEqual(mutual, []);
+});
+
+const PLAN_TOOL_LITERAL = /["']ExitPlanMode["']/;
+const TOOL_NAMES_FILE = "shared/claude/tool-names.js";
+const FAILURE_LIMIT_DECLARATION = /\bconst\s+(?:FAILURE_LIMIT|MAX_FAILURES|FAILURE_FIELD_LIMIT)\b/;
+const TEST_OUTPUT_LIMITS_FILE = "work/domain/test-output/limits.js";
+
+const filesMatching = (pattern) => scriptsUnder(SRC_DIR).filter((file) => pattern.test(readFileSync(file, "utf8"))).map(pathInSrc);
+
+test("the plan tool is named in one place", () => {
+  assert.deepEqual(filesMatching(PLAN_TOOL_LITERAL), [TOOL_NAMES_FILE]);
+});
+
+test("how many failures a run keeps and how long each field is are declared in one place", () => {
+  assert.deepEqual(filesMatching(FAILURE_LIMIT_DECLARATION), [TEST_OUTPUT_LIMITS_FILE]);
+});
+
 test("only infra, http and the composition root use Node built-ins", () => {
   const violations = scriptsUnder(SRC_DIR)
     .filter((file) => !BUILTIN_LAYERS.has(layerOf(file)))
