@@ -1,13 +1,15 @@
 import { PLAN_APPROVAL_TEXT } from "../../data/text/pt-br/plan-approval.js";
 import { toolSummaryText } from "../../domain/terminal/tool-summary-text.js";
-import { isPlanRequest, planOfRequest } from "../../domain/work-sheet/plan-request.js";
+import { canApprovePlan, isPlanRequest, planOfRequest } from "../../domain/work-sheet/plan-request.js";
 import { esc } from "../shared/escape-html.js";
 import { formatCountdown } from "../shared/format.js";
+import { renderPlanApproveButton } from "../shared/plan-approve-button.js";
 import { renderPlanContent } from "../shared/plan-content.js";
 import { shownQuestion } from "../shared/shown-question.js";
 
 const COMMAND_TOOL = "Bash";
 const PLAN_REASON_FIELD = "hq-plan-reason";
+const PLAN_WHY_ID = "hq-plan-why";
 const REASON_LIMIT = 1000;
 const QUESTION = "question";
 const UNKNOWN_AGENT = "Um agente";
@@ -76,6 +78,7 @@ function permissionBody(request) {
 // The plan lives in its own box, apart from the bar that decides it; only the bar's buttons and its own field answer the
 // request. Approving takes a click: the plan has no A key, only N to keep planning.
 function planBody(request) {
+  const approve = renderPlanApproveButton({ canApprove: canApprovePlan(request), className: "btn btn-sm btn-primary", whyId: PLAN_WHY_ID });
   return `<div class="hq-alert-body is-plan" data-pending="${esc(request.id)}">
       <article class="hq-plan md" aria-label="${PLAN_APPROVAL_TEXT.planLabel}" tabindex="0">${renderPlanContent(planOfRequest(request))}</article>
       <div class="hq-plan-decision" data-decision-bar data-reason-field="${PLAN_REASON_FIELD}">
@@ -84,8 +87,8 @@ function planBody(request) {
           <button class="btn btn-sm btn-ghost" type="button" data-decide="terminal">${PLAN_APPROVAL_TEXT.terminal}</button>
           <span class="spacer"></span>
           <button class="btn btn-sm btn-secondary" type="button" data-decide="deny" aria-keyshortcuts="N">${PLAN_APPROVAL_TEXT.keepPlanning} <kbd aria-hidden="true">N</kbd></button>
-          <button class="btn btn-sm btn-primary" type="button" data-decide="allow">${PLAN_APPROVAL_TEXT.approve}</button>
-        </div>
+          ${approve.button}
+        </div>${approve.why}
       </div>
       <p class="pending-error" role="alert" hidden></p>
     </div>`;

@@ -9,5 +9,6 @@ export const PLAN_APPROVAL_TEXT = {
   reasonPlaceholder: "Ex.: guarde o comando anterior no manifesto também",
   keepPlanning: "Continuar planejando",
   approve: "Aprovar plano",
+  approveInTerminal: "Para aprovar, leia o plano inteiro no terminal e decida lá. Daqui dá para continuar planejando.",
   terminal: "Decidir no terminal",
 };
