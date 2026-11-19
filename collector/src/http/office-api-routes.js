@@ -10,6 +10,7 @@ const CLOSE_ROUTE = /^\/api\/projects\/(.+)\/close$/;
 const DECISION_ROUTE = /^\/api\/decisions\/([\w-]+)$/;
 const MESSAGE_ROUTE = "/api/agents/message";
 const RUNNER_TICKET_ROUTE = "/api/runner-ticket";
+const NO_PLAN = Object.freeze({ plan: null });
 
 export function createOfficeApiRoutes({ store, history, stream, officeView, decidePendingRequest, sendMessageToAgent, panelAuth, signRunnerTicket }) {
   // The runner on this machine trusts a page that brings its nonce signed with the office key; only a paired page gets one.
@@ -44,6 +45,7 @@ export function createOfficeApiRoutes({ store, history, stream, officeView, deci
     "/api/state": (req, res, url, session) => sendJson(res, 200, officeView(), { "Set-Cookie": panelAuth.sessionCookie(session.token) }),
     "/api/stream": (req, res, url, session) => stream.subscribe(req, res, session.device.id),
     "/api/agents/history": (req, res, url) => sendJson(res, 200, { entries: history.of(url.searchParams.get("key") ?? "") }),
+    "/api/agents/plan": (req, res, url) => sendJson(res, 200, store.planOf(url.searchParams.get("key") ?? "") ?? NO_PLAN),
   };
 
   function get(req, res, url, session) {

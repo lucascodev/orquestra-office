@@ -69,7 +69,7 @@ const ALLOWED_LAYERS = {
   application: ["domain", "history", "shared"],
   infra: ["domain", "shared"],
   history: ["shared"],
-  claude: ["office/domain", "shared"],
+  claude: ["office/domain", "work/domain", "shared"],
   codex: ["office/domain", "shared"],
   http: ["application", "domain", "claude", "codex", "history", "shared"],
 };

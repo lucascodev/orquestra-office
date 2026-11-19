@@ -93,7 +93,7 @@ test("the agent and its log keep the action and subject of each event", () => {
 
 test("plain progress keeps the action and the log as they were", () => {
   const store = createOfficeStore();
-  store.apply(claude("PreToolUse", { tool_name: "Bash", tool_input: { command: "npm test" } }, 1_000));
+  store.apply(claude("PreToolUse", { tool_name: "Bash", tool_input: { command: "npm install" } }, 1_000));
   store.apply(claude("PostToolUse", { tool_name: "Bash" }, 2_000));
   const agent = mainAgentIn(store);
   assert.deepEqual(actionOf(agent), { actionId: AGENT_ACTION.RUNNING, subject: "npm" });

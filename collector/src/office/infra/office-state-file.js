@@ -1,5 +1,6 @@
 import { mkdirSync, readFileSync, renameSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
+import { savedOfficeStateOf } from "../domain/saved-office-state.js";
 
 const SAVE_DELAY_MS = 2_000;
 const MISSING_FILE = "ENOENT";
@@ -14,7 +15,7 @@ export function createOfficeStateFile(dataDir) {
     try {
       mkdirSync(dataDir, { recursive: true });
       const temp = `${file}.tmp`;
-      writeFileSync(temp, JSON.stringify(state));
+      writeFileSync(temp, JSON.stringify(savedOfficeStateOf(state)));
       renameSync(temp, file);
     } catch (error) {
       console.error(`could not save office state: ${error.code ?? error.message}`);

@@ -26,4 +26,9 @@ export const AGENT_ACTION = Object.freeze({
   PERMISSION_APPROVED: "permission-approved",
   PERMISSION_DENIED: "permission-denied",
   QUESTION_ANSWERED: "question-answered",
+  RUNNING_TESTS: "running-tests",
+  WRITING_TESTS: "writing-tests",
+  TESTS_PASSED: "tests-passed",
+  TESTS_FAILED: "tests-failed",
+  PLAN_APPROVED: "plan-approved",
 });

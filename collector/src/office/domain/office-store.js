@@ -7,6 +7,7 @@ import { baseName } from "./path-name.js";
 import { projectKeyOf } from "./project-key.js";
 import { isTemplate, nextTemplate } from "./templates.js";
 import { createToolOrder } from "./tool-order.js";
+import { createAgentWork } from "../../work/domain/agent-work.js";
 
 const LOG_LIMIT = 20;
 const SOURCE_LABEL = { claude: "Claude Code", codex: "Codex" };
@@ -15,6 +16,7 @@ export function createOfficeStore(initial) {
   const state = officeStateFrom(initial);
   const listeners = new Set();
   const toolOrder = createToolOrder();
+  const work = createAgentWork();
 
   const emit = () => listeners.forEach((listener) => listener());
 
@@ -88,11 +90,15 @@ export function createOfficeStore(initial) {
     const isLate = toolOrder.isLate(agent.key, event);
     toolOrder.note(agent.key, event);
 
+    if (event.work) work.apply(agent, event.work, { at: event.at, isLate });
+    if (event.endsTurn) work.endTurn(agent);
+
     if (event.kind === "session-end") {
       for (const other of Object.values(project.agents)) {
         if (other.key === agent.key || other.parentKey === agent.key) {
           other.status = "idle";
           other.endedAt = event.at;
+          work.endTurn(other);
         }
       }
     } else if (event.kind === "subagent-stop") {
@@ -127,11 +133,15 @@ export function createOfficeStore(initial) {
       for (const [agentKey, agent] of Object.entries(project.agents)) {
         if (hasAgentExpired(agent, now)) {
           delete project.agents[agentKey];
+          work.forget(agentKey);
           changed = true;
-        } else if (isBreakOver(agent, now)) {
+          continue;
+        }
+        if (isBreakOver(agent, now)) {
           agent.status = "idle";
           changed = true;
         }
+        if (work.startDay(agent, now)) changed = true;
       }
       if (isRoomAbandoned(project, now)) {
         delete state.projects[key];
@@ -160,6 +170,7 @@ export function createOfficeStore(initial) {
 
   function closeProject(projectKey) {
     if (!state.projects[projectKey]) return false;
+    Object.keys(state.projects[projectKey].agents).forEach(work.forget);
     delete state.projects[projectKey];
     for (const [sessionId, key] of Object.entries(state.sessions)) {
       if (key !== projectKey) continue;
@@ -170,11 +181,21 @@ export function createOfficeStore(initial) {
     return true;
   }
 
-  function findAgent(agentKey) {
+  function agentAt(agentKey) {
     for (const project of Object.values(state.projects)) {
-      if (project.agents[agentKey]) return { ...project.agents[agentKey] };
+      if (project.agents[agentKey]) return project.agents[agentKey];
     }
     return null;
+  }
+
+  function findAgent(agentKey) {
+    const agent = agentAt(agentKey);
+    return agent ? { ...agent } : null;
+  }
+
+  function planOf(agentKey) {
+    const agent = agentAt(agentKey);
+    return agent ? work.planOf(agent) : null;
   }
 
   return {
@@ -184,6 +205,7 @@ export function createOfficeStore(initial) {
     setTemplate,
     closeProject,
     findAgent,
+    planOf,
     snapshot: () => structuredClone(state),
     onChange: (listener) => {
       listeners.add(listener);
