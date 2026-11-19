@@ -18,16 +18,23 @@ const UNREACHABLE_OFFICE = "http://127.0.0.1:1";
 
 const hmacOf = (key, message) => createHmac("sha256", key).update(message).digest("base64url");
 
+const isRequestSigned = (request) =>
+  signatureFromHeader(request.headers[SIGNATURE_HEADER]) === hmacOf(KEY, requestMessage({ path: request.url, nonce: request.headers[NONCE_HEADER], bodyHash: bodyHashOf(request.body) }));
+
+function signedAnswer(request, body, key = KEY) {
+  const text = JSON.stringify(body);
+  const signature = hmacOf(key, responseMessage({ path: request.url, nonce: request.headers[NONCE_HEADER], status: 200, bodyHash: bodyHashOf(text) }));
+  return { status: 200, text, headers: { [SIGNATURE_HEADER]: signatureHeaderOf(signature) } };
+}
+
+// Like the collector: the challenge, too, is given only for a signed request, and comes back signed.
 function bootstrapAnswer(body, { key = KEY, isSigned = true, challengeStatus = 200 } = {}) {
   return (request) => {
-    if (request.url === CHALLENGE_PATH) return { status: challengeStatus, text: JSON.stringify({ challenge: CHALLENGE, expiresAt: 1 }) };
+    if (!isRequestSigned(request)) return { status: 401, text: "{}" };
+    if (request.url === CHALLENGE_PATH) return challengeStatus === 200 ? signedAnswer(request, { challenge: CHALLENGE, expiresAt: 1 }) : { status: challengeStatus, text: "{}" };
     if (JSON.parse(request.body).challenge !== CHALLENGE) return { status: 401, text: "{}" };
-    const nonce = request.headers[NONCE_HEADER];
-    const isRequestSigned = signatureFromHeader(request.headers[SIGNATURE_HEADER]) === hmacOf(KEY, requestMessage({ path: request.url, nonce, bodyHash: bodyHashOf(request.body) }));
-    if (!isRequestSigned) return { status: 401, text: "{}" };
-    const text = JSON.stringify(body);
-    const signature = hmacOf(key, responseMessage({ path: request.url, nonce, status: 200, bodyHash: bodyHashOf(text) }));
-    return { status: 200, text, headers: isSigned ? { [SIGNATURE_HEADER]: signatureHeaderOf(signature) } : {} };
+    const answer = signedAnswer(request, body, key);
+    return isSigned ? answer : { ...answer, headers: {} };
   };
 }
 
@@ -53,6 +60,29 @@ test("a localhost office address gives a link to 127.0.0.1, never one the browse
   assert.equal(result.code, 0);
   assert.match(result.stdout, new RegExp(`^http://127\\.0\\.0\\.1:${port}/#pair=${CODE}$`, "m"));
   assert.doesNotMatch(result.stdout, /localhost/);
+});
+
+test("the challenge request is signed too, so the office can refuse a flood from anyone without the secret", async (t) => {
+  const signedPaths = [];
+  const answer = bootstrapAnswer({ code: CODE, expiresAt: 1, urls: [] });
+  const office = await startFakeOffice(t, { answer: (request) => { if (isRequestSigned(request)) signedPaths.push(request.url); return answer(request); } });
+
+  const result = await openOffice(office.url);
+
+  assert.equal(result.code, 0);
+  assert.deepEqual(signedPaths, [CHALLENGE_PATH, "/pairing/bootstrap"]);
+});
+
+test("a challenge answer that is not signed with this machine's secret asks for no code", async (t) => {
+  const office = await startFakeOffice(t, {
+    answer: (request) => (request.url === CHALLENGE_PATH ? { status: 200, text: JSON.stringify({ challenge: CHALLENGE, expiresAt: 1 }) } : bootstrapAnswer({ code: CODE })(request)),
+  });
+
+  const result = await openOffice(office.url);
+
+  assert.equal(result.code, 1);
+  assert.deepEqual(office.requests.map((request) => request.url), [CHALLENGE_PATH]);
+  assert.match(result.stderr, /not signed/);
 });
 
 test("without a challenge from the office it asks for no code and opens nothing", async (t) => {

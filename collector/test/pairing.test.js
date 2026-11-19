@@ -92,14 +92,26 @@ test("a signed bootstrap without a challenge, or with one the office never gave,
   assert.equal((await postSigned(base, "/pairing/bootstrap", { challenge: "AAAAAAAAAAAAAAAAAAAAAA" })).status, 401);
 }));
 
-test("anyone may ask for a bootstrap challenge, which lasts 30 seconds and needs a JSON request, so a plain form cannot spend them",(t) => withOffice(t, async (base) => {
-  const res = await fetch(`${base}/pairing/challenge`, { method: "POST", headers: { "Content-Type": "application/json" }, body: "{}" });
-  const answer = await res.json();
+const PENDING_CHALLENGE_LIMIT = 20;
+const unsignedChallengeRequest = (base) => fetch(`${base}/pairing/challenge`, { method: "POST", headers: { "Content-Type": "application/json" }, body: "{}" });
 
-  assert.equal(res.status, 200);
-  assert.match(answer.challenge, /^[\w-]{22}$/);
-  assert.ok(answer.expiresAt <= Date.now() + 30_000);
+test("a bootstrap challenge is given only for a JSON request signed with this office's key, signed back, and lasts 30 seconds", (t) => withOffice(t, async (base) => {
+  const answer = await postSigned(base, "/pairing/challenge", {});
+
+  assert.equal(answer.status, 200);
+  assert.equal(answer.isSigned, true);
+  assert.match(answer.body.challenge, /^[\w-]{22}$/);
+  assert.ok(answer.body.expiresAt <= Date.now() + 30_000);
+  assert.equal((await postSigned(base, "/pairing/challenge", {}, { key: OTHER_KEY })).status, 401);
   assert.equal((await fetch(`${base}/pairing/challenge`, { method: "POST", body: "{}" })).status, 415);
+}));
+
+test("unsigned challenge requests get 401 and spend no slot, so a flood of them does not stop a real pairing", (t) => withOffice(t, async (base) => {
+  const statuses = [];
+  for (let attempt = 0; attempt <= PENDING_CHALLENGE_LIMIT; attempt += 1) statuses.push((await unsignedChallengeRequest(base)).status);
+
+  assert.deepEqual(statuses, Array(PENDING_CHALLENGE_LIMIT + 1).fill(401));
+  assert.match(await issueBootstrapCode(base), /^[\w-]{22}$/);
 }));
 
 test("a captured bootstrap is refused when sent again, even after the collector restarts", (t) => {

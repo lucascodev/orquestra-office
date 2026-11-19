@@ -17,12 +17,21 @@ const TOO_MANY_CHALLENGES = { error: "too many pending challenges" };
 export function createPairingRoutes({ hookAuth, panelAuth, issueBootstrapChallenge, bootstrapPairing, issuePairingCode, redeemPairing, revokeDevice, listDevices }) {
   const requestHostOf = (req) => String(req.headers.host ?? "");
 
-  // Public on purpose: a challenge opens nothing by itself. JSON only, so a form posted by another page cannot use them up.
+  function sendSigned(res, { path, nonce, answer }) {
+    const text = JSON.stringify(answer);
+    const signature = hookAuth.responseSignatureOf({ path, nonce, status: OK_STATUS, body: text });
+    if (!signature) return sendJson(res, 401, { error: "office secret missing" });
+    return sendJsonText(res, OK_STATUS, text, signature);
+  }
+
+  // Signed like the bootstrap, so a flood of requests from anyone without the secret cannot use up the pending challenges.
   async function challenge(req, res) {
     if (!isJson(req)) return sendJson(res, 415, {});
-    await readRawBody(req, BODY_LIMIT);
+    const body = await readRawBody(req, BODY_LIMIT);
+    const { access, nonce } = hookAuth.signedAccessOf(req, CHALLENGE_PATH, body);
+    if (access !== HOOK_ACCESS.GRANTED) return sendJson(res, 401, { error: "invalid signature" });
     const issued = issueBootstrapChallenge();
-    return issued ? sendJson(res, OK_STATUS, issued) : sendJson(res, 429, TOO_MANY_CHALLENGES);
+    return issued ? sendSigned(res, { path: CHALLENGE_PATH, nonce, answer: issued }) : sendJson(res, 429, TOO_MANY_CHALLENGES);
   }
 
   // The first browser is paired by a command on this machine, which proves it holds the secret by signing the request.
@@ -34,10 +43,7 @@ export function createPairingRoutes({ hookAuth, panelAuth, issueBootstrapChallen
     const { isFresh, issued } = bootstrapPairing({ challenge: parseJsonOrNull(body)?.challenge, requestHost: requestHostOf(req) });
     if (!isFresh) return sendJson(res, 401, { error: "invalid challenge" });
     if (!issued) return sendJson(res, 429, TOO_MANY_CODES);
-    const text = JSON.stringify(issued);
-    const signature = hookAuth.responseSignatureOf({ path: BOOTSTRAP_PATH, nonce, status: OK_STATUS, body: text });
-    if (!signature) return sendJson(res, 401, { error: "office secret missing" });
-    return sendJsonText(res, OK_STATUS, text, signature);
+    return sendSigned(res, { path: BOOTSTRAP_PATH, nonce, answer: issued });
   }
 
   async function redeem(req, res) {
