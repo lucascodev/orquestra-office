@@ -51,6 +51,13 @@ export function createOffice({ webDir, dataDir = null, holdMs, allowedHosts = []
   const devicesFile = dataDir ? createDeviceSessionsFile(dataDir) : null;
   const deviceSessions = createDeviceSessions({ saved: devicesFile?.load(), keyId: officeKey.keyId(), newId: newDeviceId });
   if (devicesFile) deviceSessions.onChange(() => devicesFile.save(deviceSessions.snapshot()));
+  deviceSessions.onChange(() => stream.keepDevices(new Set(deviceSessions.list().map((device) => device.id))));
+  // A rotated secret is noticed on the next read of the key; checking it here too means a page paired under the old key
+  // stops holding requests the moment one arrives, not on the next sweep. A missing secret drops nobody: it may be mid-rotation.
+  function applyCurrentKey() {
+    const keyId = officeKey.keyId();
+    if (keyId) deviceSessions.useKey(keyId);
+  }
   const pairingCodes = createPairingCodes({ newCode: newPairingCode });
   const bootstrapChallenges = createBootstrapChallenges({ newChallenge: newPairingCode });
   const issuePairingCode = createIssuePairingCode({ pairingCodes, lanHosts: allowedHosts });
@@ -62,7 +69,11 @@ export function createOffice({ webDir, dataDir = null, holdMs, allowedHosts = []
   });
 
   const activity = createRecordActivity({ store, history });
-  const holdRequest = createHoldRequest({ decisions, hasViewers: () => stream.viewerCount() > 0 });
+  const hasViewers = () => {
+    applyCurrentKey();
+    return stream.viewerCount() > 0;
+  };
+  const holdRequest = createHoldRequest({ decisions, hasViewers });
   const hookRoutes = createHookRoutes({
     store,
     activity,
@@ -89,7 +100,7 @@ export function createOffice({ webDir, dataDir = null, holdMs, allowedHosts = []
     bootstrapPairing: createBootstrapPairing({ bootstrapChallenges, issuePairingCode }),
     issuePairingCode,
     redeemPairing: createRedeemPairing({ pairingCodes, deviceSessions, newSessionToken, hashToken, currentKeyId }),
-    revokeDevice: createRevokeDevice({ deviceSessions, onRevoked: (id) => stream.dropDevice(id) }),
+    revokeDevice: createRevokeDevice({ deviceSessions }),
     listDevices: () => deviceSessions.list(),
   });
   const server = createServer({ allowedHosts, webDir, hookRoutes, pairingRoutes, officeApi });
@@ -101,6 +112,7 @@ export function createOffice({ webDir, dataDir = null, holdMs, allowedHosts = []
     try {
       store.sweep(Date.now());
       legacyHooks.sweep();
+      applyCurrentKey();
     } catch (error) {
       console.error("office sweep failed:", error);
     }

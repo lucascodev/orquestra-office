@@ -244,7 +244,28 @@ test("a rotated secret drops every paired device, after a restart and while runn
   }, { dataDir, secretFile }));
 });
 
-test("without a secret nothing pairs, and the refusal says the secret is missing", (t) => withOffice(t, async (base) => {
+const PERMISSION_PAYLOAD = { session_id: "s1", cwd: "/tmp/demo", hook_event_name: "PermissionRequest", tool_name: "Bash", tool_input: { command: "ls" } };
+const QUICK_ANSWER_MS = 1_500;
+
+test("a rotated secret closes the pages paired under the old one, so a request signed with the new key is not held for them", (t) => {
+  const secretFile = secretFileFor(t);
+  return withOffice(t, async (base, office) => {
+    const browser = await pairBrowser(base);
+    const viewer = new AbortController();
+    const reader = (await browser.get("/api/stream", { signal: viewer.signal })).body.getReader();
+    await reader.read();
+    writeFileSync(secretFile, `${OTHER_SECRET}\n`);
+
+    const answer = await postSigned(base, "/hooks/claude/permission", PERMISSION_PAYLOAD, { key: OTHER_KEY, signal: AbortSignal.timeout(QUICK_ANSWER_MS) });
+
+    assert.deepEqual(answer.body, { decision: null });
+    assert.deepEqual(office.decisions.list(), []);
+    assert.equal(await reader.read().then(({ done }) => done, () => true), true);
+    viewer.abort();
+  }, { secretFile });
+});
+
+test("without a secret nothing pairs, and the refusal says the secret is missing",(t) => withOffice(t, async (base) => {
   assert.equal((await postSigned(base, "/pairing/bootstrap", {})).status, 401);
   assert.deepEqual(await (await fetch(`${base}/api/state`)).json(), { error: "unpaired", isSecretMissing: true });
 }, { secretFile: null }));

@@ -46,10 +46,11 @@ export function createEventStream({ snapshot, sources }) {
     send(res, frame());
   }
 
-  // A revoked device loses its open page at once, not when the page next reconnects.
-  function dropDevice(deviceId) {
-    clients.forEach((owner, res) => { if (owner === deviceId) drop(res); });
+  // A device that leaves the list (revoked, idle or dropped by a new secret) loses its open page at once,
+  // not when the page next reconnects, so it stops counting as a viewer too.
+  function keepDevices(deviceIds) {
+    clients.forEach((owner, res) => { if (!deviceIds.has(owner)) drop(res); });
   }
 
-  return { subscribe, dropDevice, viewerCount: () => clients.size };
+  return { subscribe, keepDevices, viewerCount: () => clients.size };
 }
