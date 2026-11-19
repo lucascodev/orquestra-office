@@ -1,0 +1,30 @@
+▶ coupon
+  ▶ expiry
+    ✖ rejects an expired coupon (0.5202ms)
+    ✔ accepts a valid coupon (0.1935ms)
+  ✖ expiry (1.9297ms)
+✖ coupon (2.2695ms)
+ℹ tests 2
+ℹ suites 2
+ℹ pass 1
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 72.9609
+
+✖ failing tests:
+
+test at nested\coupon.test.js:6:5
+✖ rejects an expired coupon (0.5202ms)
+  RangeError [Error]: coupon EXPIRED10 is past its date
+      at TestContext.<anonymous> (file:///C:/work/shop/nested/coupon.test.js:7:13)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1402:25)
+      at Test.start (node:internal/test_runner/test:1262:17)
+      at node:internal/test_runner/test:1903:71
+      at node:internal/per_context/primordials:504:82
+      at new Promise (<anonymous>)
+      at new SafePromise (node:internal/per_context/primordials:478:3)
+      at node:internal/per_context/primordials:504:9
+      at Array.map (<anonymous>)

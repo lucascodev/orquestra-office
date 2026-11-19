@@ -1,0 +1,28 @@
+  Determining projects to restore...
+  All projects are up-to-date for restore.
+  Shop.Tests -> C:\work\shop\bin\Debug\net10.0\Shop.Tests.dll
+Test run for C:\work\shop\bin\Debug\net10.0\Shop.Tests.dll (.NETCoreApp,Version=v10.0)
+A total of 1 test files matched the specified pattern.
+[xUnit.net 00:00:00.36]     Shop.Tests.TaxTests.ComputesTheStateTax [SKIP]
+[xUnit.net 00:00:00.46]     Shop.Tests.DiscountTests.RejectsNegativeTotals [FAIL]
+[xUnit.net 00:00:00.46]     Shop.Tests.DiscountTests.AppliesTheDiscountFrom100 [FAIL]
+  Skipped Shop.Tests.TaxTests.ComputesTheStateTax [1 ms]
+  Failed Shop.Tests.DiscountTests.RejectsNegativeTotals [88 ms]
+  Error Message:
+   Assert.Throws() Failure: No exception was thrown
+Expected: typeof(System.ArgumentOutOfRangeException)
+  Stack Trace:
+     at Shop.Tests.DiscountTests.RejectsNegativeTotals() in C:\work\shop\UnitTest1.cs:line 28
+   at System.Reflection.MethodBaseInvoker.InterpretedInvoke_Method(Object obj, IntPtr* args)
+   at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags invokeAttr)
+  Failed Shop.Tests.DiscountTests.AppliesTheDiscountFrom100 [< 1 ms]
+  Error Message:
+   Assert.Equal() Failure: Values differ
+Expected: 90
+Actual:   100
+  Stack Trace:
+     at Shop.Tests.DiscountTests.AppliesTheDiscountFrom100() in C:\work\shop\UnitTest1.cs:line 25
+   at System.Reflection.MethodBaseInvoker.InterpretedInvoke_Method(Object obj, IntPtr* args)
+   at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags invokeAttr)
+
+Failed!  - Failed:     2, Passed:     5, Skipped:     1, Total:     8, Duration: 106 ms - Shop.Tests.dll (net10.0)

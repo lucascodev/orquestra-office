@@ -1,0 +1,26 @@
+Running ExUnit with seed: 482913, max_cases: 32
+
+..
+
+  1) test applies the discount from 100 (Shop.DiscountTest)
+     test/shop/discount_test.exs:5
+     Assertion with == failed
+     code:  assert Shop.apply_discount(100) == 90
+     left:  100
+     right: 90
+     stacktrace:
+       test/shop/discount_test.exs:6: (test)
+
+.*
+
+  2) test rejects negative totals (Shop.DiscountTest)
+     test/shop/discount_test.exs:9
+     ** (RuntimeError) negative total accepted
+     code: assert_raise ArgumentError, fn -> Shop.apply_discount(-1) end
+     stacktrace:
+       (shop 0.1.0) lib/shop.ex:12: Shop.apply_discount/1
+       test/shop/discount_test.exs:10: (test)
+
+..
+Finished in 0.04 seconds (0.02s async, 0.02s sync)
+1 doctest, 7 tests, 2 failures, 1 skipped

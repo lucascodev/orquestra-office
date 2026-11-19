@@ -1,0 +1,7 @@
+1..4
+ok 1 adds two numbers
+not ok 2 applies the discount from 100
+# (in test file test/shop.bats, line 9)
+#   `[ "$result" -eq 90 ]' failed
+ok 3 computes the state tax # skip waiting for the tax table
+ok 4 charges no tax on zero

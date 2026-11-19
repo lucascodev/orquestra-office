@@ -1,0 +1,22 @@
+> Task :compileJava UP-TO-DATE
+> Task :processResources NO-SOURCE
+> Task :classes UP-TO-DATE
+
+> Task :compileTestJava FAILED
+C:\work\shop\src\test\java\com\example\shop\DiscountTest.java:12: error: cannot find symbol
+        assertEquals(90, Cart.applyDiscont(100));
+                             ^
+  symbol:   method applyDiscont(int)
+  location: class Cart
+1 error
+
+[Incubating] Problems report is available at: file:///C:/work/shop/build/reports/problems/problems-report.html
+
+FAILURE: Build failed with an exception.
+
+* What went wrong:
+Execution failed for task ':compileTestJava'.
+> Compilation failed; see the compiler output below.
+
+BUILD FAILED in 2s
+3 actionable tasks: 1 executed, 2 up-to-date

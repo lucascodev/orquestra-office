@@ -1,0 +1,26 @@
+  Shop.Tests -> C:\work\shop\bin\Debug\net10.0\Shop.Tests.dll
+Execução de teste para C:\work\shop\bin\Debug\net10.0\Shop.Tests.dll (.NETCoreApp,Version=v10.0)
+1 arquivos de teste no total corresponderam ao padrão especificado.
+[xUnit.net 00:00:00.15]     Shop.Tests.TaxTests.ComputesTheStateTax [SKIP]
+[xUnit.net 00:00:00.17]     Shop.Tests.DiscountTests.RejectsNegativeTotals [FAIL]
+[xUnit.net 00:00:00.17]     Shop.Tests.DiscountTests.AppliesTheDiscountFrom100 [FAIL]
+  Ignorado Shop.Tests.TaxTests.ComputesTheStateTax [1 ms]
+  Com falha Shop.Tests.DiscountTests.RejectsNegativeTotals [4 ms]
+  Mensagem de erro:
+   Assert.Throws() Failure: No exception was thrown
+Expected: typeof(System.ArgumentOutOfRangeException)
+  Rastreamento de pilha:
+     at Shop.Tests.DiscountTests.RejectsNegativeTotals() in C:\work\shop\UnitTest1.cs:line 28
+   at System.Reflection.MethodBaseInvoker.InterpretedInvoke_Method(Object obj, IntPtr* args)
+   at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags invokeAttr)
+  Com falha Shop.Tests.DiscountTests.AppliesTheDiscountFrom100 [< 1 ms]
+  Mensagem de erro:
+   Assert.Equal() Failure: Values differ
+Expected: 90
+Actual:   100
+  Rastreamento de pilha:
+     at Shop.Tests.DiscountTests.AppliesTheDiscountFrom100() in C:\work\shop\UnitTest1.cs:line 25
+   at System.Reflection.MethodBaseInvoker.InterpretedInvoke_Method(Object obj, IntPtr* args)
+   at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags invokeAttr)
+
+Com falha! – Com falha:     2, Aprovado:     5, Ignorado:     1, Total:     8, Duração: 22 ms - Shop.Tests.dll (net10.0)

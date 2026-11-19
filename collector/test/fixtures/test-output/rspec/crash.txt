@@ -1,0 +1,6 @@
+/work/shop/spec/spec_helper.rb:3:in 'Kernel#require': cannot load such file -- simplecov (LoadError)
+	from /work/shop/spec/spec_helper.rb:3:in '<top (required)>'
+	from /usr/local/bundle/gems/rspec-core-3.13.2/lib/rspec/core/configuration.rb:2185:in 'Kernel#require'
+	from /usr/local/bundle/gems/rspec-core-3.13.2/exe/rspec:4:in '<top (required)>'
+	from /usr/local/bundle/bin/rspec:25:in 'Kernel#load'
+	from /usr/local/bundle/bin/rspec:25:in '<main>'

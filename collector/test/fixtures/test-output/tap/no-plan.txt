@@ -1,0 +1,8 @@
+TAP version 13
+# Subtest: applies the discount from 100
+ok 1 - applies the discount from 100
+  ---
+  duration_ms: 1.237
+  type: 'test'
+  ...
+# Subtest: rejects negative totals

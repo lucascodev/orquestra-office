@@ -1,0 +1,35 @@
+..FF*..
+
+Pending: (Failures listed here are expected and do not affect your suite's status)
+
+  1) Tax computes the state tax
+     # waiting for the tax table
+     # ./spec/tax_spec.rb:4
+
+Failures:
+
+  1) Discount applies the discount from 100
+     Failure/Error: expect(apply_discount(100)).to eq(90)
+
+       expected: 90
+            got: 100
+
+       (compared using ==)
+     # ./spec/discount_spec.rb:6:in 'block (2 levels) in <top (required)>'
+
+  2) Discount coupon rejects an expired coupon
+     Failure/Error: raise KeyError, "coupon EXPIRED10"
+
+     KeyError:
+       coupon EXPIRED10
+     # ./lib/coupon.rb:9:in 'Coupon#validate!'
+     # ./spec/discount_spec.rb:15:in 'block (3 levels) in <top (required)>'
+
+Finished in 0.01843 seconds (files took 0.11402 seconds to load)
+7 examples, 2 failures, 1 pending
+
+Failed examples:
+
+rspec ./spec/discount_spec.rb:5 # Discount applies the discount from 100
+rspec ./spec/discount_spec.rb:14 # Discount coupon rejects an expired coupon
+

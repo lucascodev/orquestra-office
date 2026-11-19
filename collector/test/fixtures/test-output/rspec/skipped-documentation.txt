@@ -1,0 +1,14 @@
+
+Tax
+  computes the state tax (PENDING: waiting for the tax table)
+  charges no tax on zero
+
+Pending: (Failures listed here are expected and do not affect your suite's status)
+
+  1) Tax computes the state tax
+     # waiting for the tax table
+     # ./spec/tax_spec.rb:4
+
+Finished in 0.00311 seconds (files took 0.10233 seconds to load)
+2 examples, 0 failures, 1 pending
+

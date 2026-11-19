@@ -1,0 +1,42 @@
+    Finished test [unoptimized + debuginfo] target(s) in 0.02s
+     Running unittests src/lib.rs (target/debug/deps/shop-5f1c2b7e9a3d4c10)
+
+running 2 tests
+test tests::adds_two_numbers ... ok
+test tests::applies_the_discount_from_100 ... FAILED
+
+failures:
+
+---- tests::applies_the_discount_from_100 stdout ----
+thread 'tests::applies_the_discount_from_100' panicked at 'assertion failed: `(left == right)`
+  left: `100`,
+ right: `90`', src/lib.rs:33:9
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    tests::applies_the_discount_from_100
+
+test result: FAILED. 1 passed; 1 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+error: test failed, to rerun pass `--lib`
+     Running tests/checkout.rs (target/debug/deps/checkout-0b8e4d1f6a2c7e93)
+
+running 1 test
+test rejects_negative_totals ... FAILED
+
+failures:
+
+---- rejects_negative_totals stdout ----
+thread 'rejects_negative_totals' panicked at 'negative total accepted: -1', tests/checkout.rs:12:9
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    rejects_negative_totals
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+error: 2 targets failed:
+    `--lib`
+    `--test checkout`

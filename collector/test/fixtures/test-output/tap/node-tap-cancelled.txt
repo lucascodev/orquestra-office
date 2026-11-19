@@ -1,0 +1,41 @@
+TAP version 13
+# Subtest: payment gateway
+    # Subtest: waits for the bank
+    not ok 1 - waits for the bank
+      ---
+      duration_ms: 56.6948
+      type: 'test'
+      location: 'C:\\work\\shop\\cancel\\slow.test.js:4:3'
+      failureType: 'cancelledByParent'
+      error: 'test did not finish before its parent and was cancelled'
+      code: 'ERR_TEST_FAILURE'
+      ...
+    # Subtest: confirms the charge
+    not ok 2 - confirms the charge
+      ---
+      duration_ms: 0
+      type: 'test'
+      location: 'C:\\work\\shop\\cancel\\slow.test.js:8:3'
+      failureType: 'cancelledByParent'
+      error: 'test did not finish before its parent and was cancelled'
+      code: 'ERR_TEST_FAILURE'
+      ...
+    1..2
+not ok 1 - payment gateway
+  ---
+  duration_ms: 56.8896
+  type: 'suite'
+  location: 'C:\\work\\shop\\cancel\\slow.test.js:3:1'
+  failureType: 'testTimeoutFailure'
+  error: 'test timed out after 50ms'
+  code: 'ERR_TEST_FAILURE'
+  ...
+1..1
+# tests 2
+# suites 1
+# pass 0
+# fail 0
+# cancelled 2
+# skipped 0
+# todo 0
+# duration_ms 1086.6956

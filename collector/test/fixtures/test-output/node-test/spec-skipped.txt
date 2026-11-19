@@ -1,0 +1,11 @@
+﹣ computes the state tax (0.5916ms) # waiting for the tax table
+✔ rounds the tax to cents (0.0934ms) # TODO
+✔ charges no tax on zero (0.5872ms)
+ℹ tests 3
+ℹ suites 0
+ℹ pass 1
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 1
+ℹ todo 1
+ℹ duration_ms 73.9187

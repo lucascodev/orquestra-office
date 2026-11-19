@@ -1,0 +1,10 @@
+
+
+  sum
+    ✔ adds two numbers
+    ✔ adds negative numbers
+    ✔ adds zero
+
+
+  3 passing (2ms)
+

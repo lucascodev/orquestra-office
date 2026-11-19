@@ -1,0 +1,11 @@
+   Compiling shop v0.1.0 (C:\work\shop)
+error[E0425]: cannot find function `discount_rate` in this scope
+ --> src\lib.rs:2:13
+  |
+2 |     total * discount_rate()
+  |             ^^^^^^^^^^^^^ not found in this scope
+
+For more information about this error, try `rustc --explain E0425`.
+error: could not compile `shop` (lib) due to 1 previous error
+warning: build failed, waiting for other jobs to finish...
+error: could not compile `shop` (lib test) due to 1 previous error

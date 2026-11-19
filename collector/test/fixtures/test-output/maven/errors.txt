@@ -1,0 +1,18 @@
+[INFO] Running com.example.shop.CheckoutTest
+[ERROR] Tests run: 2, Failures: 0, Errors: 1, Skipped: 0, Time elapsed: 0.022 s <<< FAILURE! -- in com.example.shop.CheckoutTest
+[ERROR] com.example.shop.CheckoutTest.chargesTheCard -- Time elapsed: 0.004 s <<< ERROR!
+java.lang.NullPointerException: Cannot invoke "com.example.shop.Card.charge(int)" because "this.card" is null
+	at com.example.shop.Checkout.pay(Checkout.java:21)
+	at com.example.shop.CheckoutTest.chargesTheCard(CheckoutTest.java:14)
+
+[INFO]
+[INFO] Results:
+[INFO]
+[ERROR] Errors:
+[ERROR]   CheckoutTest.chargesTheCard:14 » NullPointer Cannot invoke "com.example.shop.Card.charge(int)" because "this.card" is null
+[INFO]
+[ERROR] Tests run: 2, Failures: 0, Errors: 1, Skipped: 0
+[INFO]
+[INFO] ------------------------------------------------------------------------
+[INFO] BUILD FAILURE
+[INFO] ------------------------------------------------------------------------

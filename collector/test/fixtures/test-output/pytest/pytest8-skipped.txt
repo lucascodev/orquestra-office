@@ -1,0 +1,8 @@
+============================= test session starts =============================
+platform win32 -- Python 3.14.5, pytest-8.4.2, pluggy-1.7.0
+rootdir: C:\work\shop
+collected 3 items
+
+tests\test_tax.py sx.                                                    [100%]
+
+=================== 1 passed, 1 skipped, 1 xfailed in 0.10s ===================

@@ -1,0 +1,40 @@
+PHPUnit 11.5.42 by Sebastian Bergmann and contributors.
+
+Runtime:       PHP 8.4.14
+Configuration: /work/shop/phpunit.xml
+
+..FFS..E                                                            8 / 8 (100%)
+
+Time: 00:00.014, Memory: 10.00 MB
+
+There was 1 error:
+
+1) Shop\Tests\CheckoutTest::testChargesTheCard
+Error: Call to a member function charge() on null
+
+/work/shop/src/Checkout.php:21
+/work/shop/tests/CheckoutTest.php:14
+
+--
+
+There were 2 failures:
+
+1) Shop\Tests\DiscountTest::testAppliesTheDiscountFrom100
+Failed asserting that 100 matches expected 90.
+
+/work/shop/tests/DiscountTest.php:12
+
+2) Shop\Tests\DiscountTest::testRejectsNegativeTotals
+Failed asserting that exception of type "InvalidArgumentException" is thrown.
+
+--
+
+There was 1 skipped test:
+
+1) Shop\Tests\TaxTest::testComputesTheStateTax
+waiting for the tax table
+
+/work/shop/tests/TaxTest.php:10
+
+ERRORS!
+Tests: 8, Assertions: 6, Errors: 1, Failures: 2, Skipped: 1.

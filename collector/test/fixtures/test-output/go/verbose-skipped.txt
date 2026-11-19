@@ -1,0 +1,7 @@
+=== RUN   TestTax
+    tax_test.go:8: waiting for the tax table
+--- SKIP: TestTax (0.00s)
+=== RUN   TestNoTaxOnZero
+--- PASS: TestNoTaxOnZero (0.00s)
+PASS
+ok  	example.com/shop/tax	0.098s

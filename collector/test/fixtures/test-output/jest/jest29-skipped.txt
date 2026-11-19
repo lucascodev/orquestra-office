@@ -1,0 +1,11 @@
+PASS tests/tax.test.js
+  tax
+    √ charges no tax on zero (2 ms)
+    ○ skipped computes the state tax
+    ✎ todo rounds the tax to cents
+
+Test Suites: 1 passed, 1 total
+Tests:       1 skipped, 1 todo, 1 passed, 3 total
+Snapshots:   0 total
+Time:        0.324 s, estimated 1 s
+Ran all test suites matching /tests\\tax/i.

@@ -1,0 +1,58 @@
+
+[1m[46m RUN [49m[22m [36mv3.2.7 [39m[90mC:/work/shop[39m
+
+ [32m✓[39m tests/tax.test.js [2m([22m[2m3 tests[22m[2m | [22m[33m2 skipped[39m[2m)[22m[32m 2[2mms[22m[39m
+ [32m✓[39m tests/sum.test.js [2m([22m[2m3 tests[22m[2m)[22m[32m 3[2mms[22m[39m
+ [31m❯[39m tests/discount.test.js [2m([22m[2m3 tests[22m[2m | [22m[31m2 failed[39m[2m)[22m[32m 14[2mms[22m[39m
+[31m   [31m×[31m applyDiscount[2m > [22mapplies the discount from 100[39m[32m 8[2mms[22m[39m
+[31m     → expected 100 to be 90 // Object.is equality[39m
+[31m   [31m×[31m applyDiscount[2m > [22mrejects negative totals[39m[32m 4[2mms[22m[39m
+[31m     → expected [Function] to throw an error[39m
+   [32m✓[39m applyDiscount[2m > [22mkeeps totals under the threshold[32m 0[2mms[22m[39m
+
+[31m⎯⎯⎯⎯⎯⎯⎯[39m[1m[41m Failed Tests 2 [49m[22m[31m⎯⎯⎯⎯⎯⎯⎯[39m
+
+[41m[1m FAIL [22m[49m tests/discount.test.js[2m > [22mapplyDiscount[2m > [22mapplies the discount from 100
+[31m[1mAssertionError[22m: expected 100 to be 90 // Object.is equality[39m
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- 90[39m
+[31m+ 100[39m
+
+[36m [2m❯[22m tests/discount.test.js:[2m6:32[22m[39m
+    [90m  4| [39m[34mdescribe[39m([32m"applyDiscount"[39m[33m,[39m () [33m=>[39m {
+    [90m  5| [39m  [34mtest[39m([32m"applies the discount from 100"[39m[33m,[39m () [33m=>[39m {
+    [90m  6| [39m    [34mexpect[39m([34mapplyDiscount[39m([34m100[39m))[33m.[39m[34mtoBe[39m([34m90[39m)[33m;[39m
+    [90m   | [39m                               [31m^[39m
+    [90m  7| [39m  })[33m;[39m
+    [90m  8| [39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/2]⎯[22m[39m
+
+[41m[1m FAIL [22m[49m tests/discount.test.js[2m > [22mapplyDiscount[2m > [22mrejects negative totals
+[31m[1mAssertionError[22m: expected [Function] to throw an error[39m
+
+[32m- Expected:[39m 
+null
+
+[31m+ Received:[39m 
+undefined
+
+[36m [2m❯[22m tests/discount.test.js:[2m10:37[22m[39m
+    [90m  8| [39m
+    [90m  9| [39m  [34mtest[39m([32m"rejects negative totals"[39m[33m,[39m () [33m=>[39m {
+    [90m 10| [39m    [34mexpect[39m(() [33m=>[39m [34mapplyDiscount[39m([33m-[39m[34m1[39m))[33m.[39m[34mtoThrow[39m([32m"negative total"[39m)[33m;[39m
+    [90m   | [39m                                    [31m^[39m
+    [90m 11| [39m  })[33m;[39m
+    [90m 12| [39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/2]⎯[22m[39m
+
+
+[2m Test Files [22m [1m[31m1 failed[39m[22m[2m | [22m[1m[32m2 passed[39m[22m[90m (3)[39m
+[2m      Tests [22m [1m[31m2 failed[39m[22m[2m | [22m[1m[32m5 passed[39m[22m[2m | [22m[33m1 skipped[39m[2m | [22m[90m1 todo[39m[90m (9)[39m
+[2m   Start at [22m 11:45:46
+[2m   Duration [22m 815ms[2m (transform 77ms, setup 0ms, collect 226ms, tests 19ms, environment 1ms, prepare 1.07s)[22m
+

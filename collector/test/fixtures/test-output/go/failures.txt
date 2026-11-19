@@ -1,0 +1,12 @@
+?   	example.com/shop/cmd/shop	[no test files]
+--- FAIL: TestApplyDiscount (0.00s)
+    discount_test.go:12: ApplyDiscount(100) = 100; want 90
+--- FAIL: TestRejectsNegativeTotals (0.00s)
+    discount_test.go:19: expected an error for a negative total, got <nil>
+--- FAIL: TestCoupon (0.00s)
+    --- FAIL: TestCoupon/expired (0.00s)
+        coupon_test.go:15: coupon EXPIRED10 was accepted
+FAIL
+FAIL	example.com/shop	0.312s
+ok  	example.com/shop/cart	0.205s
+FAIL

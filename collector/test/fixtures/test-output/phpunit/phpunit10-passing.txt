@@ -1,0 +1,10 @@
+PHPUnit 10.5.58 by Sebastian Bergmann and contributors.
+
+Runtime:       PHP 8.3.27
+Configuration: /work/shop/phpunit.xml
+
+.....                                                               5 / 5 (100%)
+
+Time: 00:00.009, Memory: 8.00 MB
+
+OK (5 tests, 7 assertions)

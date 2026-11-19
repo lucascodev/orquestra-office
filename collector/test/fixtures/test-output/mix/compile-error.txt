@@ -1,0 +1,11 @@
+Compiling 2 files (.ex)
+    error: undefined function apply_discont/1 (expected Shop to define such a function or for it to be imported, but none are available)
+    │
+ 12 │     apply_discont(total)
+    │     ^^^^^^^^^^^^^
+    │
+    └─ lib/shop.ex:12:5: Shop.checkout/1
+
+
+== Compilation error in file lib/shop.ex ==
+** (CompileError) lib/shop.ex: cannot compile module Shop (errors have been logged)

@@ -1,0 +1,18 @@
+PHPUnit 11.5.42 by Sebastian Bergmann and contributors.
+
+Runtime:       PHP 8.4.14
+Configuration: /work/shop/phpunit.xml
+
+S.I                                                                 3 / 3 (100%)
+
+Time: 00:00.006, Memory: 8.00 MB
+
+There was 1 skipped test:
+
+1) Shop\Tests\TaxTest::testComputesTheStateTax
+waiting for the tax table
+
+/work/shop/tests/TaxTest.php:10
+
+OK, but some tests were skipped!
+Tests: 3, Assertions: 1, Skipped: 1, Incomplete: 1.

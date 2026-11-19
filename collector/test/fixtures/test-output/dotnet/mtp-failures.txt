@@ -1,0 +1,29 @@
+Running tests from C:\work\shop\bin\Debug\net10.0\Shop.Tests.dll (net10.0|x64)
+skipped Shop.Tests.TaxTests.ComputesTheStateTax
+  waiting for the tax table
+  from C:\work\shop\bin\Debug\net10.0\Shop.Tests.dll (net10.0|x64)
+failed Shop.Tests.DiscountTests.AppliesTheDiscountFrom100 (110ms)
+  from C:\work\shop\bin\Debug\net10.0\Shop.Tests.dll (net10.0|x64)
+  Assert.Equal() Failure: Values differ
+  Expected: 90
+  Actual:   100
+    at Shop.Tests.DiscountTests.AppliesTheDiscountFrom100() in C:\work\shop\UnitTest1.cs:25
+    at System.Reflection.MethodBaseInvoker.InterpretedInvoke_Method(Object obj, IntPtr* args)
+    at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags invokeAttr)
+failed Shop.Tests.DiscountTests.RejectsNegativeTotals (1ms)
+  from C:\work\shop\bin\Debug\net10.0\Shop.Tests.dll (net10.0|x64)
+  Assert.Throws() Failure: No exception was thrown
+  Expected: typeof(System.ArgumentOutOfRangeException)
+    at Shop.Tests.DiscountTests.RejectsNegativeTotals() in C:\work\shop\UnitTest1.cs:28
+    at System.Reflection.MethodBaseInvoker.InterpretedInvoke_Method(Object obj, IntPtr* args)
+    at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags invokeAttr)
+C:\work\shop\bin\Debug\net10.0\Shop.Tests.dll (net10.0|x64) failed with 2 error(s) (486ms)
+Exit code: 2
+
+Test run summary: Failed!
+  total: 8
+  failed: 2
+  succeeded: 5
+  skipped: 1
+  duration: 1s 290ms
+Test run completed with non-success exit code: 2 (see: https://aka.ms/testingplatform/exitcodes)

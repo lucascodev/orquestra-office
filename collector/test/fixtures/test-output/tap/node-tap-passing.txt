@@ -1,0 +1,35 @@
+TAP version 13
+# Subtest: sum
+    # Subtest: adds two numbers
+    ok 1 - adds two numbers
+      ---
+      duration_ms: 1.0289
+      type: 'test'
+      ...
+    # Subtest: adds negative numbers
+    ok 2 - adds negative numbers
+      ---
+      duration_ms: 0.1006
+      type: 'test'
+      ...
+    # Subtest: adds zero
+    ok 3 - adds zero
+      ---
+      duration_ms: 0.0955
+      type: 'test'
+      ...
+    1..3
+ok 1 - sum
+  ---
+  duration_ms: 2.1332
+  type: 'suite'
+  ...
+1..1
+# tests 3
+# suites 1
+# pass 3
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 74.8802

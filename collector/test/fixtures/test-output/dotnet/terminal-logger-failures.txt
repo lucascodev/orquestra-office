@@ -1,0 +1,43 @@
+]9;4;3;\  Shop.Tests [36;1mnet10.0[m [32;1msucceeded[m (0,2s) → ]8;;file:///C:/work/shop/bin/Debug/net10.0\bin\Debug\net10.0\Shop.Tests.dll]8;;\
+[xUnit.net 00:00:00.00] xUnit.net VSTest Adapter v3.1.4+50e68bbb8b (64-bit .NET 10.0.12)
+[xUnit.net 00:00:00.08]   Discovering: Shop.Tests
+[xUnit.net 00:00:00.12]   Discovered:  Shop.Tests
+[xUnit.net 00:00:00.14]   Starting:    Shop.Tests
+[xUnit.net 00:00:00.16]     Shop.Tests.TaxTests.ComputesTheStateTax [SKIP]
+[xUnit.net 00:00:00.16]       waiting for the tax table
+[xUnit.net 00:00:00.18]     Shop.Tests.DiscountTests.RejectsNegativeTotals [FAIL]
+[xUnit.net 00:00:00.18]       Assert.Throws() Failure: No exception was thrown
+[xUnit.net 00:00:00.18]       Expected: typeof(System.ArgumentOutOfRangeException)
+[xUnit.net 00:00:00.19]       Stack Trace:
+[xUnit.net 00:00:00.19]         C:\work\shop\UnitTest1.cs(28,0): at Shop.Tests.DiscountTests.RejectsNegativeTotals()
+[xUnit.net 00:00:00.19]            at System.Reflection.MethodBaseInvoker.InterpretedInvoke_Method(Object obj, IntPtr* args)
+[xUnit.net 00:00:00.19]            at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags invokeAttr)
+[xUnit.net 00:00:00.19]     Shop.Tests.DiscountTests.AppliesTheDiscountFrom100 [FAIL]
+[xUnit.net 00:00:00.19]       Assert.Equal() Failure: Values differ
+[xUnit.net 00:00:00.19]       Expected: 90
+[xUnit.net 00:00:00.19]       Actual:   100
+[xUnit.net 00:00:00.19]       Stack Trace:
+[xUnit.net 00:00:00.19]         C:\work\shop\UnitTest1.cs(25,0): at Shop.Tests.DiscountTests.AppliesTheDiscountFrom100()
+[xUnit.net 00:00:00.19]            at System.Reflection.MethodBaseInvoker.InterpretedInvoke_Method(Object obj, IntPtr* args)
+[xUnit.net 00:00:00.19]            at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags invokeAttr)
+[xUnit.net 00:00:00.19]   Finished:    Shop.Tests
+  Shop.Tests test [36;1mnet10.0[m [31;1mfailed with 2 error(s)[m (1,0s)
+    C:\work\shop\[1mUnitTest1.cs[m(28): [31;1merror[m [31;1mTESTERROR[m: 
+      Shop.Tests.DiscountTests.RejectsNegativeTotals (5ms): Error Message: Assert.Throws() Failure: No exception was thrown
+      Expected: typeof(System.ArgumentOutOfRangeException)
+      Stack Trace:
+         at Shop.Tests.DiscountTests.RejectsNegativeTotals() in C:\work\shop\UnitTest1.cs:line 28
+         at System.Reflection.MethodBaseInvoker.InterpretedInvoke_Method(Object obj, IntPtr* args)
+         at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags invokeAttr)
+    C:\work\shop\[1mUnitTest1.cs[m(25): [31;1merror[m [31;1mTESTERROR[m: 
+      Shop.Tests.DiscountTests.AppliesTheDiscountFrom100 (1ms): Error Message: Assert.Equal() Failure: Values differ
+      Expected: 90
+      Actual:   100
+      Stack Trace:
+         at Shop.Tests.DiscountTests.AppliesTheDiscountFrom100() in C:\work\shop\UnitTest1.cs:line 25
+         at System.Reflection.MethodBaseInvoker.InterpretedInvoke_Method(Object obj, IntPtr* args)
+         at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags invokeAttr)
+
+Test summary: total: 8; [31;1mfailed: 2[m; succeeded: 5; skipped: 1; duration: 0,9s
+Build [31;1mfailed with 2 error(s)[m in 1,5s
+]9;4;0;\
