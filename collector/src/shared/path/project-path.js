@@ -1,15 +1,17 @@
 const DRIVE_PATH = /^[a-z]:\//i;
 const DRIVE_PATH_IN_URL = /^\/[a-z]:\//i;
-const FILE_URL = /^file:\/\//i;
-const FILE_URL_PREFIX_LENGTH = "file://".length;
+// Two letters or more, so a drive letter is never taken for a scheme: file:///x, file:/x and webpack:///x are all paths.
+const URL_SCHEME = /^[a-z][a-z0-9+.-]+:\/+/i;
 const UNC_PREFIX = "//";
+const HOME_FOLDER = "~";
 const ROOT_FOLDER = "/";
 const DRIVE_ANCHOR_LENGTH = "C:/".length;
 const CURRENT_FOLDER = ".";
 const PARENT_FOLDER = "..";
 
 const withForwardSlashes = (path) => path.replace(/\\/g, "/");
-const isAbsolute = (path) => path.startsWith(ROOT_FOLDER) || DRIVE_PATH.test(path);
+const isHomePath = (path) => path === HOME_FOLDER || path.startsWith(`${HOME_FOLDER}/`);
+const isAbsolute = (path) => path.startsWith(ROOT_FOLDER) || DRIVE_PATH.test(path) || isHomePath(path);
 const lastPartOf = (path) => path.split("/").filter(Boolean).at(-1) ?? "";
 
 // A malformed escape is kept as written: the path then only fails to match the root and keeps just its name.
@@ -21,12 +23,13 @@ function decodedOrAsWritten(text) {
   }
 }
 
-// "file:///C:/x" and "file:///home/x" are local paths; "file://host/share/x" names another machine.
+// A URL becomes the path after its scheme: "file:///C:/x" is C:/x and "webpack:///home/x" is /home/x. A host such as
+// "file://host/share/x" reads as /host/share/x, a folder outside any project, so only the file name is kept.
 function localPathOf(path) {
-  if (!FILE_URL.test(path)) return path;
-  const rest = decodedOrAsWritten(path.slice(FILE_URL_PREFIX_LENGTH));
-  if (DRIVE_PATH_IN_URL.test(rest)) return rest.slice(1);
-  return rest.startsWith(ROOT_FOLDER) || DRIVE_PATH.test(rest) ? rest : `${UNC_PREFIX}${rest}`;
+  const scheme = URL_SCHEME.exec(path);
+  if (!scheme) return path;
+  const rest = `${ROOT_FOLDER}${decodedOrAsWritten(path.slice(scheme[0].length))}`;
+  return DRIVE_PATH_IN_URL.test(rest) ? rest.slice(1) : rest;
 }
 
 function anchorOf(path) {
