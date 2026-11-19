@@ -209,8 +209,9 @@ export function createHeadquartersPeople({ scene, tagLayer, onPick, describeStat
     }
   }
 
+  const destinations = () => new Map([...people.keys()].filter((key) => places.get(key)?.stop).map((key) => [key, places.get(key).stop]));
   const bodies = () => [...people.values()].map(({ person }) => person.root);
   const personOf = (key) => people.get(key)?.person ?? null;
 
-  return { show, arrange, step, follow, highlight, bodies, personOf, hasPeople: () => people.size > 0 };
+  return { show, arrange, step, follow, highlight, bodies, personOf, destinations, hasPeople: () => people.size > 0 };
 }

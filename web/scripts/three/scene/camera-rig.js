@@ -40,6 +40,8 @@ export function createCameraRig({ view = ISOMETRIC_VIEW, isMotionReduced = false
   let map = null;
   let viewpoint = null;
   let glide = null;
+  let insets = FRAME_INSETS;
+  let isShowingWhole = false;
 
   function apply(next) {
     viewpoint = next;
@@ -53,14 +55,21 @@ export function createCameraRig({ view = ISOMETRIC_VIEW, isMotionReduced = false
     camera.updateMatrixWorld();
   }
 
-  const framed = (bounds) => frameBounds({ bounds, viewport, insets: FRAME_INSETS, view });
+  const framed = (bounds) => frameBounds({ bounds, viewport, insets, view });
   const limits = () => zoomLimits(framed(map).scale);
   const keptOnMap = (next) => clampToMap(next, map);
   const hasRealViewport = () => viewport.width > PLACEHOLDER_SIZE && viewport.height > PLACEHOLDER_SIZE;
 
   function frameWhole() {
     glide = null;
+    isShowingWhole = true;
     apply(framed(map));
+  }
+
+  // Panels come and go (a request shows up, the window narrows); a view the person never moved stays framed around them.
+  function setInsets(next) {
+    insets = next;
+    if (map && isShowingWhole && !glide) frameWhole();
   }
 
   // The map is the ground the camera may look at plus the height of the tallest thing on it; it grows with each row of islands.
@@ -71,17 +80,18 @@ export function createCameraRig({ view = ISOMETRIC_VIEW, isMotionReduced = false
     else frameWhole();
   }
 
-  // A resize keeps what the viewer was looking at; only the first real size frames the whole map.
+  // A resize keeps what the viewer was looking at; the first real size and a view still showing the whole map frame it again.
   function setViewport(width, height) {
     const wasReal = hasRealViewport();
     viewport = { width: Math.max(PLACEHOLDER_SIZE, width), height: Math.max(PLACEHOLDER_SIZE, height) };
     if (!map) return;
-    if (!viewpoint || !wasReal) frameWhole();
+    if (!viewpoint || !wasReal || isShowingWhole) frameWhole();
     else apply(keptOnMap(viewpoint));
   }
 
   function jumpTo(next) {
     glide = null;
+    isShowingWhole = false;
     apply(keptOnMap(next));
   }
 
@@ -90,6 +100,7 @@ export function createCameraRig({ view = ISOMETRIC_VIEW, isMotionReduced = false
       jumpTo(next);
       return;
     }
+    isShowingWhole = false;
     glide = { from: viewpoint, to: keptOnMap(next), startedAt: now };
   }
 
@@ -110,7 +121,7 @@ export function createCameraRig({ view = ISOMETRIC_VIEW, isMotionReduced = false
   }
 
   return {
-    camera, sun, setMap, setViewport, apply, jumpTo, glideTo, glideToBounds, retarget, step, frameWhole, limits,
+    camera, sun, setMap, setViewport, setInsets, apply, jumpTo, glideTo, glideToBounds, retarget, step, frameWhole, limits,
     isGliding: () => glide !== null, viewpoint: () => viewpoint, viewport: () => viewport,
   };
 }

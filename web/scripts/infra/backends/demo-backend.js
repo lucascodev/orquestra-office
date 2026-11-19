@@ -1,4 +1,5 @@
 import { ownValueOf } from "../../domain/shared/own-value.js";
+import { demoDay } from "../demo/demo-day.js";
 import { demoHistory, demoTerminal } from "../demo/demo-terminal.js";
 import { demoThemesState } from "../demo/demo-themes.js";
 import { demoState, queueDemoMessage, resolveDemoRequest, tickDemo } from "../demo/demo-world.js";
@@ -16,7 +17,7 @@ export function createDemoBackend({ scene = null } = {}) {
 
   async function start(onChange) {
     notify = onChange;
-    world = (ownValueOf(SCENES, scene) ?? demoState)();
+    world = { ...(ownValueOf(SCENES, scene) ?? demoState)(), ...demoDay(Date.now()) };
     let step = 0;
     publish();
     setInterval(() => { tickDemo(world, step++); publish(); }, DEMO_TICK_MS);

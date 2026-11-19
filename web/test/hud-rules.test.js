@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
+import { insetsAroundPanels, PANEL_GAP } from "../scripts/domain/camera/frame-insets.js";
 import { areaBounds, projectBounds } from "../scripts/domain/camera/frame-target.js";
 import { layoutHeadquarters } from "../scripts/domain/headquarters/headquarters-layout.js";
 import { accountUsage, HIGH_USAGE_PERCENT } from "../scripts/domain/office/account-usage.js";
@@ -141,6 +142,8 @@ describe("day timeline", () => {
     assert.deepEqual(day.totals, { workingMs: 90 * MINUTE, needsYouMs: 4 * MINUTE, costUsd: 3.75 });
     const [nine, ten] = day.hours.filter(({ hour }) => hour === 9 || hour === 10);
     assert.equal(nine.level, 0.5);
+    assert.equal(nine.averageWorking, 1);
+    assert.equal(ten.averageWorking, 2);
     assert.equal(ten.level, 1);
     assert.equal(nine.needsYouCount, 0);
     assert.equal(nine.isMarked, false);
@@ -337,5 +340,30 @@ describe("headquarters search", () => {
     assert.deepEqual(result.actions.map(({ id }) => id), ["new-session"]);
     assert.deepEqual(search("copa").rooms.map(({ id }) => id), ["pantry"]);
     assert.deepEqual(search("copa").agentGroups, []);
+  });
+});
+
+describe("frame insets around the floating panels", () => {
+  const viewport = { width: 1440, height: 900 };
+  const rect = (left, top, width, height) => ({ left, top, right: left + width, bottom: top + height });
+
+  it("keeps the map clear of the panels docked on each side, with a gap", () => {
+    const insets = insetsAroundPanels(viewport, {
+      left: [rect(16, 16, 268, 500), rect(16, 700, 220, 184)],
+      top: [rect(440, 16, 560, 84), rect(1080, 16, 344, 52)],
+      bottom: [rect(252, 760, 600, 124), rect(868, 770, 148, 114)],
+      right: [],
+    });
+    assert.deepEqual(insets, { left: 300, right: PANEL_GAP, top: 116, bottom: 156 });
+  });
+
+  it("keeps only the gap on a side without panels", () => {
+    assert.deepEqual(insetsAroundPanels(viewport, { left: [], right: [], top: [], bottom: [] }), { left: 16, right: 16, top: 16, bottom: 16 });
+  });
+
+  it("lets the map run under the panels of a direction that would leave it too little room, as on a phone", () => {
+    const phone = { width: 390, height: 800 };
+    const insets = insetsAroundPanels(phone, { left: [rect(16, 80, 220, 300)], right: [rect(260, 80, 120, 40)], top: [rect(16, 16, 358, 60)], bottom: [rect(16, 640, 358, 144)] });
+    assert.deepEqual(insets, { left: 16, right: 16, top: 92, bottom: 176 });
   });
 });

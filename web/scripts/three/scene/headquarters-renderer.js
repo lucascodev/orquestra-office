@@ -252,16 +252,29 @@ export function createHeadquartersRenderer({ onFrame = () => {}, onPick = () => 
   const center = () => ({ x: rig.viewport().width / 2, y: rig.viewport().height / 2 });
   const zoomBy = (factor, at) => moveCamera((viewpoint) => zoomAt(viewpoint, { factor, at, viewport: rig.viewport(), limits: rig.limits() }));
 
+  const zoomAtCenter = (factor) => zoomBy(factor, center());
+
+  function frameWhole() {
+    if (layout) glideCamera(wholeHeadquartersBounds(layout));
+  }
+
+  function frame(bounds) {
+    if (layout && bounds) glideCamera(bounds);
+  }
+
+  function setFrameInsets(insets) {
+    rig.setInsets(insets);
+    isDirty = true;
+  }
+
   attachCameraInput({ surface: canvas, region: stage }, {
     pan: (dx, dy) => moveCamera((viewpoint) => panBy(viewpoint, { dx, dy })),
     zoomAt: zoomBy,
-    zoomAtCenter: (factor) => zoomBy(factor, center()),
+    zoomAtCenter,
     frameAt: (at) => {
       if (layout) glideCamera(boundsToFrameAt(layout, screenToGround(rig.viewpoint(), at, rig.viewport())));
     },
-    frameWhole: () => {
-      if (layout) glideCamera(wholeHeadquartersBounds(layout));
-    },
+    frameWhole,
     stopFollowing,
     pick: (at) => {
       const key = layout ? agentAt(at) : null;
@@ -279,7 +292,7 @@ export function createHeadquartersRenderer({ onFrame = () => {}, onPick = () => 
   const invalidate = () => { isDirty = true; };
 
   return {
-    element: stage, show, resize, invalidate, follow, stopFollowing, scene, rig,
-    layoutShown: () => layout, followedKey: () => followedKey,
+    element: stage, show, resize, invalidate, follow, stopFollowing, scene, rig, frame, frameWhole, zoomAtCenter, setFrameInsets,
+    layoutShown: () => layout, followedKey: () => followedKey, destinations: () => people.destinations(),
   };
 }

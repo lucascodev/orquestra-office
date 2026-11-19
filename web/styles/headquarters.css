@@ -1,16 +1,107 @@
-/* The headquarters view (?vista=sede): the map takes the whole window until the floating interface of step 6.24 arrives. */
+/* The headquarters view (?vista=sede): the map takes the whole window and the interface floats over it, as in the approved mock-up. */
 .is-headquarters .toolbar, .is-headquarters .tabs, .is-headquarters .side { display: none; }
-.is-headquarters .workspace { display: block; height: 100dvh; padding: 0; }
+.is-headquarters .workspace { display: block; position: relative; height: 100dvh; padding: 0; overflow: hidden; }
 .is-headquarters .office { display: block; position: relative; height: 100%; }
 
 .hq-stage { position: absolute; inset: 0; overflow: hidden; background: var(--bg-canvas); }
 .hq-canvas { display: block; width: 100%; height: 100%; image-rendering: pixelated; touch-action: none; }
-.hq-meter { position: absolute; top: var(--space-6); left: var(--space-6); padding: var(--space-2) var(--space-4); border: 1px solid var(--border-strong); border-radius: var(--radius-md); background: var(--bg-overlay); color: var(--text); font: 400 12px var(--font-mono); }
+.hq-meter { position: absolute; right: var(--space-6); bottom: var(--space-6); padding: var(--space-2) var(--space-4); border: 1px solid var(--border-strong); border-radius: var(--radius-md); background: var(--bg-overlay); color: var(--text); font: 400 12px var(--font-mono); }
 .hq-labels, .hq-tags { position: absolute; inset: 0; overflow: hidden; pointer-events: none; }
 .hq-tags { --tag-max-width: 132px; }
 .area-label { position: absolute; transform: translate(-50%, -100%); padding: 1px 6px; border-radius: var(--radius-md); background: var(--bg-overlay); color: var(--text); font: 600 10px/1.4 var(--font-sans); white-space: nowrap; }
 .area-label.is-free-island { color: var(--muted); }
 .name-tag.is-figurant { padding: 1px 6px; color: var(--muted); font-size: 10px; cursor: default; pointer-events: none; }
 .hq-stage:focus-visible { outline: 2px solid var(--focus); outline-offset: -2px; }
-.hq-instructions { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+.hq-instructions, .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
 .name-tag.is-followed { z-index: 3; border-color: var(--focus); box-shadow: 0 0 0 1px var(--focus); }
+
+/* Floating panels. The layer lets the map take every press that does not land on a panel. */
+.hq-hud { --hq-gap: var(--space-6); --hq-left-width: 220px; --hq-capsule-height: 40px; position: absolute; inset: 0; z-index: 2; pointer-events: none; font-size: 13px; }
+.hq-hud > * { pointer-events: auto; }
+.hq-panel { border: 1px solid var(--border-strong); border-radius: var(--radius-lg); background: var(--bg-floating); box-shadow: var(--shadow-popover); }
+.hq-heading { margin: var(--space-3) var(--space-4) var(--space-1); color: var(--muted); font-size: 10px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; }
+.hq-empty { margin: 0; color: var(--muted); font-size: 12px; }
+.hq-hint { margin: var(--space-3) var(--space-4) 0; color: var(--subtle); font-size: 11px; }
+.hq-figure { color: var(--text); font: 600 12px var(--font-mono); }
+.hq-figure.is-high, .hq-figure.is-warning { color: var(--warning); }
+
+.hq-capsule { position: absolute; left: var(--hq-gap); top: var(--hq-gap); min-width: 268px; max-width: calc(100vw - var(--hq-gap) * 2); height: var(--hq-capsule-height); box-sizing: border-box; display: flex; align-items: center; gap: 10px; padding: 0 var(--space-5); }
+.hq-brand-mark { display: grid; grid-template-columns: repeat(2, 6px); gap: 2px; }
+.hq-brand-mark i { width: 6px; height: 6px; background: var(--accent); }
+.hq-brand-mark i:nth-child(2) { background: var(--info); }
+.hq-brand-mark i:nth-child(3) { background: var(--success); }
+.hq-brand-mark i:nth-child(4) { background: var(--warning); }
+.hq-brand { flex: 1; margin: 0; font-size: 13px; font-weight: 600; white-space: nowrap; }
+.hq-connection { display: inline-flex; align-items: center; gap: var(--space-3); min-width: 0; color: var(--muted); font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.hq-dot { flex: none; width: 6px; height: 6px; border-radius: var(--radius-full); background: var(--muted); }
+.hq-dot[data-tone="live"] { background: var(--success); }
+.hq-dot[data-tone="demo"] { background: var(--info); }
+.hq-dot[data-tone="pending"] { background: var(--warning); }
+.hq-dot[data-tone="off"] { background: var(--danger); }
+
+.hq-accounts { position: absolute; right: var(--hq-gap); top: var(--hq-gap); display: flex; align-items: center; gap: var(--space-5); padding: var(--space-4) 10px; }
+.hq-account-list { display: flex; align-items: center; gap: var(--space-5); margin: 0; padding: 0; list-style: none; }
+.hq-account { display: flex; align-items: center; gap: var(--space-4); }
+.hq-account + .hq-account { padding-left: var(--space-5); border-left: 1px solid var(--border-strong); }
+.hq-ring { --used: 0%; display: grid; place-items: center; width: 34px; height: 34px; border-radius: var(--radius-full); background: conic-gradient(var(--success) 0 var(--used), var(--border-strong) var(--used) 100%); }
+.hq-ring.is-high { background: conic-gradient(var(--warning) 0 var(--used), var(--border-strong) var(--used) 100%); }
+.hq-ring > span { display: grid; place-items: center; width: 26px; height: 26px; border-radius: var(--radius-full); background: var(--bg-surface); font-size: 11px; font-weight: 700; }
+.hq-account-text { display: grid; font-size: 11px; line-height: 1.3; }
+.hq-account-text > b { font-size: 12px; }
+.hq-meters { color: var(--muted); white-space: nowrap; }
+
+.hq-rooms { position: absolute; left: var(--hq-gap); top: calc(var(--hq-gap) * 1.5 + var(--hq-capsule-height)); width: var(--hq-left-width); box-sizing: border-box; max-height: calc(100dvh - var(--hq-capsule-height) - 320px); overflow-y: auto; display: flex; flex-direction: column; gap: var(--space-1); padding: var(--space-4); font-size: 12px; }
+.hq-room-list { display: flex; flex-direction: column; gap: var(--space-1); margin: 0; padding: 0; list-style: none; }
+.hq-room { all: unset; box-sizing: border-box; display: flex; align-items: center; gap: var(--space-4); width: 100%; min-height: 30px; padding: 0 var(--space-4); border: 1px solid transparent; border-radius: var(--radius-md); color: var(--text); font-size: 12px; cursor: pointer; }
+.hq-room:hover { background: var(--bg-hover); }
+.hq-room:focus-visible { outline: 2px solid var(--focus); outline-offset: 1px; }
+.hq-room.is-whole { font-weight: 600; background: var(--bg-selected); }
+.hq-room.is-urgent { border-color: var(--warning-border); background: var(--warning-bg); }
+.hq-room-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.hq-swatch { flex: none; width: 10px; height: 10px; border-radius: 3px; background: var(--swatch); box-shadow: inset 0 0 0 2px var(--swatch-edge); }
+.hq-swatch.is-whole { background: var(--accent); box-shadow: none; }
+.hq-chip { flex: none; font-size: 11px; white-space: nowrap; }
+.hq-chip.is-empty { color: var(--subtle); }
+.hq-count { flex: none; color: var(--muted); font: 11px var(--font-mono); }
+
+.hq-legend { position: absolute; left: var(--hq-gap); bottom: var(--hq-gap); width: var(--hq-left-width); box-sizing: border-box; padding: 10px var(--space-5); font-size: 12px; }
+.hq-legend .hq-heading { margin: 0 0 var(--space-2); }
+.hq-legend-list { display: grid; gap: var(--space-1); margin: 0; padding: 0; list-style: none; }
+.hq-glyph { display: inline-block; width: 1.4em; }
+
+.hq-day { position: absolute; left: calc(var(--hq-gap) * 2 + var(--hq-left-width)); bottom: var(--hq-gap); width: min(600px, calc(100vw - var(--hq-left-width) - 220px)); box-sizing: border-box; display: flex; flex-direction: column; gap: var(--space-4); padding: 10px 14px; }
+.hq-day-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--space-2) var(--space-6); color: var(--muted); font-size: 12px; }
+.hq-day-title { margin: 0; color: var(--text); font-size: 12px; font-weight: 700; }
+.hq-day .hq-day-title + .hq-empty { margin-top: var(--space-2); }
+.hq-bars { position: relative; display: grid; grid-template-columns: repeat(var(--hours), minmax(0, 1fr)); align-items: end; gap: 3px; height: 34px; }
+.hq-bar { height: max(4%, calc(var(--level) * 100%)); border-radius: 2px; background: var(--success); }
+.hq-bar.is-marked { box-shadow: inset 0 3px 0 var(--warning); }
+.hq-bar.is-now { background: var(--accent); }
+.hq-bar.is-ahead { height: 4%; background: var(--border-strong); }
+.hq-now { position: absolute; left: var(--at); top: -4px; bottom: 0; width: 2px; background: var(--text); }
+.hq-axis { position: relative; height: 14px; color: var(--subtle); font: 10px var(--font-mono); }
+.hq-axis > span { position: absolute; left: var(--at); white-space: nowrap; }
+.hq-axis > span.is-now { translate: -50% 0; color: var(--muted); }
+.hq-axis > span:last-child:not(.is-now) { translate: -100% 0; }
+
+.hq-camera { position: absolute; bottom: var(--hq-gap); left: calc(var(--hq-gap) * 3 + var(--hq-left-width) + min(600px, calc(100vw - var(--hq-left-width) - 220px))); display: flex; gap: var(--space-2); padding: var(--space-4); }
+.hq-camera-button { all: unset; box-sizing: border-box; display: grid; place-items: center; width: 36px; height: 28px; border: 1px solid var(--border-strong); border-radius: var(--radius-md); background: var(--bg-raised); color: var(--text); cursor: pointer; }
+.hq-camera-button:hover { background: var(--bg-hover); }
+.hq-camera-button:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+
+/* Below the width where the three top pieces fit side by side, the request alert drops under them. */
+@media (max-width: 1279px) {
+  .hq-alert { top: calc(var(--hq-gap) * 1.5 + var(--hq-capsule-height)); }
+}
+
+@media (max-width: 719px) {
+  .hq-hud { --hq-gap: var(--space-4); --hq-left-width: min(220px, 46vw); }
+  .hq-capsule { width: auto; right: var(--hq-gap); }
+  .hq-accounts { top: auto; left: var(--hq-gap); right: var(--hq-gap); bottom: calc(var(--hq-gap) * 2 + 72px); justify-content: space-between; }
+  .hq-accounts .hq-meters { display: none; }
+  .hq-legend { display: none; }
+  .hq-rooms { max-height: 40dvh; }
+  .hq-day { left: var(--hq-gap); right: var(--hq-gap); width: auto; }
+  .hq-day .hq-bars, .hq-day .hq-axis { display: none; }
+  .hq-camera { left: auto; right: var(--hq-gap); bottom: auto; top: calc(var(--hq-gap) * 2 + var(--hq-capsule-height)); flex-direction: column; }
+}

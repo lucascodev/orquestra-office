@@ -61,6 +61,7 @@ export function dayTimeline(timeline, { now, dayStart }) {
     hours: visible.map((hour, offset) => ({
       hour: from + offset,
       level: busiest > 0 ? hour.workingAgentMs / busiest : 0,
+      averageWorking: hour.workingAgentMs / HOUR_MS,
       needsYouCount: hour.needsYouCount,
       isMarked: hour.needsYouCount > 0,
       isPast: from + offset < nowHour,

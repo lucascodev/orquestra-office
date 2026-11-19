@@ -1,0 +1,51 @@
+import { themeById } from "../../data/themes.js";
+import { esc } from "../shared/escape-html.js";
+import { STATUS } from "../office/status-display.js";
+
+const COUNTED = {
+  needs_you: ["precisa de você", "precisam de você"],
+  blocked: ["parou com um erro", "pararam com um erro"],
+  working: ["trabalhando", "trabalhando"],
+  waiting: ["espera sua resposta", "esperam sua resposta"],
+  break: ["em pausa", "em pausa"],
+  idle: ["livre", "livres"],
+};
+
+const NOBODY = "ninguém";
+const people = (count) => (count === 0 ? NOBODY : count === 1 ? "1 pessoa" : `${count} pessoas`);
+const counted = ({ status, count }) => `${count} ${COUNTED[status][count === 1 ? 0 : 1]}`;
+
+function chipOf(project) {
+  const [headline] = project.byStatus;
+  if (!headline) return `<span class="hq-chip is-empty" aria-hidden="true">vazia</span>`;
+  const { glyph, color } = STATUS[headline.status];
+  return `<span class="hq-chip" style="color:${esc(color)}" aria-hidden="true">${esc(glyph)} ${headline.count}</span>`;
+}
+
+function projectItem(project) {
+  const theme = themeById(project.themeId);
+  const isUrgent = project.byStatus[0]?.status === "needs_you";
+  const description = project.byStatus.length > 0 ? project.byStatus.map(counted).join(", ") : `${NOBODY} agora`;
+  return `<li><button type="button" class="hq-room${isUrgent ? " is-urgent" : ""}" data-project="${esc(project.key)}">
+      <span class="hq-swatch" style="--swatch:${esc(theme.rug)};--swatch-edge:${esc(theme.divider)}" aria-hidden="true"></span>
+      <span class="hq-room-name">${esc(project.name)}</span>${chipOf(project)}<span class="sr-only">: ${esc(description)}</span>
+    </button></li>`;
+}
+
+const areaItem = (area) => `<li><button type="button" class="hq-room" data-area="${esc(area.id)}">
+      <span class="hq-room-name">${esc(area.name)}</span><span class="hq-count" aria-hidden="true">${area.count}</span><span class="sr-only">: ${people(area.count)}</span>
+    </button></li>`;
+
+export function renderAreaList(census) {
+  const projects = census.projects.length > 0
+    ? `<ul class="hq-room-list">${census.projects.map(projectItem).join("")}</ul>`
+    : `<p class="hq-empty">Nenhum projeto aberto ainda.</p>`;
+  return `<button type="button" class="hq-room is-whole" data-frame="whole">
+      <span class="hq-swatch is-whole" aria-hidden="true"></span><span class="hq-room-name">Sede inteira</span><span class="hq-count" aria-hidden="true">${census.total}</span><span class="sr-only">: ${people(census.total)}</span>
+    </button>
+    <h2 class="hq-heading">Área de trabalho · ilhas</h2>
+    ${projects}
+    <h2 class="hq-heading">Áreas comuns</h2>
+    <ul class="hq-room-list">${census.areas.map(areaItem).join("")}</ul>
+    <p class="hq-hint">Clique numa sala para a câmera ir até ela.</p>`;
+}
