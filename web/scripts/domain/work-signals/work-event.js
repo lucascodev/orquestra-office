@@ -1,9 +1,10 @@
 import { WORK_MARKS } from "../../data/work-marks.js";
 import { WORK_SIGNALS } from "../../data/text/pt-br/work-signals.js";
+import { countOf } from "../shared/field-values.js";
 import { ownValueOf } from "../shared/own-value.js";
 import { countPhrase } from "../text/count-phrase.js";
 import { fillPhrase } from "../text/fill-phrase.js";
-import { countOf, testsOf } from "./agent-work-fields.js";
+import { lastTestRunOf, testRunsOfDay } from "../work-sheet/test-fields.js";
 
 // The log entry and the run it reports are written by the same hook, but not necessarily in the same millisecond.
 export const RUN_MATCH_MS = 5_000;
@@ -11,7 +12,8 @@ export const RUN_MATCH_MS = 5_000;
 const TEXT = WORK_SIGNALS.event;
 
 function matchingRun(agent, entry, isOk) {
-  const { lastRun, runsToday } = testsOf(agent);
+  const lastRun = lastTestRunOf(agent?.tests);
+  const runsToday = testRunsOfDay(agent?.tests);
   const runs = lastRun ? [lastRun, ...runsToday] : runsToday;
   return runs.find((run) => run.isOk === isOk && run.finishedAt !== null && Math.abs(run.finishedAt - entry.at) <= RUN_MATCH_MS) ?? null;
 }

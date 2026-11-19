@@ -1,5 +1,5 @@
 import { checklistProgress } from "./checklist-progress.js";
-import { hasFailedLastRun } from "./test-run-summary.js";
+import { hasFailedLastRun } from "./test-fields.js";
 
 export const FIRST_TAB = "now";
 const TAB_ORDER = [FIRST_TAB, "todos", "plan", "tests"];

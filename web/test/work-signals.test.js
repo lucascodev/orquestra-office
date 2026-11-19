@@ -1,7 +1,6 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import { countPhrase } from "../scripts/domain/text/count-phrase.js";
-import { countOf } from "../scripts/domain/work-signals/agent-work-fields.js";
 import { agentWorkSignalOf, NO_WORK_SIGNAL, PASSED_SHOWN_MS, WRITING_SHOWN_MS } from "../scripts/domain/work-signals/agent-work-signal.js";
 import { clockText } from "../scripts/domain/work-signals/clock-text.js";
 import { agentWith, checklistOf, failedRun, HOUR, item, MINUTE, NOW, passedRun, run, SECOND, testsWith } from "./support/work-fixtures.js";
@@ -29,13 +28,6 @@ describe("counted phrases", () => {
   }
 });
 
-describe("counts read from the collector", () => {
-  const cases = [[3, 3], [0, 0], ["248", 248], ["", null], ["2 testes", null], [-1, null], [2.5, null], [null, null], [undefined, null], [{}, null]];
-  for (const [value, expected] of cases) {
-    it(`read ${JSON.stringify(value) ?? "undefined"} as ${expected}`, () => assert.equal(countOf(value), expected));
-  }
-});
-
 describe("signal over the agent's figure", () => {
   const cases = [
     ["nothing for a state saved before the fields", agentWith(), null, ""],
@@ -58,8 +50,8 @@ describe("signal over the agent's figure", () => {
     ["nothing for a checklist all done", agentWith({ checklist: checklistOf("completed", "completed") }), null, ""],
     ["nothing for an empty checklist", agentWith({ checklist: { items: [], updatedAt: NOW } }), null, ""],
     ["nothing for a null checklist", agentWith({ checklist: null, tests: null }), null, ""],
-    ["nothing for checklist items without a status", agentWith({ checklist: { items: [null, 3, "x", { text: "a" }] } }), null, ""],
-    ["only the items that have a status", agentWith({ checklist: { items: [null, item("completed"), { status: 1 }, item("pending")] } }), "checklist", "1/2"],
+    ["nothing for checklist items that are not records", agentWith({ checklist: { items: [null, 3, "x"] } }), null, ""],
+    ["an item without a known status as still to do", agentWith({ checklist: { items: [null, item("completed"), { status: 1 }, item("pending")] } }), "checklist", "1/3"],
     ["nothing for a checklist that is a list", agentWith({ checklist: [item("pending")] }), null, ""],
     ["nothing for tests that are a list", agentWith({ tests: [failedRun(2, 1)] }), null, ""],
     ["nothing for a run that does not say whether it passed", agentWith({ tests: testsWith({ lastRun: { failed: 2, finishedAt: NOW } }) }), null, ""],

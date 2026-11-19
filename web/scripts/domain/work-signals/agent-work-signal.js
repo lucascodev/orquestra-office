@@ -2,7 +2,9 @@ import { WORK_MARKS } from "../../data/work-marks.js";
 import { WORK_SIGNALS } from "../../data/text/pt-br/work-signals.js";
 import { countPhrase } from "../text/count-phrase.js";
 import { fillPhrase } from "../text/fill-phrase.js";
-import { checklistProgressOf, testsOf } from "./agent-work-fields.js";
+import { checklistProgress } from "../work-sheet/checklist-progress.js";
+import { runningElapsedMs } from "../work-sheet/running-elapsed.js";
+import { lastTestFileAtOf, lastTestRunOf, runningTestsOf } from "../work-sheet/test-fields.js";
 import { clockText } from "./clock-text.js";
 
 export const PASSED_SHOWN_MS = 60_000;
@@ -17,18 +19,18 @@ const isRecent = (at, now, windowMs) => at !== null && now - at < windowMs;
 
 function testingSignal({ running }, now) {
   if (!running) return null;
-  const elapsedMs = Math.max(0, now - running.startedAt);
+  const elapsedMs = runningElapsedMs(running.startedAt, now);
   return signal("testing", fillPhrase(TEXT.testing, { clock: clockText(elapsedMs) }), elapsedMs);
 }
 
 function failedSignal({ lastRun }) {
   if (!lastRun || lastRun.isOk) return null;
-  return signal("tests-failed", countPhrase(TEXT.failed, lastRun.failed));
+  return signal("tests-failed", countPhrase(TEXT.failed, lastRun.headlineCount));
 }
 
 function passedSignal({ lastRun }, now) {
   if (!lastRun?.isOk || !isRecent(lastRun.finishedAt, now, PASSED_SHOWN_MS)) return null;
-  return signal("tests-passed", countPhrase(TEXT.passed, lastRun.passed));
+  return signal("tests-passed", countPhrase(TEXT.passed, lastRun.headlineCount));
 }
 
 // Writing counts only while the last test file touched is newer than the last run and from the last minute.
@@ -38,20 +40,28 @@ function writingSignal({ lastRun, lastTestFileAt }, now) {
   return signal("writing-tests", TEXT.writing);
 }
 
-function checklistSignal(agent) {
-  const progress = checklistProgressOf(agent);
-  if (!progress || progress.done === progress.total) return null;
-  return signal("checklist", fillPhrase(TEXT.checklist, progress));
+function checklistSignal({ checklist }) {
+  if (!checklist?.hasOpenItems) return null;
+  return signal("checklist", fillPhrase(TEXT.checklist, checklist));
+}
+
+function workOf(agent) {
+  return {
+    running: runningTestsOf(agent?.tests),
+    lastRun: lastTestRunOf(agent?.tests),
+    lastTestFileAt: lastTestFileAtOf(agent?.tests),
+    checklist: checklistProgress(agent?.checklist),
+  };
 }
 
 // What the tag over the figure says about the agent's tests and checklist, the first that applies in this order: tests
 // running, the last run failed (until the next one), the last run passed (for a minute), writing a test, open checklist items.
 export function agentWorkSignalOf(agent, now) {
-  const tests = testsOf(agent);
-  return testingSignal(tests, now)
-    ?? failedSignal(tests)
-    ?? passedSignal(tests, now)
-    ?? writingSignal(tests, now)
-    ?? checklistSignal(agent)
+  const work = workOf(agent);
+  return testingSignal(work, now)
+    ?? failedSignal(work)
+    ?? passedSignal(work, now)
+    ?? writingSignal(work, now)
+    ?? checklistSignal(work)
     ?? NO_WORK_SIGNAL;
 }

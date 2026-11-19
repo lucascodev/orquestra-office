@@ -6,7 +6,8 @@ import { planDocument } from "../scripts/domain/work-sheet/plan-document.js";
 import { planStatus } from "../scripts/domain/work-sheet/plan-status.js";
 import { runningElapsedMs } from "../scripts/domain/work-sheet/running-elapsed.js";
 import { testFileState } from "../scripts/domain/work-sheet/test-file-state.js";
-import { hasFailedLastRun, testRunSummary } from "../scripts/domain/work-sheet/test-run-summary.js";
+import { hasFailedLastRun } from "../scripts/domain/work-sheet/test-fields.js";
+import { testRunSummary } from "../scripts/domain/work-sheet/test-run-summary.js";
 import { testsOverview } from "../scripts/domain/work-sheet/tests-overview.js";
 import { hasWorkTabs, shownTabOf, workTabs } from "../scripts/domain/work-sheet/work-tabs.js";
 
@@ -54,9 +55,10 @@ describe("test rounds", () => {
     assert.equal(testRunSummary({ isOk: false, passed: 3, failed: 0 }).headlineCount, null);
   });
 
-  it("drops counts that are not whole numbers and treats anything but isOk true as failed", () => {
-    const summary = testRunSummary({ isOk: "yes", passed: -1, failed: 1.5, skipped: "7" });
+  it("drops counts that are not whole numbers and takes a round that does not say whether it passed as no round", () => {
+    const summary = testRunSummary({ isOk: false, passed: -1, failed: 1.5, skipped: "7" });
     assert.deepEqual(pick(summary, ["verdict", "passed", "failed", "skipped", "hasCounts"]), ["failed", null, null, null, false]);
+    for (const isOk of ["yes", "false", 1, null, undefined]) assert.equal(testRunSummary({ isOk, passed: 3, failed: 0 }), null);
   });
 
   it("marks the tests as failed only while the last round really failed", () => {

@@ -14,7 +14,7 @@ const SEPARATOR = " · ";
 
 function runningSection(running) {
   if (!running) return "";
-  const clock = running.startedAt === null ? "" : `<span class="work-clock" data-elapsed-since="${running.startedAt}"></span>`;
+  const clock = `<span class="work-clock" data-elapsed-since="${running.startedAt}"></span>`;
   const command = running.command ?? running.framework;
   return `<section class="work-card is-running" aria-label="${TESTS_TEXT.runningLabel}">
       <div class="work-card-head"><span class="work-mark" aria-hidden="true">⚗</span><b>${TESTS_TEXT.running}</b>${clock}</div>
