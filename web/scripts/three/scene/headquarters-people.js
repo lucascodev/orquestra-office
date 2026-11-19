@@ -6,6 +6,7 @@ import { createConversationTracker } from "../../domain/conversations/conversati
 import { areaOfPoint } from "../../domain/headquarters/area-of-point.js";
 import { bubbleDetail, figureDetail } from "../../domain/headquarters/figure-detail.js";
 import { tagDetail } from "../../domain/headquarters/label-detail.js";
+import { queuedCountOf, queuedText } from "../../domain/office/queued-messages.js";
 import { group } from "../kit.js";
 import { createCrowd } from "../people/crowd.js";
 import { createPerson, isWalking, placeAt, removePerson, setReaction, standAt, stepPerson, walkTo } from "../people/people.js";
@@ -55,6 +56,7 @@ export function createHeadquartersPeople({ scene, tagLayer, onPick, describeStat
   let layout = null;
   let spots = null;
   let routeFor = () => [];
+  let outbox = {};
   let hasShownPeople = false;
   let followedKey = null;
 
@@ -139,14 +141,15 @@ export function createHeadquartersPeople({ scene, tagLayer, onPick, describeStat
 
   function label(agent) {
     const { tag } = people.get(agent.key);
+    const queue = queuedText(queuedCountOf(outbox, agent.key));
     tag.element.dataset.status = agent.status;
     tag.name.textContent = agent.name;
-    tag.title.textContent = agent.label;
-    tag.element.title = `${agent.name} · ${agent.label} · ${describeStatus(agent.status)}`;
+    tag.title.textContent = [agent.label, queue].filter(Boolean).join(" · ");
+    tag.element.title = [agent.name, agent.label, describeStatus(agent.status), queue].filter(Boolean).join(" · ");
   }
 
   function show(next, seconds) {
-    ({ layout, spots, routeFor } = next);
+    ({ layout, spots, routeFor, outbox } = next);
     agents = next.agents;
     placeAt(receptionist, spots.receptionist);
     arrange(seconds);

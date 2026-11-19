@@ -189,6 +189,7 @@
 .hq-member:focus-visible { outline: 2px solid var(--focus); outline-offset: -2px; }
 .hq-member-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .hq-member-status { flex: none; color: var(--muted); font-size: 11px; }
+.hq-member-queue { flex: none; padding: 0 var(--space-3); border: 1px solid var(--border-strong); border-radius: var(--radius-sm); color: var(--info); font: 11px var(--font-mono); white-space: nowrap; }
 .hq-island-day { display: grid; grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); gap: var(--space-4); margin: 0; padding: var(--space-4) 10px; border-radius: var(--radius-md); background: var(--bg-raised); }
 .hq-island-day > div { display: grid; gap: var(--space-1); min-width: 0; }
 .hq-island-day dt { color: var(--muted); font-size: 11px; }

@@ -153,12 +153,12 @@ export function createHeadquartersRenderer({
     return routes.routeFor;
   }
 
-  function show(projects) {
+  function show(projects, outbox) {
     layout = layoutHeadquarters(projects);
     showSite();
     showIslands();
     const spots = headquartersSpots(layout);
-    people.show({ layout, spots, routeFor: routesFor(), agents: agentsOf(projects) }, performance.now() / 1000);
+    people.show({ layout, spots, routeFor: routesFor(), agents: agentsOf(projects), outbox }, performance.now() / 1000);
     labels.show(layout, rig.camera);
     isDirty = true;
   }

@@ -14,6 +14,7 @@ import { movedCursor, TAB_KEYS } from "../scripts/domain/office/option-cursor.js
 import { isDismissedByDrag } from "../scripts/domain/shared/drag-dismiss.js";
 import { searchEntries } from "../scripts/domain/office/search-entries.js";
 import { crossesWarning, newArrivals, pendingInFocus, requesterOf, serverClockNow } from "../scripts/domain/office/pending-queue.js";
+import { queuedCountOf, queuedText } from "../scripts/domain/office/queued-messages.js";
 import { requestIntentText } from "../scripts/domain/office/request-intent-text.js";
 
 const MINUTE = 60_000;
@@ -319,7 +320,24 @@ describe("island sheet facts", () => {
     assert.deepEqual(facts.team.map(({ name, status }) => [name, status]), [
       ["Davi", "reviewing"], ["Heitor", "working"], ["Eva", "idle"], ["Nina", "idle"],
     ]);
-    assert.deepEqual(Object.keys(facts.team[0]), ["key", "name", "label", "status", "kind"]);
+    assert.deepEqual(Object.keys(facts.team[0]), ["key", "name", "label", "status", "kind", "queued"]);
+  });
+
+  it("counts the messages waiting in each person's queue, none for a key only the prototype knows", () => {
+    const project = projectOf("c:/loja", "loja-online", [agentOf("claude:Vitor", "working"), agentOf("claude:Otto", "idle")]);
+    const facts = islandFacts(project, { "claude:Vitor": 2, toString: 9 });
+    assert.deepEqual(facts.team.map(({ name, queued }) => [name, queued]), [["Vitor", 2], ["Otto", 0]]);
+    assert.deepEqual(islandFacts(project).team.map(({ queued }) => queued), [0, 0]);
+  });
+});
+
+describe("queued messages", () => {
+  it("counts an agent's queue, none without an outbox or for a key only the prototype knows", () => {
+    assert.deepEqual([queuedCountOf({ "claude:a": 3 }, "claude:a"), queuedCountOf({}, "claude:a"), queuedCountOf(null, "claude:a"), queuedCountOf({}, "constructor")], [3, 0, 0, 0]);
+  });
+
+  it("says how many messages wait in the queue, and nothing when none does", () => {
+    assert.deepEqual([0, 1, 4].map(queuedText), ["", "1 na fila", "4 na fila"]);
   });
 
   it("zeroes the day of a project the collector has not counted yet", () => {

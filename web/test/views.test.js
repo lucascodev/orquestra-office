@@ -363,6 +363,14 @@ describe("headquarters island sheet", () => {
     assertMatchesRecording("hq-island-team", renderIslandTeam(island().team));
   });
 
+  it("shows next to the person how many messages wait in their queue, and nothing for whoever has none", () => {
+    const team = islandFacts(projectOf("c:/loja", "loja <online>", busyTeam()), { "claude:c1": 2 }).team;
+    const html = renderIslandTeam(team);
+    const caio = html.split("</li>").find((item) => item.includes("<b>Caio</b>"));
+    assert.match(caio, /<span class="hq-member-status">Precisa de você agora<\/span>\s*<span class="hq-member-queue">2 na fila<\/span>/);
+    assert.equal(html.match(/hq-member-queue/g).length, 1);
+  });
+
   it("says nobody works on an empty island and how the team shows up", () => {
     assert.match(renderIslandTeam([]), /Ninguém trabalhando aqui agora/);
   });

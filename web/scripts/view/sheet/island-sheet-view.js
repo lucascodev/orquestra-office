@@ -1,4 +1,5 @@
 import { THEMES, themeById } from "../../data/themes.js";
+import { queuedText } from "../../domain/office/queued-messages.js";
 import { STATUS } from "../office/status-display.js";
 import { esc } from "../shared/escape-html.js";
 import { formatCost, formatTokens } from "../shared/format.js";
@@ -63,13 +64,18 @@ export function renderIslandDay(day) {
   ].map(dayCell).join("");
 }
 
+function queueChip(queued) {
+  const text = queuedText(queued);
+  return text ? `\n      <span class="hq-member-queue">${esc(text)}</span>` : "";
+}
+
 function memberItem(member) {
   const { glyph, color, sentence } = STATUS[member.status];
   const role = member.kind === "subagent" ? `${member.label} · ${SUBAGENT}` : member.label;
   return `<li><button type="button" class="hq-member" data-agent="${esc(member.key)}">
       <span class="hq-glyph" style="color:${esc(color)}" aria-hidden="true">${esc(glyph)}</span>
       <span class="hq-member-name"><b>${esc(member.name)}</b> <span class="muted">${esc(role)}</span></span>
-      <span class="hq-member-status">${esc(sentence)}</span>
+      <span class="hq-member-status">${esc(sentence)}</span>${queueChip(member.queued)}
     </button></li>`;
 }
 

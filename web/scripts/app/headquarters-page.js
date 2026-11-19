@@ -170,7 +170,7 @@ export function createHeadquartersPage({ hud, headquarters, source, newSessionDi
 
   const openAgentFromMap = (agentKey) => openAgent(agentKey, { opener: headquarters?.tagOf(agentKey) });
 
-  const islandFactsOf = (projectKey) => (Object.hasOwn(state.projects, projectKey) ? islandFacts(state.projects[projectKey]) : null);
+  const islandFactsOf = (projectKey) => (Object.hasOwn(state.projects, projectKey) ? islandFacts(state.projects[projectKey], state.outbox) : null);
   const islandContext = () => ({ canOpenSession: state.runner.isAvailable });
   const suggestedFolder = () => (focusedProjectKey && Object.hasOwn(state.projects, focusedProjectKey) ? focusedProjectKey : "");
 
@@ -194,7 +194,7 @@ export function createHeadquartersPage({ hud, headquarters, source, newSessionDi
   function receive(next) {
     receivedAt = Date.now();
     state = { ...next, projects: withBuildingAgentNames(next.projects) };
-    headquarters?.show(state.projects);
+    headquarters?.show(state.projects, state.outbox);
     render();
     pendingAlert.update(state);
     updateDrawer();
