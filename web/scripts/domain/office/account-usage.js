@@ -21,6 +21,13 @@ function usageOf({ id, label }, rateLimits) {
   return { id, label, initial: label.charAt(0).toLocaleUpperCase("pt-BR"), windows, peak: peakOf(windows) };
 }
 
+// With a single account there is nothing to tell apart, so the agent's sheet leaves the account out.
+export function agentAccountLabel({ accounts, accountId }) {
+  const known = accounts ?? {};
+  if (!accountId || Object.keys(known).length < 2 || !Object.hasOwn(known, accountId)) return null;
+  return known[accountId].label;
+}
+
 // Until the collector reads accounts, its single plan reading is the default account it will later file it under.
 export function accountUsage({ accounts = null, usage = null }) {
   const listed = Object.values(accounts ?? {});

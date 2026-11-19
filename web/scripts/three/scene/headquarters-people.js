@@ -72,6 +72,8 @@ export function createHeadquartersPeople({ scene, tagLayer, onPick, describeStat
 
   function meet(agent) {
     const entry = { person: createPerson(root, agent), tag: createNameTag(agent.key, onPick), bubble: createThoughtBubble() };
+    // Sixty Tab stops on the map help nobody: the keyboard reaches each agent through the Ctrl K search instead.
+    entry.tag.element.tabIndex = -1;
     tagLayer.append(entry.tag.element, entry.bubble.element);
     crowd.join(agent.key, entry.person.root);
     people.set(agent.key, entry);

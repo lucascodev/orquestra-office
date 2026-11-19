@@ -19,8 +19,14 @@ import { renderAreaList } from "../scripts/view/hud/area-list-view.js";
 import { renderConnection } from "../scripts/view/hud/connection-view.js";
 import { renderDayTimeline } from "../scripts/view/hud/day-timeline-view.js";
 import { renderLegend } from "../scripts/view/hud/legend-view.js";
-import { arrivalsText, arrivalText, countdownText, renderAlertBody, renderAlertHead, warningText } from "../scripts/view/hud/pending-alert-view.js";
+import {
+  arrivalsText, arrivalText, countdownText, renderAlertBody, renderAlertHead, requestsButtonLabel, warningText,
+} from "../scripts/view/hud/pending-alert-view.js";
 import { renderPendingCard, renderPendingStrip } from "../scripts/view/sheet/pending-request-view.js";
+import { islandFacts } from "../scripts/domain/office/island-facts.js";
+import { followingStoppedText, renderCameraControls, renderFollowing } from "../scripts/view/hud/camera-controls-view.js";
+import { renderSearchResults, resultCountText } from "../scripts/view/hud/search-results-view.js";
+import { renderIslandDay, renderIslandIdentity, renderIslandShell, renderIslandTeam } from "../scripts/view/sheet/island-sheet-view.js";
 
 // ago(), clockTime() and resetTime() print in the machine's time zone; the recorded pages are in UTC.
 process.env.TZ = "UTC";
@@ -210,6 +216,12 @@ describe("headquarters agent drawer", () => {
     assertMatchesRecording("hq-drawer-identity", renderDrawerIdentity(agent, { mark: agentMark(agent), origin: originOf(agent), projectName: "loja <online>" }));
   });
 
+  it("adds the account the agent works on, spelled out", () => {
+    const agent = agentOf("claude:a1", { name: "Heitor" });
+    const identity = renderDrawerIdentity(agent, { mark: agentMark(agent), origin: originOf(agent), projectName: "orquestra-office", accountLabel: "Pessoal <casa>" });
+    assertMatchesRecording("hq-drawer-identity-account", identity);
+  });
+
   it("writes the status out in words with what the agent is doing and since when", () => {
     assertMatchesRecording("hq-drawer-status", renderDrawerStatus(agentOf("claude:a1", { status: "needs_you", action: undefined, actionId: "permission-requested", subject: "Bash" })));
   });
@@ -290,6 +302,69 @@ describe("headquarters room list", () => {
 
   it("says no project is open yet", () => {
     assertMatchesRecording("hq-room-list-empty", renderAreaList({ total: 0, projects: [], areas: census.areas }));
+  });
+
+  it("marks as current the room the camera went to, and none after the camera is moved by hand", () => {
+    const currentOf = (html) => [...html.matchAll(/data-(project|area|frame)="([^"]+)" aria-current="true"/g)].map(([, kind, id]) => `${kind}:${id}`);
+    assert.deepEqual(currentOf(renderAreaList(census)), ["frame:whole"]);
+    assert.deepEqual(currentOf(renderAreaList(census, { kind: "project", id: "c:/orquestra" })), ["project:c:/orquestra"]);
+    assert.deepEqual(currentOf(renderAreaList(census, { kind: "area", id: "pantry" })), ["area:pantry"]);
+    assert.deepEqual(currentOf(renderAreaList(census, null)), []);
+  });
+});
+
+describe("headquarters search results", () => {
+  const results = {
+    agentGroups: [
+      { room: "loja <online>", agents: [{ key: "claude:v", name: "Vitor", label: "Claude Code", room: "loja <online>", status: "needs_you", doing: "pede permissão para usar Bash" }] },
+      { room: "orquestra-office", agents: [{ key: "codex:l", name: "Lívia", label: "Codex", room: "orquestra-office", status: "waiting", doing: "" }] },
+    ],
+    rooms: [{ id: "c:/loja", kind: "project", name: "loja <online>" }, { id: "pantry", kind: "area", name: "Copa" }],
+    actions: [{ id: "go-to-request", label: "Ir para o pedido" }],
+  };
+
+  it("groups the agents by room with the status in words, then the rooms and the actions, numbered in order", () => {
+    assertMatchesRecording("hq-search-results", renderSearchResults(results));
+  });
+
+  it("says nothing was found and how to search instead of an empty list", () => {
+    assert.match(renderSearchResults({ agentGroups: [], rooms: [], actions: [] }), /Nada encontrado/);
+    assert.deepEqual([0, 1, 7].map(resultCountText), ["Nenhum resultado", "1 resultado", "7 resultados"]);
+  });
+});
+
+describe("headquarters camera controls", () => {
+  it("has the minimap hidden from screen readers, zoom in and out, framing the whole building and room to say who is followed", () => {
+    assertMatchesRecording("hq-camera", renderCameraControls());
+  });
+
+  it("says who the camera follows, with a button to stop, and announces when it stops", () => {
+    assertMatchesRecording("hq-camera-following", renderFollowing("Heitor <dev>"));
+    assert.equal(followingStoppedText("Heitor"), "A câmera parou de seguir Heitor.");
+  });
+});
+
+describe("headquarters island sheet", () => {
+  const island = () => islandFacts(projectOf("c:/loja", "loja <online>", busyTeam()));
+
+  it("has the team, the day, the seven themes, a new session in the folder and closing the room", () => {
+    assertMatchesRecording("hq-island-shell", renderIslandShell());
+  });
+
+  it("names the island with its folder and theme", () => {
+    assertMatchesRecording("hq-island-identity", renderIslandIdentity(island()));
+  });
+
+  it("spells out the day's numbers, flagging who needs you", () => {
+    assertMatchesRecording("hq-island-day", renderIslandDay(island().day));
+  });
+
+  it("lists who is on the island with the status in words, the most urgent first", () => {
+    assertMatchesRecording("hq-island-team", renderIslandTeam(island().team));
+  });
+
+  it("says nobody works on an empty island and how the team shows up", () => {
+    assert.match(renderIslandTeam([]), /Ninguém trabalhando aqui agora/);
   });
 });
 
@@ -375,5 +450,6 @@ describe("headquarters request alert", () => {
     assert.equal(arrivalText(null, "tem uma pergunta"), "Um agente tem uma pergunta.");
     assert.equal(arrivalsText([{ requester: vitor, intent: "quer rodar um comando" }, { requester: null, intent: "tem uma pergunta" }]), "2 pedidos novos. Vitor, em loja <online>, quer rodar um comando.");
     assert.equal(warningText(vitor), "Faltam 30 segundos para o pedido de Vitor voltar ao terminal.");
+    assert.deepEqual([0, 1, 3].map(requestsButtonLabel), ["Pedidos: nenhum esperando você", "Pedidos: 1 esperando você", "Pedidos: 3 esperando você"]);
   });
 });

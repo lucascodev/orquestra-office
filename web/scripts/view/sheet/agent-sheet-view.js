@@ -73,8 +73,8 @@ export function renderSheetShell({ canReceiveMessages, isLive }) {
     </div>`;
 }
 
-export function renderDrawerIdentity(agent, { mark, origin, projectName }) {
-  const about = [...new Set([agent.label, origin]), projectName].filter(Boolean).join(" · ");
+export function renderDrawerIdentity(agent, { mark, origin, projectName, accountLabel = null }) {
+  const about = [...new Set([agent.label, origin]), projectName, accountLabel && `conta ${accountLabel}`].filter(Boolean).join(" · ");
   return `${mark}<div class="identity"><h2 class="panel-title" id="sheet-title">${esc(agent.name)}</h2><p class="muted">${esc(about)}</p></div>`;
 }
 

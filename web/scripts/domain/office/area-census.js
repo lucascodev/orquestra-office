@@ -5,7 +5,8 @@ export const COMMON_ROOMS = ["meeting", "pantry", "games", "lounge"];
 export const STATUS_PRIORITY = ["needs_you", "blocked", "working", "waiting", "break", "idle"];
 const FOLDED_STATUS = { reviewing: "working" };
 
-const groupOf = (agent) => FOLDED_STATUS[statusOf(agent)] ?? statusOf(agent);
+export const statusGroupOf = (status) => FOLDED_STATUS[status] ?? status;
+const groupOf = (agent) => statusGroupOf(statusOf(agent));
 
 function countByStatus(agents) {
   const counts = new Map();

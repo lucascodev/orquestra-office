@@ -46,7 +46,26 @@
       <span class="hq-brand-mark" aria-hidden="true"><i></i><i></i><i></i><i></i></span>
       <h1 class="hq-brand">Orquestra Office</h1>
       <span class="hq-connection" role="status" data-slot="connection"></span>
+      <button type="button" class="hq-requests-button" aria-disabled="true" aria-label="Pedidos: nenhum esperando você" data-requests>Pedidos <b data-requests-count>0</b></button>
     </header>
+    <button type="button" class="hq-search-button hq-panel" aria-haspopup="dialog" aria-keyshortcuts="Control+K Meta+K" data-open-search>
+      <svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"></circle><path d="m20 20-3.5-3.5"></path></svg>
+      <span class="hq-search-label">Buscar agente, sala ou ação</span>
+      <kbd aria-hidden="true" data-search-keys>Ctrl K</kbd>
+    </button>
+    <dialog class="hq-search" aria-labelledby="hq-search-title" data-slot="search">
+      <div class="hq-search-box">
+        <h2 class="sr-only" id="hq-search-title">Buscar agente, sala ou ação</h2>
+        <div class="hq-search-field">
+          <svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"></circle><path d="m20 20-3.5-3.5"></path></svg>
+          <input type="text" role="combobox" aria-label="Buscar agente, sala ou ação" aria-expanded="true" aria-controls="hq-search-list" aria-autocomplete="list" aria-describedby="hq-search-help" autocomplete="off" spellcheck="false" placeholder="Buscar agente, sala ou ação">
+          <kbd aria-hidden="true">Esc</kbd>
+        </div>
+        <div class="hq-search-list" id="hq-search-list" role="listbox" aria-label="Resultados da busca"></div>
+        <p class="hq-search-help" id="hq-search-help">As setas escolhem, Enter abre e Esc fecha. Sem texto, a lista mostra todos os agentes, quem precisa de você primeiro.</p>
+        <p class="sr-only" role="status" data-search-count></p>
+      </div>
+    </dialog>
     <section class="hq-alert" aria-label="Precisa de você" aria-describedby="hq-alert-keys" tabindex="-1" data-slot="alert" hidden>
       <div class="hq-alert-head" data-part="head"></div>
       <div data-part="body"></div>
@@ -60,15 +79,30 @@
     <nav class="hq-rooms hq-panel" aria-label="Salas" data-slot="rooms"></nav>
     <section class="hq-legend hq-panel" aria-labelledby="hq-legend-title" data-slot="legend"></section>
     <section class="hq-day hq-panel" aria-label="Hoje" data-slot="day"></section>
-    <div class="hq-camera hq-panel" role="group" aria-label="Câmera">
-      <button class="hq-camera-button" type="button" data-camera="in" aria-label="Aproximar" title="Aproximar (+)">+</button>
-      <button class="hq-camera-button" type="button" data-camera="out" aria-label="Afastar" title="Afastar (-)">−</button>
-      <button class="hq-camera-button" type="button" data-camera="whole" aria-label="Enquadrar a Sede inteira" title="Enquadrar a Sede inteira (0)">⤢</button>
-    </div>
+    <div class="hq-camera hq-panel" role="group" aria-label="Câmera" data-slot="camera"></div>
     <aside class="hq-drawer hq-panel" data-slot="drawer" hidden>
       <div class="side-resizer hq-drawer-resizer" data-drawer-resizer role="separator" aria-orientation="vertical" aria-label="Largura da ficha" title="Arraste para mudar a largura · duplo clique volta ao padrão" tabindex="0"></div>
       <section class="sheet hq-sheet" aria-labelledby="sheet-title" data-slot="sheet" hidden></section>
     </aside>
+    <button type="button" class="hq-sheet-toggle hq-panel" aria-expanded="false" aria-controls="hq-sheet" data-sheet-toggle>
+      <span class="hq-sheet-toggle-grip" aria-hidden="true"></span>Salas, hoje, contas e legenda
+    </button>
+    <section class="hq-sheet-panel" id="hq-sheet" aria-label="Painéis da Sede" data-mobile-sheet hidden>
+      <div class="hq-sheet-grip" aria-hidden="true" data-sheet-grip><span></span></div>
+      <div class="hq-sheet-head">
+        <div class="hq-sheet-tabs" role="tablist" aria-label="Painéis da Sede">
+          <button type="button" role="tab" id="hq-tab-rooms" aria-controls="hq-tabpanel-rooms" aria-selected="true" data-tab="rooms">Salas</button>
+          <button type="button" role="tab" id="hq-tab-day" aria-controls="hq-tabpanel-day" aria-selected="false" tabindex="-1" data-tab="day">Hoje</button>
+          <button type="button" role="tab" id="hq-tab-accounts" aria-controls="hq-tabpanel-accounts" aria-selected="false" tabindex="-1" data-tab="accounts">Contas</button>
+          <button type="button" role="tab" id="hq-tab-legend" aria-controls="hq-tabpanel-legend" aria-selected="false" tabindex="-1" data-tab="legend">Legenda</button>
+        </div>
+        <button type="button" class="icon-btn" aria-label="Fechar os painéis" title="Fechar os painéis (Esc)" data-sheet-close>✕</button>
+      </div>
+      <div class="hq-sheet-body" role="tabpanel" id="hq-tabpanel-rooms" aria-labelledby="hq-tab-rooms" tabindex="0" data-tabpanel="rooms"></div>
+      <div class="hq-sheet-body" role="tabpanel" id="hq-tabpanel-day" aria-labelledby="hq-tab-day" tabindex="0" data-tabpanel="day" hidden></div>
+      <div class="hq-sheet-body" role="tabpanel" id="hq-tabpanel-accounts" aria-labelledby="hq-tab-accounts" tabindex="0" data-tabpanel="accounts" hidden></div>
+      <div class="hq-sheet-body" role="tabpanel" id="hq-tabpanel-legend" aria-labelledby="hq-tab-legend" tabindex="0" data-tabpanel="legend" hidden></div>
+    </section>
     <p class="sr-only" aria-live="polite" data-slot="announcer"></p>
   </div>
 </template>
