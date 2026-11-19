@@ -186,6 +186,23 @@ describe("tabs of the agent's sheet", () => {
     for (const mark of [WORK_MARKS.testing, WORK_MARKS["tests-failed"], WORK_MARKS["tests-passed"], WORK_MARKS["no-result"]]) assert.ok(html.includes(mark), mark);
   });
 
+  it("shows the rounds kept over a restart of the collector, which come without their command and label, by framework and numbers", () => {
+    const html = renderTestsTab(testsOverview({
+      running: null,
+      lastRun: { framework: "vitest", startedAt: NOW - 5_000, finishedAt: NOW, durationMs: 5_000, isOk: false, passed: 248, failed: 2, skipped: 0, failures: [] },
+      runsToday: [
+        { finishedAt: NOW, framework: "vitest", isOk: false, passed: 248, failed: 2, skipped: 0 },
+        { finishedAt: NOW - MINUTE, framework: null, isOk: true, passed: null, failed: null, skipped: null },
+      ],
+      files: [],
+      lastTestFileAt: null,
+    }, { dayStart: TODAY }));
+    assert.ok(!html.includes("undefined") && !html.includes("null"));
+    assert.ok(html.includes("<b>2 falharam · Vitest</b>"));
+    assert.ok(html.includes('<span class="work-row-text">Vitest</span>') && html.includes('<span class="work-row-text">testes</span>'));
+    assert.ok(!html.includes('<span class="work-row-text"></span>') && !html.includes("work-command"));
+  });
+
   it("writes how long a round took in seconds or minutes", () => {
     assert.deepEqual([4_100, 59_000, 125_000, null].map(formatTestDuration), ["4,1 s", "59 s", "2 min 05 s", ""]);
   });
