@@ -110,7 +110,15 @@ test("closing the hook connection releases the held permission with no answer an
   assert.deepEqual(control.history.of(MAIN_KEY), []);
 });
 
-test("a held permission nobody answers expires with no answer", { timeout: EXPIRY_TEST_TIMEOUT_MS }, async () => {
+// The hold timer is unref'd because in production the HTTP server keeps the loop alive.
+// Without a server, Node 22 sees an empty loop and cancels the rest of the file.
+function keepEventLoopAlive(t) {
+  const keepAlive = setTimeout(() => {}, EXPIRY_TEST_TIMEOUT_MS);
+  t.after(() => clearTimeout(keepAlive));
+}
+
+test("a held permission nobody answers expires with no answer", { timeout: EXPIRY_TEST_TIMEOUT_MS }, async (t) => {
+  keepEventLoopAlive(t);
   const control = createControl({ holdMs: EXPIRING_HOLD_MS });
   assert.equal(await control.holdPermission({ actor: ACTOR, ...BASH, onAbort: NEVER_ABORTED }), null);
   assert.deepEqual(control.decisions.list(), []);
