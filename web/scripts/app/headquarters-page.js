@@ -10,6 +10,7 @@ import { dayTimeline } from "../domain/office/day-timeline.js";
 import { islandFacts } from "../domain/office/island-facts.js";
 import { serverClockNow } from "../domain/office/pending-queue.js";
 import { searchEntries } from "../domain/office/search-entries.js";
+import { localDayStart } from "../domain/shared/local-day-start.js";
 import { ownValueOf } from "../domain/shared/own-value.js";
 import { latestWorkEvent } from "../domain/work-signals/latest-work-event.js";
 import { renderAccounts } from "../view/hud/accounts-view.js";
@@ -59,8 +60,6 @@ const WHOLE_ROOM = { kind: "whole", id: "whole" };
 const ROOM_ATTRIBUTE = { whole: "frame", project: "project", area: "area" };
 const APPLE_PLATFORM = /mac|iphone|ipad/i;
 const APPLE_SEARCH_KEYS = "⌘ K";
-
-const startOfDay = (ms) => new Date(ms).setHours(0, 0, 0, 0);
 
 function focusSelectorOf(element) {
   const key = FOCUS_KEYS.find((name) => element.dataset[name] !== undefined);
@@ -125,7 +124,7 @@ export function createHeadquartersPage({ hud, headquarters, source, newSessionDi
 
   function renderDay() {
     const now = clockNow();
-    const dayStart = startOfDay(now);
+    const dayStart = localDayStart(now);
     keepingFocus(dayPanel, () => setHtml(dayPanel, renderDayTimeline(dayTimeline(state.timeline, { now, dayStart }), latestWorkEvent(state.projects, { dayStart }))));
   }
 

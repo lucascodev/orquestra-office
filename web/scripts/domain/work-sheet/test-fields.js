@@ -27,10 +27,11 @@ export function lastTestRunOf(tests) {
   return { ...summary, command: textOf(run.command), durationMs: timeOf(run.durationMs), failures };
 }
 
-export function testRunsOfDay(tests) {
+// The collector empties runsToday at UTC midnight; the page keeps only what finished since the viewer's own midnight.
+export function testRunsOfDay(tests, dayStart) {
   return recordsOf(testsField(tests, "runsToday"))
     .map((run) => ({ summary: testRunSummary(run), label: textOf(run.label) }))
-    .filter(({ summary }) => summary)
+    .filter(({ summary }) => summary && summary.finishedAt !== null && summary.finishedAt >= dayStart)
     .map(({ summary, label }) => ({ ...summary, label }));
 }
 

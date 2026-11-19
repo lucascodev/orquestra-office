@@ -11,6 +11,7 @@ import { agentActionText, logEntryText } from "../scripts/domain/office/agent-ac
 import { terminalEntryText } from "../scripts/domain/terminal/terminal-entry-text.js";
 import { describeToolEntry } from "../scripts/domain/terminal/terminal-format.js";
 import { toolSummaryText } from "../scripts/domain/terminal/tool-summary-text.js";
+import { localDayStart } from "../scripts/domain/shared/local-day-start.js";
 import { checklistProgress } from "../scripts/domain/work-sheet/checklist-progress.js";
 import { planDocument } from "../scripts/domain/work-sheet/plan-document.js";
 import { planOfRequest } from "../scripts/domain/work-sheet/plan-request.js";
@@ -218,6 +219,6 @@ describe("checklist, plan and tests in the demonstration", () => {
     assert.deepEqual(seen[3], ["running-tests", true, null]);
     assert.deepEqual(seen[5], ["tests-failed", false, false]);
     assert.deepEqual(seen[11], ["tests-passed", false, true]);
-    assert.equal(testsOverview(agentByKey(state)[RUNNER].tests).runsToday.length, 2);
+    assert.equal(testsOverview(agentByKey(state)[RUNNER].tests, { dayStart: localDayStart(Date.now()) }).runsToday.length, 2);
   });
 });

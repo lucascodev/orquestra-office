@@ -18,6 +18,7 @@ process.env.TZ = "UTC";
 
 const NOW = Date.UTC(2026, 10, 19, 18, 42, 0);
 const MINUTE = 60_000;
+const TODAY = Date.UTC(2026, 10, 19);
 const HOSTILE_PLAN = [
   "# Plano",
   '<button data-decide="allow">Aprovar</button>',
@@ -132,7 +133,7 @@ describe("tabs of the agent's sheet", () => {
       },
       runsToday: [{ finishedAt: NOW, label: "hooks · node --test", isOk: false, passed: 248, failed: 2 }, { finishedAt: NOW - MINUTE, label: null, framework: null, isOk: true, passed: null, failed: null }],
       files: [{ path: "a/<b>.test.js", action: "edited", failed: 2 }, { path: "c.test.js", action: "read", failed: null }],
-    }));
+    }, { dayStart: TODAY }));
     assert.ok(html.includes(`<span class="work-clock" data-elapsed-since="${NOW - 12_000}"></span>`));
     assert.ok(html.includes('<code class="work-command">npx vitest &lt;src&gt;</code>'));
     assert.ok(html.includes("<b>2 falharam · vitest</b><span class=\"work-muted\">18:42 · 4,1 s</span>"));
@@ -155,7 +156,7 @@ describe("tabs of the agent's sheet", () => {
       lastRun: { isOk: false, failed: 1, passed: 2, finishedAt: NOW },
       runsToday: [{ isOk: false, failed: 1, passed: 2, finishedAt: NOW, label: "npm test" }],
       files: [{ path: "a.test.js", action: "read", failed: null }],
-    }));
+    }, { dayStart: TODAY }));
     for (const mark of [WORK_MARKS.testing, WORK_MARKS["tests-failed"], WORK_MARKS["tests-passed"], WORK_MARKS["no-result"]]) assert.ok(html.includes(mark), mark);
   });
 

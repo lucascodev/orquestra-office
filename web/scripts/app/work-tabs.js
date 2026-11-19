@@ -1,4 +1,5 @@
 import { movedCursor, TAB_KEYS } from "../domain/office/option-cursor.js";
+import { localDayStart } from "../domain/shared/local-day-start.js";
 import { planDocument } from "../domain/work-sheet/plan-document.js";
 import { planStatus } from "../domain/work-sheet/plan-status.js";
 import { runningElapsedMs } from "../domain/work-sheet/running-elapsed.js";
@@ -52,7 +53,7 @@ export function createWorkTabs({ sheet, control, view, clockNow }) {
   function showPanels(current) {
     setHtml(slot("todos"), view.todos(current));
     setHtml(slot("plan"), view.plan(current, plan.agentKey === current.key ? plan : NO_PLAN_LOADED));
-    setHtml(slot("tests"), view.tests(current));
+    setHtml(slot("tests"), view.tests(current, { dayStart: localDayStart(clockNow()) }));
     showElapsed();
   }
 

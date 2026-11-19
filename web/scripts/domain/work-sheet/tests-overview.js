@@ -1,11 +1,12 @@
 import { lastTestFileAtOf, lastTestRunOf, runningTestsOf, testFilesOf, testRunsOfDay } from "./test-fields.js";
 
 // Everything the Tests tab shows, or null when the session has not run, written or read a test yet, or the record is damaged.
-export function testsOverview(tests) {
+// dayStart is the viewer's midnight, which decides what counts as today.
+export function testsOverview(tests, { dayStart } = {}) {
   const overview = {
     running: runningTestsOf(tests),
     lastRun: lastTestRunOf(tests),
-    runsToday: testRunsOfDay(tests),
+    runsToday: testRunsOfDay(tests, dayStart),
     files: testFilesOf(tests),
     lastTestFileAt: lastTestFileAtOf(tests),
   };

@@ -80,7 +80,7 @@ describe("test rounds", () => {
       lastRun: { ...failedRun, failures: [{ name: "x", location: "a.test.js:3", message: "boom" }, null, "texto"] },
       runsToday: [{ finishedAt: NOW, label: "web", isOk: true, passed: 3 }, null, 7],
       files: [{ path: "a.test.js", action: "edited", failed: 1 }, { path: 3 }, "b.test.js"],
-    });
+    }, { dayStart: NOW - MINUTE });
     assert.deepEqual(overview.running, { command: "npx vitest", framework: "vitest", startedAt: NOW - 12_000 });
     assert.deepEqual(overview.lastRun.failures, [{ name: "x", location: "a.test.js:3", message: "boom" }]);
     assert.deepEqual(overview.runsToday.map((run) => [run.label, run.verdict, run.passed]), [["web", "passed", 3]]);

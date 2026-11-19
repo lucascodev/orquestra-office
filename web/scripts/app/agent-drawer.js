@@ -28,7 +28,7 @@ const DRAWER_SHEET = {
   tabs: (tabs) => renderWorkTabs(tabs),
   todos: (agent) => renderChecklistTab(checklistProgress(agent.checklist)),
   plan: (agent, loaded) => renderPlanTab(planStatus(agent.plan), { text: loaded.text, loading: loaded.loading }),
-  tests: (agent) => renderTestsTab(testsOverview(agent.tests)),
+  tests: (agent, day) => renderTestsTab(testsOverview(agent.tests, day)),
 };
 
 const isFocusable = (element) => Boolean(element?.isConnected) && !element.closest("[hidden]") && element.getClientRects().length > 0;
