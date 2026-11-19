@@ -15,6 +15,12 @@ const DEFAULT_REPORT = "http://127.0.0.1:8420/events/claude";
 
 const at = (officeUrl) => ["--office-url", officeUrl];
 
+// The antivirus scans a freshly copied executable on its first run, which can outlast the hook's git timeout.
+function copyNodeAs(target) {
+  copyFileSync(process.execPath, target);
+  execFileSync(target, ["-e", "0"]);
+}
+
 function projectWithTeam(t, { isGitRepository }) {
   const root = realpathSync.native(mkdtempSync(join(tmpdir(), "office-session-")));
   t.after(() => rmSync(root, { recursive: true, force: true }));
@@ -84,7 +90,7 @@ test("never runs a git.exe or git.cmd planted in the opened repository", { skip:
   t.after(() => rmSync(repository, { recursive: true, force: true }));
   const marker = join(repository, "planted-git-ran");
   const preload = join(repository, "mark.cjs");
-  copyFileSync(process.execPath, join(repository, "git.exe"));
+  copyNodeAs(join(repository, "git.exe"));
   writeFileSync(join(repository, "git.cmd"), `@echo ran > "${marker}"\r\n`);
   writeFileSync(preload, MARK_WHEN_RUN_AS_GIT(marker));
 
@@ -105,7 +111,7 @@ function gitOnPath(t) {
   t.after(() => rmSync(dir, { recursive: true, force: true }));
   const marker = join(dir, "fake-git-ran");
   const preload = join(dir, "mark.cjs");
-  copyFileSync(process.execPath, join(dir, "git.exe"));
+  copyNodeAs(join(dir, "git.exe"));
   writeFileSync(preload, MARK_WHEN_RUN_AS_GIT(marker));
   const env = { PATH: `${dir}${delimiter}${process.env.PATH}`, NODE_OPTIONS: `--require "${preload.replaceAll("\\", "/")}"` };
   return { marker, env };
