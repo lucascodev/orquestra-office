@@ -3,14 +3,19 @@ import { describe, it } from "node:test";
 import { claudeHistoryEntry } from "../../collector/src/claude/claude-history-entry.js";
 import { describeActivity } from "../../collector/src/claude/describe-activity.js";
 import { decisionAnswerOf, INVALID_ANSWER } from "../../collector/src/control/domain/decision-answer.js";
+import { normalizeClaudeEvent } from "../../collector/src/claude/claude-event.js";
+import { createPublicOfficeView } from "../../collector/src/office/application/public-office-view.js";
 import { canReceiveMessages as collectorCanReceiveMessages } from "../../collector/src/office/domain/can-receive-messages.js";
+import { createOfficeStore } from "../../collector/src/office/domain/office-store.js";
 import { TEMPLATE_IDS } from "../../collector/src/office/domain/templates.js";
 import { THEMES } from "../scripts/data/themes.js";
 import { busyReactionOf } from "../scripts/domain/behavior/agent-reactions.js";
 import { thoughtAt, thoughtSubjectOf } from "../scripts/domain/behavior/agent-thoughts.js";
 import { KNOWN_STATUSES } from "../scripts/domain/office/agent-status.js";
 import { canReceiveMessages as webCanReceiveMessages } from "../scripts/domain/office/can-receive-messages.js";
+import { dayTimeline } from "../scripts/domain/office/day-timeline.js";
 import { buildDecision } from "../scripts/domain/office/decision-body.js";
+import { demoDay } from "../scripts/infra/demo/demo-day.js";
 import { describeToolEntry, diffLines } from "../scripts/domain/terminal/terminal-format.js";
 import { STATUS } from "../scripts/view/office/status-display.js";
 
@@ -155,5 +160,56 @@ describe("agent statuses", () => {
   it("are shown with a label, a glyph and a color for exactly the statuses the domain knows", () => {
     assert.deepEqual(Object.keys(STATUS).sort(), [...KNOWN_STATUSES].sort());
     for (const display of Object.values(STATUS)) assert.ok(display.label && display.glyph && display.color);
+  });
+});
+
+const MINUTE_MS = 60_000;
+const HOUR_MS = 60 * MINUTE_MS;
+// Whole UTC hours line up with the viewer's hours, so a UTC midnight stands in for the local one and the test runs in any zone.
+const DAY_START = Date.UTC(2026, 10, 19);
+const COST_TOLERANCE = 1e-9;
+// The demo fills the hours from eight in the morning, local time, up to now.
+const DEMO_LOCAL_HOUR = 18;
+const at = (hour, minute = 0) => DAY_START + hour * HOUR_MS + minute * MINUTE_MS;
+
+function publishedDay() {
+  const store = createOfficeStore();
+  const claude = (event, time, extra = {}) =>
+    store.apply(normalizeClaudeEvent({ session_id: SESSION_ID, cwd: "/home/dev/orquestra", hook_event_name: event, ...extra }, time));
+  const spent = (costUsd, time) => store.recordUsage({ sessionId: SESSION_ID, at: time, tokens: 0, costUsd, rateLimits: null });
+  claude("UserPromptSubmit", at(9, 45), { prompt: "go" });
+  spent(1, at(10));
+  claude("PermissionRequest", at(10, 5), { tool_name: "Bash" });
+  claude("PostToolUse", at(10, 10), { tool_name: "Bash" });
+  claude("Stop", at(10, 15));
+  spent(1.6, at(10, 20));
+  claude("UserPromptSubmit", at(10, 40), { prompt: "again" });
+  const view = createPublicOfficeView({ store, decisions: { list: () => [] }, outbox: { counts: () => ({}) }, now: () => at(10, 50) });
+  return view();
+}
+
+describe("the day's timeline published by the collector", () => {
+  const office = publishedDay();
+  const day = dayTimeline(office.timeline, { now: office.generatedAt, dayStart: DAY_START });
+  const hourAt = (hour) => day.hours.find((shown) => shown.hour === hour);
+
+  it("has the shape of the demo day the page is drawn with", () => {
+    const demo = demoDay(new Date(2026, 10, 19, DEMO_LOCAL_HOUR).getTime()).timeline;
+    assert.equal(office.timeline.slotMs, demo.slotMs);
+    assert.deepEqual(Object.keys(office.timeline.open).sort(), Object.keys(demo.open).sort());
+    for (const slot of office.timeline.slots) assert.deepEqual(Object.keys(slot).sort(), Object.keys(demo.slots[0]).sort());
+  });
+
+  it("gives the page the hours worked, waited and marked, with the stretch still open closed by the collector's clock", () => {
+    assert.equal(hourAt(9).averageWorking, 15 / 60);
+    assert.equal(hourAt(10).averageWorking, 20 / 60);
+    assert.deepEqual([hourAt(9).isMarked, hourAt(10).isMarked, hourAt(10).needsYouCount], [false, true, 1]);
+    assert.deepEqual([day.nowAt.hour, day.nowAt.minute, hourAt(10).isNow], [10, 50, true]);
+  });
+
+  it("adds up today's totals of time and spend", () => {
+    assert.equal(day.totals.workingMs, 35 * MINUTE_MS);
+    assert.equal(day.totals.needsYouMs, 5 * MINUTE_MS);
+    assert.ok(Math.abs(day.totals.costUsd - 0.6) < COST_TOLERANCE, `cost was ${day.totals.costUsd}`);
   });
 });

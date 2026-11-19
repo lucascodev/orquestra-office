@@ -5,6 +5,7 @@ import { dictionaryOf } from "./dictionary.js";
 import { officeStateFrom } from "./office-state.js";
 import { baseName } from "./path-name.js";
 import { projectKeyOf } from "./project-key.js";
+import { addCost, advanceTimeline, countsOf, markNeedsYou, pruneTimeline } from "./status-timeline.js";
 import { isTemplate, nextTemplate } from "./templates.js";
 import { createToolOrder } from "./tool-order.js";
 import { dayOf } from "../../shared/time/day.js";
@@ -12,14 +13,22 @@ import { createAgentWork } from "../../work/domain/agent-work.js";
 
 const LOG_LIMIT = 20;
 const SOURCE_LABEL = { claude: "Claude Code", codex: "Codex" };
+const NEEDS_YOU_STATUS = "needs_you";
 
-export function createOfficeStore(initial) {
+export function createOfficeStore(initial, { now: clock = Date.now } = {}) {
   const state = officeStateFrom(initial);
   const listeners = new Set();
   const toolOrder = createToolOrder();
   const work = createAgentWork();
 
   const emit = () => listeners.forEach((listener) => listener());
+
+  const allAgents = () => Object.values(state.projects).flatMap((project) => Object.values(project.agents));
+
+  // Counted again over every agent instead of tracking transitions: there are only a handful of them.
+  function advanceTimelineTo(at) {
+    state.timeline = pruneTimeline(advanceTimeline(state.timeline, at, countsOf(allAgents())), at);
+  }
 
   function ensureProject(event) {
     const known = state.sessions[event.sessionId];
@@ -76,8 +85,10 @@ export function createOfficeStore(initial) {
     const project = state.projects[state.sessions[reading.sessionId]];
     if (previous && project) {
       const stats = statsOf(project, reading.at);
+      const costGrowth = growthOf(previous.costUsd, reading.costUsd);
       stats.tokens = (stats.tokens ?? 0) + growthOf(previous.tokens, reading.tokens);
-      stats.costUsd = (stats.costUsd ?? 0) + growthOf(previous.costUsd, reading.costUsd);
+      stats.costUsd = (stats.costUsd ?? 0) + costGrowth;
+      state.timeline = addCost(state.timeline, reading.at, costGrowth);
     }
     state.meters[reading.sessionId] = { tokens: reading.tokens, costUsd: reading.costUsd };
     if (reading.rateLimits) state.usage = { rateLimits: reading.rateLimits, updatedAt: reading.at };
@@ -118,13 +129,16 @@ export function createOfficeStore(initial) {
       if (agent.log.length > LOG_LIMIT) agent.log.splice(0, agent.log.length - LOG_LIMIT);
     }
     const isPlainProgress = event.actionId === null;
-    if (!isLate && event.status && (!isPlainProgress || agent.status === "needs_you")) agent.status = event.status;
+    const wasNeedingYou = agent.status === NEEDS_YOU_STATUS;
+    if (!isLate && event.status && (!isPlainProgress || wasNeedingYou)) agent.status = event.status;
+    if (!wasNeedingYou && agent.status === NEEDS_YOU_STATUS) state.timeline = markNeedsYou(state.timeline, event.at);
     if (!isLate && event.activity) agent.activity = event.activity;
     if (event.team) project.team = event.team;
     if (event.counts === "tools") agent.tools += 1;
     countStat(project, event.counts, event.at);
     agent.updatedAt = event.at;
     project.updatedAt = event.at;
+    advanceTimelineTo(event.at);
     emit();
   }
 
@@ -158,6 +172,9 @@ export function createOfficeStore(initial) {
         changed = true;
       }
     }
+    // Time passing alone is no change: the page closes the open stretch with the collector's clock, so only a sweep
+    // that changed an agent makes a new frame and a save.
+    advanceTimelineTo(now);
     if (changed) emit();
   }
 
@@ -178,6 +195,7 @@ export function createOfficeStore(initial) {
       delete state.sessions[sessionId];
       delete state.meters[sessionId];
     }
+    advanceTimelineTo(clock());
     emit();
     return true;
   }
