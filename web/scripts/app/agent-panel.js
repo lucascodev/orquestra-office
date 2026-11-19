@@ -3,7 +3,7 @@ import { ownValueOf } from "../domain/shared/own-value.js";
 import { ago } from "../view/shared/format.js";
 import { renderPendingCard } from "../view/sheet/pending-request-view.js";
 import { renderEntries, renderHistory } from "../view/terminal/terminal-entries.js";
-import { submitDecision, toggleOption } from "./decision-form.js";
+import { decisionOf, submitDecision, toggleOption } from "./decision-form.js";
 import { createTerminalPane } from "./terminal-pane.js";
 import { createWorkTabs } from "./work-tabs.js";
 
@@ -129,8 +129,8 @@ export function createAgentPanel({ sheet, control, view, clockNow = Date.now, on
     if (event.target.closest("[data-close]")) return close();
     const option = event.target.closest("[data-option]");
     if (option) return toggleOption(option);
-    const decide = event.target.closest("[data-decide]");
-    if (decide) return submitDecision(control, decide.closest("[data-pending]"), decide.dataset.decide);
+    const decision = decisionOf(event.target.closest("[data-decide]"));
+    if (decision) return submitDecision(control, decision.card, decision.action);
     const live = event.target.closest("[data-live]");
     if (live) return LIVE_ACTIONS[live.dataset.live]?.(agentKey);
     const action = event.target.closest("[data-action]");

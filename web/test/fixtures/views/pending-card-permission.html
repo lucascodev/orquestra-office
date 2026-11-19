@@ -3,12 +3,14 @@
     <h3 class="card-title">Caio quer usar Bash</h3>
     <p class="pending-what">Aplicar as migrações do banco</p>
     <pre class="mono">npx prisma migrate deploy</pre>
-    <div class="field"><label for="deny-reason">Motivo, se for negar (opcional)</label><input class="input" id="deny-reason" type="text" name="reason" maxlength="500" autocomplete="off"></div>
+    <div class="pending-decision" data-decision-bar data-reason-field="deny-reason">
+    <div class="field"><label for="deny-reason">Motivo, se for negar (opcional)</label><input class="input" id="deny-reason" type="text" maxlength="500" autocomplete="off"></div>
     <div class="pending-actions">
       <button class="btn btn-ghost" data-decide="terminal">Decidir no terminal</button>
       <span class="spacer"></span>
       <button class="btn btn-secondary" data-decide="deny">Negar</button>
       <button class="btn btn-primary" data-decide="allow">Permitir</button>
+    </div>
     </div>
     <p class="pending-error" role="alert" hidden></p>
   </section>

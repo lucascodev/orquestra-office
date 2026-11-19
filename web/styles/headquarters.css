@@ -368,7 +368,20 @@ code.work-row-text { font: 12px var(--font-mono); }
 .work-file-action[data-action="edited"] { color: var(--accent); }
 .work-file-action[data-action="read"] { color: var(--info); }
 
+/* The bar that decides a request wraps the rows it always had, without changing their layout. */
+.hq-alert-decision, .pending-decision { display: contents; }
+.hq-alert-body.is-plan { gap: var(--space-4); }
+.hq-plan { max-height: min(44vh, 360px); overflow: auto; }
+.hq-plan-decision { display: flex; flex-direction: column; gap: var(--space-4); }
+.hq-plan-decision .textarea { min-height: 0; font-size: 13px; resize: none; }
+.hq-plan-decision .hq-alert-row { flex-wrap: wrap; }
+.pending-plan { max-height: 50vh; overflow: auto; }
+
 @media (max-width: 719px) {
   .work-tab { height: 40px; padding: 0 var(--space-2); font-size: 12px; }
   .work-tab-count { font-size: 10px; }
+  .hq-plan { max-height: 32dvh; }
+  .hq-plan-decision .hq-alert-row .btn { min-height: 36px; }
+  .hq-plan-decision .hq-alert-row .spacer { display: none; }
+  .hq-plan-decision .btn-ghost { order: 3; width: 100%; }
 }
