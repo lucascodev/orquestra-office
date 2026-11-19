@@ -1,6 +1,6 @@
 import { AGENT_ACTION } from "../office/domain/agent-actions.js";
 import { baseName } from "../office/domain/path-name.js";
-import { ASK_TOOLS, DELEGATE_TOOLS, EDIT_TOOLS, READ_TOOLS, SHELL_TOOLS, TODO_TOOLS, WEB_TOOLS, WRITE_TOOLS } from "../shared/claude/tool-names.js";
+import { ASK_TOOLS, DELEGATE_TOOLS, EDIT_TOOLS, PLAN_TOOL, READ_TOOLS, SHELL_TOOLS, TODO_TOOLS, WEB_TOOLS, WRITE_TOOLS } from "../shared/claude/tool-names.js";
 import { projectPathOf } from "../shared/path/project-path.js";
 import { testCommandOf } from "../work/domain/commands/test-command.js";
 import { isTestFile } from "../work/domain/tests/test-file.js";
@@ -43,7 +43,7 @@ export function describeActivity(toolName, toolInput, projectRoot = "") {
   if (EDIT_TOOLS.has(name) || WRITE_TOOLS.has(name)) return describeEdit(toolInput, projectRoot);
   if (SHELL_TOOLS.has(name)) return describeShell(toolInput?.command);
   if (DELEGATE_TOOLS.has(name)) return doing("working", "delegating", AGENT_ACTION.DELEGATING, String(toolInput?.subagent_type ?? "").slice(0, AGENT_TYPE_LIMIT));
-  if (ASK_TOOLS.has(name)) return doing("needs_you", "asking", name === "ExitPlanMode" ? AGENT_ACTION.ASKING_PLAN_APPROVAL : AGENT_ACTION.ASKING_QUESTION);
+  if (ASK_TOOLS.has(name)) return doing("needs_you", "asking", name === PLAN_TOOL ? AGENT_ACTION.ASKING_PLAN_APPROVAL : AGENT_ACTION.ASKING_QUESTION);
   if (TODO_TOOLS.has(name)) return doing("working", "planning", AGENT_ACTION.UPDATING_TODOS);
   if (WEB_TOOLS.has(name)) return doing("reviewing", "web", AGENT_ACTION.SEARCHING_WEB);
   if (name.startsWith("mcp__")) return doing("working", "editing", AGENT_ACTION.USING_CONNECTOR, (name.split("__")[1] ?? "").slice(0, SHOWN_NAME_LIMIT));

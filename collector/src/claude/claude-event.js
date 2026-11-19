@@ -1,11 +1,11 @@
 import { AGENT_ACTION } from "../office/domain/agent-actions.js";
 import { TOOL_PHASE } from "../office/domain/tool-order.js";
+import { PLAN_TOOL } from "../shared/claude/tool-names.js";
 import { PATH_LIMIT } from "../shared/text/field-limits.js";
 import { claudeSessionIdOf } from "./claude-session-id.js";
 import { describeActivity } from "./describe-activity.js";
 import { claudeWorkOf } from "./work/claude-work.js";
 
-const PLAN_TOOL = "ExitPlanMode";
 const NEEDS_YOU_NOTIFICATIONS = new Set(["permission_prompt", "elicitation_dialog", "agent_needs_input"]);
 const ROLE_NAME = /^[\w.-]{1,40}$/;
 const TEAM_LIMIT = 40;

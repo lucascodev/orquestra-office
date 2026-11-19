@@ -119,6 +119,21 @@ test("no two contexts import each other, so the arrows between contexts point on
   assert.deepEqual(mutual, []);
 });
 
+const PLAN_TOOL_LITERAL = /["']ExitPlanMode["']/;
+const TOOL_NAMES_FILE = "shared/claude/tool-names.js";
+const FAILURE_LIMIT_DECLARATION = /\bconst\s+(?:FAILURE_LIMIT|MAX_FAILURES|FAILURE_FIELD_LIMIT)\b/;
+const TEST_OUTPUT_LIMITS_FILE = "work/domain/test-output/limits.js";
+
+const filesMatching = (pattern) => scriptsUnder(SRC_DIR).filter((file) => pattern.test(readFileSync(file, "utf8"))).map(pathInSrc);
+
+test("the plan tool is named in one place", () => {
+  assert.deepEqual(filesMatching(PLAN_TOOL_LITERAL), [TOOL_NAMES_FILE]);
+});
+
+test("how many failures a run keeps and how long each field is are declared in one place", () => {
+  assert.deepEqual(filesMatching(FAILURE_LIMIT_DECLARATION), [TEST_OUTPUT_LIMITS_FILE]);
+});
+
 test("only infra, http and the composition root use Node built-ins", () => {
   const violations = scriptsUnder(SRC_DIR)
     .filter((file) => !BUILTIN_LAYERS.has(layerOf(file)))

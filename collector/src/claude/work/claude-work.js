@@ -1,4 +1,4 @@
-import { EDIT_TOOLS, SHELL_TOOLS, WRITE_TOOLS } from "../../shared/claude/tool-names.js";
+import { EDIT_TOOLS, PLAN_TOOL, SHELL_TOOLS, WRITE_TOOLS } from "../../shared/claude/tool-names.js";
 import { projectPathOf } from "../../shared/path/project-path.js";
 import { scriptCommandOf } from "../../work/domain/commands/script-command.js";
 import { testCommandOf } from "../../work/domain/commands/test-command.js";
@@ -9,7 +9,6 @@ import { WORK_UPDATE } from "../../work/domain/work-update.js";
 import { failureOutputOf, isShellCallOk, shellOutputOf } from "./shell-call.js";
 import { taskIdOf } from "./task-id.js";
 
-const PLAN_TOOL = "ExitPlanMode";
 const READ_FILE_TOOLS = new Set(["Read", "NotebookRead"]);
 const WRITE_TOOL = "Write";
 const CREATED_FILE = "create";
