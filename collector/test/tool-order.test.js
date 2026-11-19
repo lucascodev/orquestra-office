@@ -40,6 +40,9 @@ test("a PreToolUse arriving after the PostToolUse of the same call leaves the st
 
   assert.equal(agent().status, before.status);
   assert.equal(agent().activity, before.activity);
+  assert.equal(agent().action, before.action);
+  assert.equal(agent().actionId, before.actionId);
+  assert.equal(agent().subject, before.subject);
   assert.equal(agent().status, "working");
 });
 
