@@ -136,7 +136,22 @@ test("an expired pairing code is refused", (t) => {
   });
 });
 
-test("a made-up code is refused", (t) => withOffice(t, async (base) => {
+test("pairing again a browser that is already paired replaces its device instead of leaving an orphan", (t) => withOffice(t, async (base) => {
+  const browser = await pairBrowser(base);
+  const code = await issueBootstrapCode(base);
+
+  const res = await fetch(`${base}/api/pairings/redeem`, {
+    method: "POST", headers: { "Content-Type": "application/json", Origin: base, Cookie: browser.cookie }, body: JSON.stringify({ code, label: "again" }),
+  });
+  const cookie = cookieOf(res);
+  const { devices } = await (await fetch(`${base}/api/devices`, { headers: { Cookie: cookie } })).json();
+
+  assert.equal(res.status, 204);
+  assert.deepEqual(devices.map((device) => [device.label, device.isCurrent]), [["again", true]]);
+  assert.equal((await browser.get("/api/state")).status, 401);
+}));
+
+test("a made-up code is refused",(t) => withOffice(t, async (base) => {
   assert.equal((await redeem(base, "AAAAAAAAAAAAAAAAAAAAAA")).status, 400);
 }));
 

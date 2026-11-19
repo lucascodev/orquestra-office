@@ -44,7 +44,8 @@ export function createPairingRoutes({ hookAuth, panelAuth, issueBootstrapChallen
     if (!isJson(req)) return sendJson(res, 415, {});
     if (!isSameOrigin(req)) return sendJson(res, 403, { error: "forbidden origin" });
     const body = await readJsonBody(req, BODY_LIMIT);
-    const redeemed = redeemPairing({ code: body?.code, label: body?.label, host: requestHostOf(req) });
+    const previousDeviceId = panelAuth.sessionOf(req)?.device.id ?? null;
+    const redeemed = redeemPairing({ code: body?.code, label: body?.label, host: requestHostOf(req), previousDeviceId });
     if (!redeemed) return sendJson(res, 400, { error: "invalid pairing code" });
     res.writeHead(204, { "Set-Cookie": panelAuth.sessionCookie(redeemed.token), "Cache-Control": "no-store" });
     return res.end();

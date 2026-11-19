@@ -33,5 +33,5 @@ export function createPanelAuth({ identifyDevice, isSecretMissing }) {
     return session;
   }
 
-  return { admit, sessionCookie, clearedCookie };
+  return { admit, sessionOf, sessionCookie, clearedCookie };
 }
