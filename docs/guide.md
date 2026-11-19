@@ -9,7 +9,7 @@ How the office behaves once it is installed. Installing, pairing and uninstallin
 - Every project shares the same Sede, a single-storey open-plan building seen from above. Each project gets an island of 6 desks in the work area; a project with more people gets more than one island. Sessions and their subagents sit together, and free desks stay visible.
 - Each island has one of 7 themes, which paints its carpet, desks and chairs: Lab (Laboratório), Café, Library (Biblioteca), Garage (Garagem), Space station (Estação espacial), Garden (Jardim) and Arcade (Fliperama). Pick the theme in the island sheet, which opens from the project name in the rooms list or with a click on the island.
 - Around the islands are the common areas, shared by every project: meeting room, pantry, game room, lounge and reception, plus the yard in front of the building.
-- Every character wears a tag with its name, its title and the color of its status. Characters with queued messages show how many on the tag and in the island sheet.
+- Every character wears a tag with its name, its title and the color of its status. Characters with queued messages show how many on the tag and in the island sheet. While an agent tests or works through its checklist, the tag also shows a sign (see [Signs over the character](#signs-over-the-character)).
 - A session opened in a git worktree joins the island of the main repository.
 - Roles defined in the project's `.claude/agents` get a named desk even when nobody is in that role. Only the file names are read.
 - The interface follows the Orquestra Design System: the same color, type, spacing and radius tokens (`web/styles/tokens.css`), statuses always with a glyph and text, and the app's terminal panel.
@@ -19,6 +19,8 @@ How the office behaves once it is installed. Installing, pairing and uninstallin
 Click a character, or its name in the island sheet or in search (`Ctrl K`, `Cmd K` on a Mac), to open its agent sheet in the drawer on the right. It holds the answer options, the message box and the history.
 
 To widen the drawer, hover over its left edge and drag. The browser remembers the width; a double click on the edge resets it, and with focus on the edge the arrow keys change the width too.
+
+The sheet has four tabs: Now (Agora), Tasks (Tarefas), Plan (Plano) and Tests (Testes). Now holds the status, the terminal and the message box, described below. The other three are in [Checklist, plan and tests](#checklist-plan-and-tests).
 
 The terminal in the agent sheet:
 
@@ -38,6 +40,66 @@ When Claude Code is about to ask for a permission or ask a question, the hook ho
 - The collector holds a request for up to 120 seconds (the container's `OFFICE_HOLD_SECONDS` variable). With no answer by then, or if you click Decide in the terminal (Decidir no terminal), the request goes back to the terminal.
 - While a request is held, the terminal shows "Esperando você no escritório" (waiting for you in the office).
 - When you deny, you can write the reason. The agent reads it.
+
+## Checklist, plan and tests
+
+Claude Code reports the agent's task list, its plan and its test runs. The office shows them in the agent sheet and over the character. Codex only reports the end of each turn, so none of this shows for Codex agents. In demo mode (`?modo=demo`), the sample agents show all of it.
+
+### Signs over the character
+
+The tag over the character shows one sign at a time, the first one that applies:
+
+| Sign | When |
+|---|---|
+| ⚗ testing 0:12 (testando 0:12) | tests are running; the clock counts the time |
+| ✕ 2 failed (2 falharam) | the last run failed, until the next run |
+| ✓ 250 passed (250 passaram) | the last run passed, for 1 minute after it ends |
+| ✎ writing test (escrevendo teste) | the last file the agent created or edited is a test file, for up to 1 minute |
+| ☰ 4/7 | the checklist has open items: 4 of 7 done |
+
+With none of them, the tag shows only the name, the title and the status. The legend (Legenda) explains the signs. The island sheet shows, for each agent, the checklist count and the result of the last run. The timeline in the Today panel (Hoje) lists each test run and each approved plan, for example "ran the tests: 2 failed, 248 passed" (rodou os testes: 2 falharam, 248 passaram).
+
+<p><img src="images/work-tags.png" width="640" alt="Characters on the map with signs over them: testing, passed, failed, writing a test and a checklist at 4/7"><br><sub>Signs over the characters: ⚗ testing, ✓ passed, ✕ failed, ✎ writing a test and ☰ checklist.</sub></p>
+
+### Tasks
+
+The Tasks (Tarefas) tab shows the agent's own checklist, the one it builds with Claude Code's task tools. Each item has its status: to do (a fazer), in progress (em andamento) or done (feito). The count, such as "4 of 7 done" (4 de 7 feitas), also shows on the tab. The list only changes when the agent updates it.
+
+<p><img src="images/checklist-tab.png" width="640" alt="Agent sheet on the Tasks tab, with a checklist of 7 items and 4 done"><br><sub>Tasks (Tarefas) tab: the agent's checklist, with 4 of 7 done.</sub></p>
+
+### Plan
+
+When the agent finishes a plan in plan mode and asks to go ahead, the permission alert at the top shows the plan itself, under the agent's name and "finished the plan and wants your approval" (terminou o plano e quer sua aprovação).
+
+- Approve plan (Aprovar plano) only works with a click. It has no keyboard shortcut, so nobody approves a plan without reading it.
+- Keep planning (Continuar planejando), or the N key, denies the request and sends what you wrote in the field to the agent, which goes back to planning with it.
+- Decide in the terminal (Decidir no terminal) sends the request back to the terminal, like any other permission request.
+- A plan longer than 20,000 characters arrives cut; the rest is in the terminal.
+
+The Plan (Plano) tab shows the latest version, its state (waiting for your approval, approved, or replaced by a new version) and the time. It fetches the text from the collector when you open it. The text only lives in the collector's memory: after a restart, the tab says the collector no longer has it.
+
+<p><img src="images/plan-approval.png" width="640" alt="Permission alert at the top of the Sede with a plan to approve, the field for what to change, Keep planning and Approve plan"><br><sub>Plan in the permission alert: Approve plan (Aprovar plano) by click only, or Keep planning (Continuar planejando) with a comment.</sub></p>
+
+### Tests
+
+The office recognizes a test run in any language, in three ways:
+
+- **By the command.** jest, vitest, mocha, `node --test`, playwright, cypress, pytest, tox, `go test`, `cargo test`, `dotnet test`, maven, gradle, rspec, `rails test`, phpunit, pest, `mix test`, `flutter test`, `swift test`, and the `test` scripts of npm, pnpm, yarn and bun, among others. A `cd` or environment variables at the start of the command do not get in the way.
+- **By the output.** The summary of 15 frameworks gives the passed, failed and skipped counts: jest, vitest, pytest, node:test and TAP, go, cargo, dotnet, maven, gradle, mocha, rspec, phpunit, mix and playwright. Jest, vitest, pytest, node:test, TAP, go, cargo and rspec also give each failure's name, file and line, and message. Without a summary it knows, the office only says whether the command ended well or with an error.
+- **By the test files.** Names such as `*.test.*`, `*.spec.*`, `__tests__/`, `test_*.py`, `*_test.go`, `*Test.java`, `*Tests.cs`, `*_spec.rb` and `*Test.php`, and the `test/`, `tests/` and `spec/` folders.
+
+The Tests (Testes) tab shows:
+
+- the run in progress, with its clock;
+- the last run, with the passed, failed and skipped counts and up to 10 failures with name, file and line, and message;
+- today's runs, the latest first;
+- the session's test files, whether the agent read, created or edited each one, and how many failures of the last run were in it.
+
+When the last run failed and the tab is not open, the tab gets a red dot.
+
+<p><img src="images/tests-tab.png" width="640" alt="Agent sheet on the Tests tab, with tests running, the last run with 2 named failures and the session's test files"><br><sub>Tests (Testes) tab: the run in progress, the last run with each failure and the test files.</sub></p>
+
+The office never keeps the whole test output: only the counts and up to 10 failures. Secrets in the command, the failures, the plan and the checklist are masked, and the checklist, the failures and the plan text never reach the disk. The README's [What is stored](../README.md#what-is-stored) has the details.
 
 ## Sending messages
 

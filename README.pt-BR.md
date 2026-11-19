@@ -35,8 +35,11 @@ Cada pasta de projeto ganha uma ilha de mesas na Sede, um prédio térreo aberto
 | Histórico da sessão | sim, somente leitura | não |
 | Uso do plano de 5 h e semanal | sim | não |
 | Tokens e custo do dia | sim | não |
+| Checklist, plano e testes na ficha e no mapa | sim | não |
 
 Clique num boneco, ou no nome dele na ficha da ilha ou na busca (`Ctrl K`, `Cmd K` no Mac), para abrir a ficha do agente, na gaveta à direita do mapa. É nela que ficam as opções de resposta, a caixa de mensagem e o histórico. Os pedidos de permissão aparecem também no alerta de permissão no alto da tela, com **Permitir** e **Negar**.
+
+A ficha do agente tem quatro abas: **Agora**, com o status, o terminal e a caixa de mensagem; **Tarefas**, com a checklist do agente; **Plano**, com o plano que ele propôs; e **Testes**, com cada rodada de testes e as falhas pelo nome. O escritório reconhece testes em qualquer linguagem, do jest e do pytest ao `go test`, `cargo test` e `dotnet test`, e mostra um sinal em cima do boneco: ⚗ enquanto os testes rodam, depois ✓ ou ✕ com a contagem. Quando o agente termina um plano, o alerta de permissão mostra o plano, e só um clique aprova.
 
 <table>
   <tr>
@@ -51,9 +54,13 @@ Clique num boneco, ou no nome dele na ficha da ilha ou na busca (`Ctrl K`, `Cmd 
     <td><img src="docs/images/permission-alert.png" width="420" alt="Alerta de permissão de um comando, com Negar, Permitir e Decidir no terminal"><br><sub>Alerta de permissão: <b>Permitir</b>, <b>Negar</b> ou <b>Decidir no terminal</b>.</sub></td>
     <td><img src="docs/images/mobile.png" width="420" alt="O escritório em duas telas de celular: o mapa com o alerta e a folha de baixo com as salas"><br><sub>No celular, o mapa ocupa a tela e os painéis vão para uma folha de baixo.</sub></td>
   </tr>
+  <tr>
+    <td><img src="docs/images/tests-tab.png" width="420" alt="Ficha do agente na aba Testes, com testes rodando, a última rodada com 2 falhas pelo nome e os arquivos de teste da sessão"><br><sub>Aba <b>Testes</b>: a rodada em andamento, a última rodada com cada falha e os arquivos de teste.</sub></td>
+    <td><img src="docs/images/work-tags.png" width="420" alt="Bonecos no mapa com sinais em cima: testando, passaram, falharam, escrevendo teste e checklist em 4/7"><br><sub>Sinais em cima dos bonecos: ⚗ testando, ✓ passaram, ✕ falharam, ✎ escrevendo teste e ☰ checklist.</sub></td>
+  </tr>
 </table>
 
-O [guia de uso](docs/guia.md) cobre o resto: como os bonecos se comportam, o terminal da ficha, aprovar e responder, mensagens, o executor, e uso e custo.
+O [guia de uso](docs/guia.md) cobre o resto: como os bonecos se comportam, o terminal da ficha, aprovar e responder, checklist, plano e testes, mensagens, o executor, e uso e custo.
 
 ## Como funciona
 
@@ -158,11 +165,13 @@ As sessões já abertas continuam com os hooks antigos até serem fechadas.
 
 ## O que fica guardado
 
-**No disco** (volume `office-data`), só o necessário para desenhar o escritório: pasta do projeto, id da sessão, nome do subagente, nome da ferramenta, nome do arquivo (sem o caminho), o primeiro termo do comando (por exemplo `cargo`, nunca os argumentos) e os totais de tokens e custo.
+**No disco** (volume `office-data`), só o necessário para desenhar o escritório: pasta do projeto, id da sessão, nome do subagente, nome da ferramenta, nome do arquivo (sem o caminho), o primeiro termo do comando (por exemplo `cargo`, nunca os argumentos) e os totais de tokens e custo. Dos testes, ficam também os números de cada rodada (passaram, falharam e pulados), o framework, o comando de teste cortado em 200 caracteres e com segredos mascarados, e o caminho dos arquivos de teste a partir da pasta do projeto. Do plano, só a versão, o estado e os horários.
 
 **Aparelhos pareados** (`devices.json`, no mesmo volume): o nome do navegador, o endereço por onde foi aberto, as datas e o hash SHA-256 do cookie, nunca o cookie. Um aparelho sem uso por 30 dias sai da lista.
 
-**Só na memória do coletor**, para o histórico e para você decidir com contexto: o texto dos seus pedidos, os comandos completos, a última resposta do agente em cada turno, os pedidos de permissão pendentes, as mensagens na fila e os códigos de pareamento ainda não usados. Nada disso vai para o disco, e tudo se perde quando o container reinicia. O histórico guarda no máximo 200 registros por sessão.
+**Só na memória do coletor**, para o histórico e para você decidir com contexto: o texto dos seus pedidos, os comandos completos, a última resposta do agente em cada turno, os pedidos de permissão pendentes, as mensagens na fila, os códigos de pareamento ainda não usados, a checklist do agente, o texto do plano e até 10 falhas da última rodada de testes. Nada disso vai para o disco, e tudo se perde quando o container reinicia. O histórico guarda no máximo 200 registros por sessão.
+
+**A saída dos testes nunca é guardada inteira.** O coletor lê os números e até 10 falhas (nome, local e mensagem, cada um cortado em 300 caracteres) e descarta o resto. Antes de guardar o comando de teste, as falhas, o plano ou a checklist, ele mascara tokens, chaves, JWT, credenciais em URL e valores de `password=` ou `token=`.
 
 **Na sua pasta pessoal** (`~/.orquestra-office`, criada pelo instalador e legível só pelo seu usuário): `secret`, a chave que hooks, coletor e executor compartilham, e `activity.header`, o cabeçalho com o token de atividade que o `curl` lê. O token fica num arquivo, e não na linha de comando, porque no macOS e no Linux qualquer usuário vê a linha de comando dos processos.
 
