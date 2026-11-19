@@ -146,7 +146,7 @@ Por padrão, o coletor só aceita conexões da sua máquina (`127.0.0.1`). Todo 
 
 Cada navegador recebe um cookie de 90 dias, renovado sempre que a página carrega, também nesta máquina. Sem ele, a página mostra "Este navegador não está pareado".
 
-- **Neste computador:** rode `node hooks/open-office.mjs` na pasta do escritório. Ele pede um código ao coletor com um pedido assinado pelo segredo e abre o escritório já pareado no navegador padrão, em `http://127.0.0.1:8420`. Para outro navegador, copie o endereço que o comando mostra; ele vale uma vez, por 2 minutos.
+- **Neste computador:** rode `node hooks/open-office.mjs` na pasta do escritório. Ele pede ao coletor um desafio de uso único, que vale 30 segundos, e depois um código, com um pedido assinado pelo segredo que leva esse desafio; um pedido copiado no caminho não serve de novo. Em seguida, abre o escritório já pareado no navegador padrão, em `http://127.0.0.1:8420`. Para outro navegador, copie o endereço que o comando mostra; ele vale uma vez, por 2 minutos.
 - **Use `127.0.0.1`, não `localhost`.** O cookie vale só para o endereço em que foi recebido. No Windows, `localhost` resolve primeiro para `::1`, onde outro processo pode estar escutando e receberia o código de pareamento e o cookie. Por isso o comando abre o endereço exato em que o coletor escuta.
 - **Em outro aparelho:** num navegador já pareado, clique em **Aparelhos** e depois em **Parear aparelho**. Leia o QR com o outro aparelho ou abra o link nele, também uma vez e por 2 minutos.
 - **Revogar:** em **Aparelhos**, "Revogar" desconecta o aparelho na hora; "Sair deste" desconecta o navegador atual.

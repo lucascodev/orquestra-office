@@ -1,7 +1,9 @@
+import { createBootstrapPairing } from "./access/application/bootstrap-pairing.js";
 import { createIdentifyDevice } from "./access/application/identify-device.js";
 import { createIssuePairingCode } from "./access/application/issue-pairing-code.js";
 import { createRedeemPairing } from "./access/application/redeem-pairing.js";
 import { createRevokeDevice } from "./access/application/revoke-device.js";
+import { createBootstrapChallenges } from "./access/domain/bootstrap-challenges.js";
 import { createDeviceSessions } from "./access/domain/device-sessions.js";
 import { createLegacyHooksNotice } from "./access/domain/legacy-hooks-notice.js";
 import { createPairingCodes } from "./access/domain/pairing-codes.js";
@@ -50,6 +52,8 @@ export function createOffice({ webDir, dataDir = null, holdMs, allowedHosts = []
   const deviceSessions = createDeviceSessions({ saved: devicesFile?.load(), keyId: officeKey.keyId(), newId: newDeviceId });
   if (devicesFile) deviceSessions.onChange(() => devicesFile.save(deviceSessions.snapshot()));
   const pairingCodes = createPairingCodes({ newCode: newPairingCode });
+  const bootstrapChallenges = createBootstrapChallenges({ newChallenge: newPairingCode });
+  const issuePairingCode = createIssuePairingCode({ pairingCodes, lanHosts: allowedHosts });
   const currentKeyId = () => officeKey.keyId();
   const hookAuth = createHookAuth({ officeKey });
   const panelAuth = createPanelAuth({
@@ -81,7 +85,9 @@ export function createOffice({ webDir, dataDir = null, holdMs, allowedHosts = []
   const pairingRoutes = createPairingRoutes({
     hookAuth,
     panelAuth,
-    issuePairingCode: createIssuePairingCode({ pairingCodes, lanHosts: allowedHosts }),
+    issueBootstrapChallenge: () => bootstrapChallenges.issue(),
+    bootstrapPairing: createBootstrapPairing({ bootstrapChallenges, issuePairingCode }),
+    issuePairingCode,
     redeemPairing: createRedeemPairing({ pairingCodes, deviceSessions, newSessionToken, hashToken, currentKeyId }),
     revokeDevice: createRevokeDevice({ deviceSessions, onRevoked: (id) => stream.dropDevice(id) }),
     listDevices: () => deviceSessions.list(),

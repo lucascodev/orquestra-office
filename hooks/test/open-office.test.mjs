@@ -12,12 +12,16 @@ const SCRIPT = "open-office.mjs";
 const KEY = parseSecret(THROWAWAY_SECRET);
 const OTHER_KEY = parseSecret("HxwdHh8AAQIDBAUGBwgJCgsMDQ4PEBESExQVFhcYGRo");
 const CODE = "AAECAwQFBgcICQoLDA0ODw";
+const CHALLENGE = "DwAODQwLCgkIBwYFBAMCAQ";
+const CHALLENGE_PATH = "/pairing/challenge";
 const UNREACHABLE_OFFICE = "http://127.0.0.1:1";
 
 const hmacOf = (key, message) => createHmac("sha256", key).update(message).digest("base64url");
 
-function bootstrapAnswer(body, { key = KEY, isSigned = true } = {}) {
+function bootstrapAnswer(body, { key = KEY, isSigned = true, challengeStatus = 200 } = {}) {
   return (request) => {
+    if (request.url === CHALLENGE_PATH) return { status: challengeStatus, text: JSON.stringify({ challenge: CHALLENGE, expiresAt: 1 }) };
+    if (JSON.parse(request.body).challenge !== CHALLENGE) return { status: 401, text: "{}" };
     const nonce = request.headers[NONCE_HEADER];
     const isRequestSigned = signatureFromHeader(request.headers[SIGNATURE_HEADER]) === hmacOf(KEY, requestMessage({ path: request.url, nonce, bodyHash: bodyHashOf(request.body) }));
     if (!isRequestSigned) return { status: 401, text: "{}" };
@@ -35,7 +39,8 @@ test("asks the office for a code with a signed request and prints the link at th
   const result = await openOffice(office.url);
 
   assert.equal(result.code, 0);
-  assert.equal(office.requests[0].url, "/pairing/bootstrap");
+  assert.deepEqual(office.requests.map((request) => request.url), [CHALLENGE_PATH, "/pairing/bootstrap"]);
+  assert.deepEqual(JSON.parse(office.requests[1].body), { challenge: CHALLENGE });
   assert.match(result.stdout, new RegExp(`^http://127\\.0\\.0\\.1:${new URL(office.url).port}/#pair=${CODE}$`, "m"));
 });
 
@@ -47,6 +52,16 @@ test("the link keeps the host of the office address it was given", async (t) => 
 
   assert.equal(result.code, 0);
   assert.match(result.stdout, new RegExp(`^http://localhost:${port}/#pair=${CODE}$`, "m"));
+});
+
+test("without a challenge from the office it asks for no code and opens nothing", async (t) => {
+  const office = await startFakeOffice(t, { answer: bootstrapAnswer({ code: CODE }, { challengeStatus: 429 }) });
+
+  const result = await openOffice(office.url);
+
+  assert.equal(result.code, 1);
+  assert.deepEqual(office.requests.map((request) => request.url), [CHALLENGE_PATH]);
+  assert.doesNotMatch(result.stdout, /#pair=/);
 });
 
 test("an answer signed with another key opens nothing", async (t) => {

@@ -5,10 +5,10 @@ import { request } from "node:http";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { createOffice } from "../src/composition.js";
-import { postSigned } from "./support/hook-client.js";
+import { postSigned, signedHeaders } from "./support/hook-client.js";
 import { listenOnFetchablePort } from "./support/listen-on-fetchable-port.js";
 import { OTHER_KEY, OTHER_SECRET, secretFileFor } from "./support/office-secret.js";
-import { cookieOf, issueBootstrapCode, pairBrowser, redeem } from "./support/panel-client.js";
+import { bootstrapChallengeOf, cookieOf, issueBootstrapCode, pairBrowser, redeem } from "./support/panel-client.js";
 
 const HOLD_MS = 5_000;
 const NINETY_DAYS_SECONDS = 7_776_000;
@@ -74,7 +74,7 @@ test("a signed bootstrap gives a code that pairs this browser with an HttpOnly, 
 }));
 
 test("the bootstrap answer is signed and carries the code, when it expires and the link to open", (t) => withOffice(t, async (base) => {
-  const answer = await postSigned(base, "/pairing/bootstrap", {});
+  const answer = await postSigned(base, "/pairing/bootstrap", { challenge: await bootstrapChallengeOf(base) });
 
   assert.equal(answer.isSigned, true);
   assert.match(answer.body.code, /^[\w-]{22}$/);
@@ -83,9 +83,39 @@ test("the bootstrap answer is signed and carries the code, when it expires and t
 }));
 
 test("a bootstrap that is not signed with this office's key gets no code", (t) => withOffice(t, async (base) => {
-  assert.equal((await postSigned(base, "/pairing/bootstrap", {}, { key: OTHER_KEY })).status, 401);
+  assert.equal((await postSigned(base, "/pairing/bootstrap", { challenge: await bootstrapChallengeOf(base) }, { key: OTHER_KEY })).status, 401);
   assert.equal((await fetch(`${base}/pairing/bootstrap`, { method: "POST", headers: { "Content-Type": "application/json" }, body: "{}" })).status, 401);
 }));
+
+test("a signed bootstrap without a challenge, or with one the office never gave, gets no code", (t) => withOffice(t, async (base) => {
+  assert.equal((await postSigned(base, "/pairing/bootstrap", {})).status, 401);
+  assert.equal((await postSigned(base, "/pairing/bootstrap", { challenge: "AAAAAAAAAAAAAAAAAAAAAA" })).status, 401);
+}));
+
+test("anyone may ask for a bootstrap challenge, which lasts 30 seconds and needs a JSON request, so a plain form cannot spend them",(t) => withOffice(t, async (base) => {
+  const res = await fetch(`${base}/pairing/challenge`, { method: "POST", headers: { "Content-Type": "application/json" }, body: "{}" });
+  const answer = await res.json();
+
+  assert.equal(res.status, 200);
+  assert.match(answer.challenge, /^[\w-]{22}$/);
+  assert.ok(answer.expiresAt <= Date.now() + 30_000);
+  assert.equal((await fetch(`${base}/pairing/challenge`, { method: "POST", body: "{}" })).status, 415);
+}));
+
+test("a captured bootstrap is refused when sent again, even after the collector restarts", (t) => {
+  const secretFile = secretFileFor(t);
+  let captured = null;
+  return withOffice(t, async (base) => {
+    const body = JSON.stringify({ challenge: await bootstrapChallengeOf(base) });
+    captured = { body, headers: signedHeaders({ path: "/pairing/bootstrap", body }) };
+    const replay = () => fetch(`${base}/pairing/bootstrap`, { method: "POST", ...captured });
+
+    assert.equal((await replay()).status, 200);
+    assert.equal((await replay()).status, 401);
+  }, { secretFile }).then(() => withOffice(t, async (base) => {
+    assert.equal((await fetch(`${base}/pairing/bootstrap`, { method: "POST", ...captured })).status, 401);
+  }, { secretFile }));
+});
 
 test("a pairing code works only once", (t) => withOffice(t, async (base) => {
   const code = await issueBootstrapCode(base);

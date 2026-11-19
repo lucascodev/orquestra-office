@@ -2,8 +2,14 @@ import { postSigned } from "./hook-client.js";
 
 const SESSION_COOKIE = /^office_session=([\w-]+);/;
 
+export async function bootstrapChallengeOf(base) {
+  const res = await fetch(`${base}/pairing/challenge`, { method: "POST", headers: { "Content-Type": "application/json" }, body: "{}" });
+  if (res.status !== 200) throw new Error(`challenge failed with ${res.status}`);
+  return (await res.json()).challenge;
+}
+
 export async function issueBootstrapCode(base, options) {
-  const answer = await postSigned(base, "/pairing/bootstrap", {}, options);
+  const answer = await postSigned(base, "/pairing/bootstrap", { challenge: await bootstrapChallengeOf(base) }, options);
   if (answer.status !== 200 || !answer.isSigned) throw new Error(`bootstrap failed with ${answer.status}`);
   return answer.body.code;
 }

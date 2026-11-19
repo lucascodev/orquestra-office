@@ -1,8 +1,9 @@
 import { publicDeviceOf } from "../access/domain/device-sessions.js";
 import { HOOK_ACCESS } from "./hook-auth.js";
-import { readJsonBody, readRawBody, sendJson, sendJsonText } from "./json-io.js";
+import { parseJsonOrNull, readJsonBody, readRawBody, sendJson, sendJsonText } from "./json-io.js";
 import { isJson, isSameOrigin } from "./request-policy.js";
 
+const CHALLENGE_PATH = "/pairing/challenge";
 const BOOTSTRAP_PATH = "/pairing/bootstrap";
 const REDEEM_PATH = "/api/pairings/redeem";
 const PAIRINGS_PATH = "/api/pairings";
@@ -11,9 +12,18 @@ const REVOKE_ROUTE = /^\/api\/devices\/([\w-]+)\/revoke$/;
 const BODY_LIMIT = 4 * 1024;
 const OK_STATUS = 200;
 const TOO_MANY_CODES = { error: "too many pending pairing codes" };
+const TOO_MANY_CHALLENGES = { error: "too many pending challenges" };
 
-export function createPairingRoutes({ hookAuth, panelAuth, issuePairingCode, redeemPairing, revokeDevice, listDevices }) {
+export function createPairingRoutes({ hookAuth, panelAuth, issueBootstrapChallenge, bootstrapPairing, issuePairingCode, redeemPairing, revokeDevice, listDevices }) {
   const requestHostOf = (req) => String(req.headers.host ?? "");
+
+  // Public on purpose: a challenge opens nothing by itself. JSON only, so a form posted by another page cannot use them up.
+  async function challenge(req, res) {
+    if (!isJson(req)) return sendJson(res, 415, {});
+    await readRawBody(req, BODY_LIMIT);
+    const issued = issueBootstrapChallenge();
+    return issued ? sendJson(res, OK_STATUS, issued) : sendJson(res, 429, TOO_MANY_CHALLENGES);
+  }
 
   // The first browser is paired by a command on this machine, which proves it holds the secret by signing the request.
   async function bootstrap(req, res) {
@@ -21,7 +31,8 @@ export function createPairingRoutes({ hookAuth, panelAuth, issuePairingCode, red
     const body = await readRawBody(req, BODY_LIMIT);
     const { access, nonce } = hookAuth.signedAccessOf(req, BOOTSTRAP_PATH, body);
     if (access !== HOOK_ACCESS.GRANTED) return sendJson(res, 401, { error: "invalid signature" });
-    const issued = issuePairingCode({ requestHost: requestHostOf(req) });
+    const { isFresh, issued } = bootstrapPairing({ challenge: parseJsonOrNull(body)?.challenge, requestHost: requestHostOf(req) });
+    if (!isFresh) return sendJson(res, 401, { error: "invalid challenge" });
     if (!issued) return sendJson(res, 429, TOO_MANY_CODES);
     const text = JSON.stringify(issued);
     const signature = hookAuth.responseSignatureOf({ path: BOOTSTRAP_PATH, nonce, status: OK_STATUS, body: text });
@@ -61,6 +72,7 @@ export function createPairingRoutes({ hookAuth, panelAuth, issuePairingCode, red
   }
 
   function routeOf(method, pathname) {
+    if (method === "POST" && pathname === CHALLENGE_PATH) return challenge;
     if (method === "POST" && pathname === BOOTSTRAP_PATH) return bootstrap;
     if (method === "POST" && pathname === REDEEM_PATH) return redeem;
     if (method === "POST" && pathname === PAIRINGS_PATH) return issue;

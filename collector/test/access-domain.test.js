@@ -1,5 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
+import { createBootstrapChallenges } from "../src/access/domain/bootstrap-challenges.js";
 import { createDeviceSessions } from "../src/access/domain/device-sessions.js";
 import { createPairingCodes } from "../src/access/domain/pairing-codes.js";
 
@@ -66,6 +67,23 @@ test("no more than twenty codes wait at once, and expired ones free their place"
   assert.equal(pairing.issue(), null);
   time.advance(CODE_TTL_MS);
   assert.ok(pairing.issue());
+});
+
+const BOOTSTRAP_CHALLENGE_TTL_MS = 30_000;
+
+test("a bootstrap challenge works once, for 30 seconds, and only twenty wait at once", () => {
+  const time = clock();
+  const challenges = createBootstrapChallenges({ newChallenge: sequence("challenge-"), now: time.now });
+  const used = challenges.issue();
+  const late = challenges.issue();
+
+  assert.equal(used.expiresAt, time.now() + BOOTSTRAP_CHALLENGE_TTL_MS);
+  assert.equal(challenges.redeem(used.challenge), true);
+  assert.equal(challenges.redeem(used.challenge), false);
+  time.advance(BOOTSTRAP_CHALLENGE_TTL_MS);
+  assert.equal(challenges.redeem(late.challenge), false);
+  for (let index = 0; index < PENDING_LIMIT; index += 1) assert.ok(challenges.issue());
+  assert.equal(challenges.issue(), null);
 });
 
 const sessions = (time, saved = null, keyId = KEY_ID) => createDeviceSessions({ saved, keyId, now: time.now, newId: sequence("device-") });

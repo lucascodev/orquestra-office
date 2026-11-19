@@ -3,7 +3,7 @@ import { SIGNATURE_HEADER, isResponseSigned, newNonce, signedRequestHeaders } fr
 const OK_STATUS = 200;
 const ANSWER_LIMIT_BYTES = 1024 * 1024;
 
-async function readCapped(response) {
+export async function readCapped(response) {
   const chunks = [];
   let size = 0;
   for await (const chunk of response.body ?? []) {

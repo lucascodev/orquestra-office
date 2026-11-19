@@ -209,7 +209,7 @@ Recomendo L2: o celular pareado é seu, e "Revogar" resolve aparelho perdido. L3
 ### 4.3 Como o pareamento funciona
 
 - **Cookie.** `office_session=<32 bytes aleatórios>; HttpOnly; SameSite=Strict; Path=/api; Max-Age=7776000`. Sem `Secure`, porque o escritório é HTTP. O coletor guarda só o SHA-256 do valor.
-- **Primeiro navegador.** O comando de abrir manda `POST /pairing/bootstrap` como pedido assinado (seção 3.2), confere a assinatura da resposta e abre `http://127.0.0.1:8420/#pair=<código>`, o endereço exato em que o coletor escuta (no Windows, `localhost` resolve primeiro para `::1`, onde outro processo poderia receber o código e o cookie). O código é aleatório, de uso único, vale 2 minutos e vive só na memória do coletor. Na CLI da fase 7, coletor e CLI estão no mesmo processo, então a CLI pede o código direto, sem HMAC.
+- **Primeiro navegador.** O comando de abrir pede um desafio em `POST /pairing/challenge` (público, de uso único, vale 30 segundos, no máximo 20 pendentes, só na memória do coletor) e manda `POST /pairing/bootstrap` como pedido assinado (seção 3.2), com `{"challenge": "<desafio>"}` no corpo assinado. Sem desafio válido, o coletor responde `401`: o protocolo não tem relógio, e é o desafio que impede repetir um bootstrap capturado, inclusive depois de reiniciar o coletor, que esquece os nonces e os desafios. Depois, confere a assinatura da resposta e abre `http://127.0.0.1:8420/#pair=<código>`, o endereço exato em que o coletor escuta (no Windows, `localhost` resolve primeiro para `::1`, onde outro processo poderia receber o código e o cookie). O código é aleatório, de uso único, vale 2 minutos e vive só na memória do coletor. Na CLI da fase 7, coletor e CLI estão no mesmo processo, então a CLI pede o código direto, sem HMAC.
 - **Resgate.** A página lê `#pair=` (o fragmento não vai para o servidor nem para o `Referer`), chama `POST /api/pairings/redeem`, recebe o cookie e limpa o endereço com `history.replaceState`.
 - **Outro aparelho.** Num aparelho pareado, `POST /api/pairings` devolve um código novo e os endereços da rede (de `OFFICE_ALLOWED_HOSTS`). A página mostra o QR e o link `http://<OFFICE_LAN_IP>:8420/#pair=<código>`.
 - **Sem cookie.** `/api/*` responde `401 {"error": "unpaired"}`. A página mostra "Este navegador não está pareado", com o comando a rodar (em `localhost`) ou "abra o escritório no computador e use Parear aparelho" (na rede).
@@ -270,12 +270,21 @@ paths:
   /hooks/claude/permission: { post: { security: [{ signedRequest: [] }], responses: { "200": { description: "resposta assinada: { decision }" }, "401": { description: assinatura inválida } } } }
   /hooks/claude/question: { post: { security: [{ signedRequest: [] }], responses: { "200": { description: "resposta assinada: { answers }" }, "401": { description: assinatura inválida } } } }
   /hooks/claude/stop: { post: { security: [{ signedRequest: [] }], responses: { "200": { description: "resposta assinada: { messages }" }, "401": { description: assinatura inválida } } } }
+  /pairing/challenge:
+    post:
+      security: []
+      description: "Exige JSON. Desafio de uso único, 30 s, no máximo 20 pendentes."
+      responses:
+        "200": { content: { application/json: { schema: { type: object, required: [challenge, expiresAt], properties: { challenge: { type: string }, expiresAt: { type: integer } } } } } }
+        "415": { description: corpo que não é JSON }
+        "429": { description: desafios pendentes demais }
   /pairing/bootstrap:
     post:
       security: [{ signedRequest: [] }]
+      requestBody: { content: { application/json: { schema: { type: object, required: [challenge], properties: { challenge: { type: string } } } } } }
       responses:
         "200": { description: resposta assinada, content: { application/json: { schema: { $ref: "#/components/schemas/PairingCode" } } } }
-        "401": { description: assinatura inválida }
+        "401": { description: assinatura inválida, ou desafio ausente, usado ou vencido }
         "429": { description: códigos pendentes demais }
   /api/pairings/redeem:
     post:
@@ -321,7 +330,7 @@ No executor: `POST /auth/challenge` devolve `{ nonce }`; `POST /auth/session` re
 | `~/.orquestra-office/secret` | `K` em base64url |
 | `~/.orquestra-office/activity.header` | `Authorization: Bearer <token de atividade>` |
 | `DATA_DIR/devices.json` (volume `office-data` ou pasta da CLI) | `{ version: 1, keyId, devices: [{ id, tokenHash, label, host, createdAt, lastSeenAt }] }`; sessão sem uso por 30 dias sai |
-| memória do coletor | códigos de pareamento, nonces de pedidos de pareamento |
+| memória do coletor | códigos de pareamento, desafios do bootstrap, nonces de pedidos assinados |
 | memória do executor | desafios (60 s) e tokens (12 h ou até o executor parar) |
 
 No coletor, o pareamento vira um contexto próprio, `access/`, com `domain/` (códigos de uso único, sessões de aparelho), `application/` (resgatar, emitir, pareamento inicial, revogar) e `infra/` (arquivo de aparelhos, arquivo do segredo). A verificação de hook fica na borda, em `http/hook-auth.js`, porque é tradução de protocolo. A montagem das mensagens assinadas fica em `collector/src/shared/auth/`, que o executor pode importar (ADR 0001, item 3). Os hooks têm cópia própria em `hooks/lib/`, porque precisam continuar copiáveis como pasta (fase 7); um teste de contrato com vetores fixos prende as duas cópias.
@@ -488,3 +497,14 @@ A CPU do Windows é contada em fatias de 15,6 ms, então os números de CPU do `
 3. a permissão decidida no escritório volta para a sessão pelo `office-decision.mjs`;
 4. o `docker compose up` acha o segredo pelo caminho interpolado no Windows e no macOS, e o que acontece quando o arquivo falta;
 5. os mesmos números no macOS.
+
+## Frescor dos pedidos assinados (revisão S.13)
+
+O coletor lembra os últimos 4 096 nonces, mas só enquanto está de pé. Um pedido assinado que o coletor nunca recebeu, porque outro processo ocupava a porta naquela hora, ou um pedido capturado antes de um reinício, ainda passa pela assinatura.
+
+- **Bootstrap do pareamento: corrigido.** Repetir um bootstrap daria um navegador pareado, com controle total. Agora ele só vale com um desafio de `POST /pairing/challenge` no corpo assinado (seção 4.3), de uso único e com 30 segundos de vida. Como os desafios moram só na memória, nenhum bootstrap antigo vale depois de um reinício.
+- **`Stop`, `PermissionRequest` e `AskUserQuestion`: risco aceito.**
+  - Repetir um `Stop` capturado faz o coletor entregar a quem repetiu as mensagens que estiverem na fila daquela sessão. Elas somem da fila, e o agente não as recebe. Repetir uma permissão ou uma pergunta cria um pedido pendente falso. A resposta que você der vai para quem repetiu e não muda nada em sessão nenhuma.
+  - Para capturar, é preciso receber o pedido no lugar do coletor: ocupar a porta enquanto ele está parado, ou estar no caminho até um `OFFICE_URL` remoto, que exige `https://`. Nada disso dá poder de decisão, pareamento ou acesso ao painel.
+  - O desafio custaria uma ida a mais ao coletor no fim de cada turno, no caminho síncrono do `Stop`, que tem 5 segundos de limite. As permissões ganhariam um estado a mais entre o pedido e a espera de até 150 segundos.
+  - Fica como está. Se a fila de mensagens passar a levar algo sensível, o mesmo desafio do bootstrap serve para o `Stop`.
