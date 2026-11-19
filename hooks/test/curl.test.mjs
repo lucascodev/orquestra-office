@@ -4,11 +4,13 @@ import { test } from "node:test";
 import { curlPostArgs, findCurl, nullDeviceOf } from "../lib/curl.mjs";
 
 const existing = (...paths) => (path) => paths.includes(path);
+const OTHER_SYSTEM_ROOT = String.raw`D:\Win`;
+const HEADER_FILE = String.raw`C:\h\activity.header`;
 
 test("on Windows, curl is the one in System32 under SystemRoot", () => {
-  const systemCurl = join("D:\Win", "System32", "curl.exe");
+  const systemCurl = join(OTHER_SYSTEM_ROOT, "System32", "curl.exe");
 
-  assert.equal(findCurl({ platform: "win32", systemRoot: "D:\Win", exists: existing(systemCurl) }), systemCurl);
+  assert.equal(findCurl({ platform: "win32", systemRoot: OTHER_SYSTEM_ROOT, exists: existing(systemCurl) }), systemCurl);
 });
 
 test("on macOS and Linux, curl is the first system path that exists", () => {
@@ -17,7 +19,7 @@ test("on macOS and Linux, curl is the first system path that exists", () => {
 });
 
 test("without curl there is nothing to install with", () => {
-  assert.equal(findCurl({ platform: "win32", systemRoot: "C:\Windows", exists: existing() }), null);
+  assert.equal(findCurl({ platform: "win32", systemRoot: String.raw`C:\Windows`, exists: existing() }), null);
   assert.equal(findCurl({ platform: "darwin", exists: existing() }), null);
 });
 
@@ -27,11 +29,12 @@ test("the null device is NUL on Windows and /dev/null elsewhere", () => {
 });
 
 test("curl reads the token from the header file, sends stdin and throws the answer away", () => {
-  const args = curlPostArgs({ url: "http://127.0.0.1:8420/events/claude", nullDevice: "NUL", activityHeaderFile: "C:\h\activity.header" });
+  const args = curlPostArgs({ url: "http://127.0.0.1:8420/events/claude", nullDevice: "NUL", activityHeaderFile: HEADER_FILE });
 
   assert.deepEqual(args, [
-    "-s", "--noproxy", "*", "-m", "3", "-o", "NUL", "-H", "@C:\h\activity.header", "-H", "Content-Type: application/json", "--data-binary", "@-",
+    "-s", "--noproxy", "*", "-m", "3", "-o", "NUL", "-H", `@${HEADER_FILE}`, "-H", "Content-Type: application/json", "--data-binary", "@-",
     "http://127.0.0.1:8420/events/claude",
   ]);
+  assert.equal(args[8], "@C:\\h\\activity.header");
   assert.ok(!args.some((arg) => /Bearer/.test(arg)));
 });
