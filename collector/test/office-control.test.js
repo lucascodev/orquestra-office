@@ -118,7 +118,21 @@ test("a question is answered from the office with the original questions echoed 
   viewer.abort();
 }));
 
-test("a message waits in the outbox and is delivered when the turn ends", () => withOffice(async (base) => {
+test("a question longer than the page shows keeps its whole text as the answer key, the one Claude Code checks", () => withOffice(async (base) => {
+  const viewer = await openOfficePage(base);
+  const longQuestion = `${"Which of these frameworks fits the plan we wrote last week? ".repeat(12)}Pick one.`;
+  const questions = [{ question: longQuestion, header: "Framework", multiSelect: false, options: [{ label: "React", description: "" }] }];
+  const hook = postSigned(base, "/hooks/claude/question", { ...SESSION, hook_event_name: "PreToolUse", tool_name: "AskUserQuestion", tool_input: { questions } });
+  const request = await pendingRequest(base);
+
+  await post(`${base}/api/decisions/${request.id}`, { answers: { [request.questions[0].question]: "React" } });
+
+  assert.ok(longQuestion.length > 500);
+  assert.deepEqual((await hook).body, { answers: { [longQuestion]: "React" } });
+  viewer.abort();
+}));
+
+test("a message waits in the outbox and is delivered when the turn ends",() => withOffice(async (base) => {
   await postActivity(base, "/events/claude", { ...SESSION, hook_event_name: "SessionStart" });
   assert.equal((await post(`${base}/api/agents/message`, { key: "claude:unknown", text: "hi" })).status, 404);
   assert.equal((await post(`${base}/api/agents/message`, { key: "claude:s1", text: "  " })).status, 400);

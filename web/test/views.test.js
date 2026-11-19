@@ -142,6 +142,14 @@ describe("pending request card", () => {
   it("asks each question with its options and a free answer field", () => {
     assertMatchesRecording("pending-card-question", renderPendingCard(question, "Duda <dev>"));
   });
+
+  it("clips a long question on screen but keeps its whole text as the answer key", () => {
+    const longText = "q".repeat(600);
+    const html = renderPendingCard({ ...question, questions: [{ ...question.questions[0], question: longText }] }, "Duda");
+
+    assert.ok(html.includes(`data-question="${longText}"`));
+    assert.ok(html.includes(`<span>${"q".repeat(500)}…</span>`));
+  });
 });
 
 describe("agent sheet", () => {

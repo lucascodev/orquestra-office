@@ -1,6 +1,9 @@
+import { clipText } from "../../domain/text/clip-text.js";
 import { esc } from "../shared/escape-html.js";
 import { clockTime } from "../shared/format.js";
 
+// Only what is shown is clipped: data-question keeps the whole text, because it is the key Claude Code checks the answer by.
+const QUESTION_TEXT_LIMIT = 500;
 const FAILED_DECISION_ALERT = `<p class="pending-error" role="alert" hidden></p>`;
 
 const quickDecision = () => `<div class="pending-actions"><button class="btn btn-sm btn-secondary" data-decide="deny">Negar</button><button class="btn btn-sm btn-primary" data-decide="allow">Permitir</button></div>
@@ -33,7 +36,7 @@ function questionBlock(item, index) {
   const options = item.options.map((option) => `<button type="button" class="choice" aria-pressed="false" data-option="${esc(option.label)}">
       <b>${esc(option.label)}</b>${option.description ? `<span>${esc(option.description)}</span>` : ""}</button>`).join("");
   return `<fieldset class="question" data-question="${esc(item.question)}" data-multi="${item.multiSelect}">
-    <legend>${item.header ? `<span class="badge">${esc(item.header)}</span>` : ""}<span>${esc(item.question)}</span></legend>
+    <legend>${item.header ? `<span class="badge">${esc(item.header)}</span>` : ""}<span>${esc(clipText(item.question, QUESTION_TEXT_LIMIT))}</span></legend>
     <div class="choices">${options}</div>
     <div class="field"><label for="other-${index}">Outra resposta</label><input class="input" id="other-${index}" type="text" maxlength="1000" autocomplete="off"></div>
   </fieldset>`;
