@@ -31,6 +31,17 @@ test("refuses what is not a bare http or https origin, even with the remote flag
   }
 });
 
+// The URL parser keeps these in a host name, and the origin goes inside a shell command written to settings.json.
+const SHELL_ACTIVE_HOSTS = ["https://a$(id).example", "https://a`id`.example", 'https://a"b.example', "https://a;b.example", "https://a&b.example", "https://a!b.example", "https://a'b.example"];
+
+test("an origin with a character a shell would act on is refused, wherever it points", () => {
+  for (const raw of SHELL_ACTIVE_HOSTS) {
+    assert.match(parseOfficeUrl(raw, { allowRemote: true }).problem ?? "", /only letters, digits/, raw);
+  }
+  assert.deepEqual(parseOfficeUrl("https://xn--ao-siap.example:9443", { allowRemote: true }), { origin: "https://xn--ao-siap.example:9443" });
+  assert.deepEqual(parseOfficeUrl("https://ação.example", { allowRemote: true }), { origin: "https://xn--ao-siap.example" });
+});
+
 test("a remote address needs the explicit flag and https", () => {
   assert.match(parseOfficeUrl("http://evil.example").problem, /--allow-remote-office/);
   assert.match(parseOfficeUrl(REMOTE_HTTPS).problem, /--allow-remote-office/);
