@@ -209,7 +209,7 @@ Recomendo L2: o celular pareado é seu, e "Revogar" resolve aparelho perdido. L3
 ### 4.3 Como o pareamento funciona
 
 - **Cookie.** `office_session=<32 bytes aleatórios>; HttpOnly; SameSite=Strict; Path=/api; Max-Age=7776000`. Sem `Secure`, porque o escritório é HTTP. O coletor guarda só o SHA-256 do valor.
-- **Primeiro navegador.** O comando de abrir pede um desafio em `POST /pairing/challenge` (público, de uso único, vale 30 segundos, no máximo 20 pendentes, só na memória do coletor) e manda `POST /pairing/bootstrap` como pedido assinado (seção 3.2), com `{"challenge": "<desafio>"}` no corpo assinado. Sem desafio válido, o coletor responde `401`: o protocolo não tem relógio, e é o desafio que impede repetir um bootstrap capturado, inclusive depois de reiniciar o coletor, que esquece os nonces e os desafios. Depois, confere a assinatura da resposta e abre `http://127.0.0.1:8420/#pair=<código>`, o endereço exato em que o coletor escuta (no Windows, `localhost` resolve primeiro para `::1`, onde outro processo poderia receber o código e o cookie). O código é aleatório, de uso único, vale 2 minutos e vive só na memória do coletor. Na CLI da fase 7, coletor e CLI estão no mesmo processo, então a CLI pede o código direto, sem HMAC.
+- **Primeiro navegador.** O comando de abrir pede um desafio em `POST /pairing/challenge` (pedido assinado, como o bootstrap; de uso único, vale 30 segundos, no máximo 20 pendentes, só na memória do coletor) e manda `POST /pairing/bootstrap` como pedido assinado (seção 3.2), com `{"challenge": "<desafio>"}` no corpo assinado. A rota do desafio deixou de ser pública: aberta, quem não tem o segredo ocupava as 20 vagas com pedidos em série e o comando de abrir recebia `429`. Sem assinatura válida, ela responde `401` e não gasta vaga; a resposta vem assinada e o comando confere antes de usar o desafio. Sem desafio válido, o coletor responde `401`: o protocolo não tem relógio, e é o desafio que impede repetir um bootstrap capturado, inclusive depois de reiniciar o coletor, que esquece os nonces e os desafios. Depois, confere a assinatura da resposta e abre `http://127.0.0.1:8420/#pair=<código>`, o endereço exato em que o coletor escuta (no Windows, `localhost` resolve primeiro para `::1`, onde outro processo poderia receber o código e o cookie). O código é aleatório, de uso único, vale 2 minutos e vive só na memória do coletor. Na CLI da fase 7, coletor e CLI estão no mesmo processo, então a CLI pede o código direto, sem HMAC.
 - **Resgate.** A página lê `#pair=` (o fragmento não vai para o servidor nem para o `Referer`), chama `POST /api/pairings/redeem`, recebe o cookie e limpa o endereço com `history.replaceState`.
 - **Outro aparelho.** Num aparelho pareado, `POST /api/pairings` devolve um código novo e os endereços da rede (de `OFFICE_ALLOWED_HOSTS`). A página mostra o QR e o link `http://<OFFICE_LAN_IP>:8420/#pair=<código>`.
 - **Sem cookie.** `/api/*` responde `401 {"error": "unpaired"}`. A página mostra "Este navegador não está pareado", com o comando a rodar (em `localhost`) ou "abra o escritório no computador e use Parear aparelho" (na rede).
@@ -272,10 +272,11 @@ paths:
   /hooks/claude/stop: { post: { security: [{ signedRequest: [] }], responses: { "200": { description: "resposta assinada: { messages }" }, "401": { description: assinatura inválida } } } }
   /pairing/challenge:
     post:
-      security: []
-      description: "Exige JSON. Desafio de uso único, 30 s, no máximo 20 pendentes."
+      security: [{ signedRequest: [] }]
+      description: "Exige JSON. Desafio de uso único, 30 s, no máximo 20 pendentes. Pedido sem assinatura válida não gasta vaga."
       responses:
-        "200": { content: { application/json: { schema: { type: object, required: [challenge, expiresAt], properties: { challenge: { type: string }, expiresAt: { type: integer } } } } } }
+        "200": { description: resposta assinada, content: { application/json: { schema: { type: object, required: [challenge, expiresAt], properties: { challenge: { type: string }, expiresAt: { type: integer } } } } } }
+        "401": { description: assinatura inválida ou ausente }
         "415": { description: corpo que não é JSON }
         "429": { description: desafios pendentes demais }
   /pairing/bootstrap:
