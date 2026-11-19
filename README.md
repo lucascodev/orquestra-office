@@ -31,7 +31,7 @@ Para alargar o painel lateral, passe o mouse na borda esquerda dele e arraste. A
 
 ## Como funciona
 
-- Um coletor pequeno (Node, sem dependências) roda no Docker em `http://localhost:8420`.
+- Um coletor pequeno (Node, sem dependências) roda no Docker em `http://127.0.0.1:8420`.
 - O Claude Code manda cada evento para ele pelos hooks configurados no `~/.claude/settings.json` (vale para todos os projetos). A atividade vai pelo `curl` do sistema, em segundo plano, sem atrasar as ferramentas. Pedidos de permissão, perguntas e o fim do turno passam por `hooks/office-decision.mjs`, que assina o pedido e só aceita uma resposta assinada pelo coletor.
 - O Codex manda um aviso no fim de cada turno pelo `notify` do `~/.codex/config.toml`. O Codex só avisa o fim do turno, então aparece com menos detalhe que o Claude Code.
 - Hooks, coletor e executor se reconhecem por um segredo que o instalador cria em `~/.orquestra-office/secret`. Cada navegador que abre o escritório precisa estar pareado (veja [Parear navegadores e aparelhos](#parear-navegadores-e-aparelhos)).
@@ -144,9 +144,10 @@ Por padrão, o coletor só aceita conexões da sua máquina (`127.0.0.1`). Todo 
 
 ### Parear navegadores e aparelhos
 
-Cada navegador recebe um cookie de 90 dias, renovado sempre que a página carrega, também em `localhost`. Sem ele, a página mostra "Este navegador não está pareado".
+Cada navegador recebe um cookie de 90 dias, renovado sempre que a página carrega, também nesta máquina. Sem ele, a página mostra "Este navegador não está pareado".
 
-- **Neste computador:** rode `node hooks/open-office.mjs` na pasta do escritório. Ele pede um código ao coletor com um pedido assinado pelo segredo e abre o escritório já pareado no navegador padrão. Para outro navegador, copie o endereço que o comando mostra; ele vale uma vez, por 2 minutos.
+- **Neste computador:** rode `node hooks/open-office.mjs` na pasta do escritório. Ele pede um código ao coletor com um pedido assinado pelo segredo e abre o escritório já pareado no navegador padrão, em `http://127.0.0.1:8420`. Para outro navegador, copie o endereço que o comando mostra; ele vale uma vez, por 2 minutos.
+- **Use `127.0.0.1`, não `localhost`.** O cookie vale só para o endereço em que foi recebido. No Windows, `localhost` resolve primeiro para `::1`, onde outro processo pode estar escutando e receberia o código de pareamento e o cookie. Por isso o comando abre o endereço exato em que o coletor escuta.
 - **Em outro aparelho:** num navegador já pareado, clique em **Aparelhos** e depois em **Parear aparelho**. Leia o QR com o outro aparelho ou abra o link nele, também uma vez e por 2 minutos.
 - **Revogar:** em **Aparelhos**, "Revogar" desconecta o aparelho na hora; "Sair deste" desconecta o navegador atual.
 - **Girar o segredo** (`node hooks/install-claude-hooks.mjs --rotate-secret`) é o botão de pânico: invalida todos os aparelhos, os tokens do executor e qualquer hook com o segredo antigo. No Docker, rode `docker compose restart office` depois, porque o arquivo montado não muda dentro do container.

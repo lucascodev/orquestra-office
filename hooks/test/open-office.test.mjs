@@ -29,14 +29,24 @@ function bootstrapAnswer(body, { key = KEY, isSigned = true } = {}) {
 
 const openOffice = (officeUrl, env = {}) => runHookScript(SCRIPT, { env: { OFFICE_URL: officeUrl, ...env }, args: ["--no-open"] });
 
-test("asks the office for a code with a signed request and prints the link at localhost", async (t) => {
+test("asks the office for a code with a signed request and prints the link at the address the collector listens on", async (t) => {
   const office = await startFakeOffice(t, { answer: bootstrapAnswer({ code: CODE, expiresAt: 1, urls: [] }) });
 
   const result = await openOffice(office.url);
 
   assert.equal(result.code, 0);
   assert.equal(office.requests[0].url, "/pairing/bootstrap");
-  assert.match(result.stdout, new RegExp(`^http://localhost:${new URL(office.url).port}/#pair=${CODE}$`, "m"));
+  assert.match(result.stdout, new RegExp(`^http://127\\.0\\.0\\.1:${new URL(office.url).port}/#pair=${CODE}$`, "m"));
+});
+
+test("the link keeps the host of the office address it was given", async (t) => {
+  const office = await startFakeOffice(t, { answer: bootstrapAnswer({ code: CODE, expiresAt: 1, urls: [] }) });
+  const port = new URL(office.url).port;
+
+  const result = await openOffice(`http://localhost:${port}`);
+
+  assert.equal(result.code, 0);
+  assert.match(result.stdout, new RegExp(`^http://localhost:${port}/#pair=${CODE}$`, "m"));
 });
 
 test("an answer signed with another key opens nothing", async (t) => {
