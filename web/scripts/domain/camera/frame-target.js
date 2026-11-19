@@ -9,6 +9,21 @@ const boundsOf = ({ x, z, w, d }, maxY) => ({ minX: x, maxX: x + w, minZ: z, max
 
 export const wholeHeadquartersBounds = (layout) => ({ ...layout.bounds, minY: 0, maxY: layout.yard.flagpole.height + FLAG_ALLOWANCE });
 
+export function projectBounds(layout, projectKey) {
+  const rugs = layout.islands.filter((island) => island.projectKey === projectKey).map((island) => island.rug);
+  if (rugs.length === 0) return null;
+  return {
+    minX: Math.min(...rugs.map((rug) => rug.x)), maxX: Math.max(...rugs.map((rug) => rug.x + rug.w)),
+    minZ: Math.min(...rugs.map((rug) => rug.z)), maxZ: Math.max(...rugs.map((rug) => rug.z + rug.d)),
+    minY: 0, maxY: ISLAND_HEIGHT,
+  };
+}
+
+export function areaBounds(layout, areaId) {
+  const area = layout.areas.find((candidate) => candidate.id === areaId);
+  return area ? boundsOf(area, ROOM_HEIGHT) : null;
+}
+
 export function boundsToFrameAt(layout, point) {
   const island = layout.islands.find((candidate) => contains(candidate.rug, point));
   if (island) return boundsOf(island.rug, ISLAND_HEIGHT);
