@@ -1,3 +1,5 @@
+import { PERSONAL_ACCOUNT, WORK_ACCOUNT } from "./demo-accounts.js";
+
 const MIN = 60_000;
 const HOUR = 60 * MIN;
 const ORQUESTRA = "c:/projetos/orquestra";
@@ -26,6 +28,9 @@ function project(key, name, template, minutesAgo, agents, team = []) {
     agents: Object.fromEntries(agents.map((a) => [a.key, a])),
   };
 }
+
+// The Claude Code sessions of a folder and their subagents run on the account installed there; Codex has no Claude account.
+const onAccount = (account, agents) => agents.map((a) => (a.source === "claude" ? { ...a, accountId: account.id } : a));
 
 const SHOWCASE = "c:/projetos/demo/reacoes";
 const WALKER = "claude:r-walker";
@@ -90,23 +95,23 @@ export function demoState() {
     usage: { updatedAt: Date.now(), rateLimits: { fiveHour: { usedPercentage: 37, resetsAt: Date.now() + 2 * HOUR }, sevenDay: { usedPercentage: 84, resetsAt: Date.now() + 70 * HOUR } } },
     projects: {
       [SHOWCASE]: showcaseProject(),
-      [ORQUESTRA]: project(ORQUESTRA, "orquestra", "startup", 0, [
+      [ORQUESTRA]: project(ORQUESTRA, "orquestra", "startup", 0, onAccount(PERSONAL_ACCOUNT, [
         agent("claude:a1", "Claude Code", "working", did("editing", "office-store.js"), 0),
         sub("claude:a1", "s1", "code-reviewer", "reviewing", did("reading", "server.js"), 1),
         sub("claude:a1", "s2", "security-engineer", "reviewing", did("reading"), 2),
         agent("codex:b1", "Codex", "waiting", did("turn-finished-waiting"), 4, { source: "codex" }),
-      ], ["code-reviewer", "security-engineer", "test-engineer", "tech-writer", "board-keeper"]),
-      "c:/projetos/loja-online": project("c:/projetos/loja-online", "loja-online", "cafe", 3, [
+      ]), ["code-reviewer", "security-engineer", "test-engineer", "tech-writer", "board-keeper"]),
+      "c:/projetos/loja-online": project("c:/projetos/loja-online", "loja-online", "cafe", 3, onAccount(WORK_ACCOUNT, [
         agent("claude:c1", "Claude Code", "needs_you", did("permission-requested", "Bash"), 1),
         sub("claude:c1", "s3", "Explore", "break", did("task-delivered"), 6),
-      ]),
-      "c:/projetos/jogo-de-plataforma": project("c:/projetos/jogo-de-plataforma", "jogo-de-plataforma", "fliperama", 12, [
+      ])),
+      "c:/projetos/jogo-de-plataforma": project("c:/projetos/jogo-de-plataforma", "jogo-de-plataforma", "fliperama", 12, onAccount(PERSONAL_ACCOUNT, [
         agent("claude:d1", "Claude Code", "needs_you", did("asking-question"), 2),
         agent("claude:d2", "Claude Code 2", "blocked", did("api-error"), 15),
-      ]),
-      "c:/projetos/site-institucional": project("c:/projetos/site-institucional", "site-institucional", "jardim", 40, [
+      ])),
+      "c:/projetos/site-institucional": project("c:/projetos/site-institucional", "site-institucional", "jardim", 40, onAccount(WORK_ACCOUNT, [
         agent("claude:e1", "Claude Code", "idle", did("session-closed"), 40),
-      ]),
+      ])),
     },
   };
 }
@@ -125,7 +130,9 @@ function cycleHelper(project, step) {
   const tick = step % HELPER_CYCLE_TICKS;
   const now = Date.now();
   if (tick === 0) {
-    const helper = agent(HELPER_KEY, "test-engineer", "working", did("task-started"), 0, { kind: "subagent", parentKey: "claude:a1", activity: "editing" });
+    const helper = agent(HELPER_KEY, "test-engineer", "working", did("task-started"), 0, {
+      kind: "subagent", parentKey: "claude:a1", activity: "editing", accountId: PERSONAL_ACCOUNT.id,
+    });
     project.agents = { ...project.agents, [HELPER_KEY]: { ...helper, startedAt: now } };
     return;
   }

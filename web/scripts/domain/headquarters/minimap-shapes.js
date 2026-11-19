@@ -3,6 +3,7 @@ import { ISOMETRIC_VIEW, screenToGround } from "../camera/viewpoint.js";
 
 export const MINIMAP_SIZE = { width: 132, height: 84 };
 const NEEDS_YOU = "needs_you";
+const NO_INSETS = { left: 0, right: 0, top: 0, bottom: 0 };
 
 // Seen from above with the back wall on top, the whole map fits the minimap without stretching and is centered in it.
 export function minimapFrame({ minX, maxX, minZ, maxZ }, size = MINIMAP_SIZE) {
@@ -37,8 +38,14 @@ export function minimapShapes(layout, size = MINIMAP_SIZE) {
   return { frame, shapes };
 }
 
-// The four corners of the screen seen on the ground; in the isometric view they make a diamond.
-export function cameraFootprint(viewpoint, viewport, view = ISOMETRIC_VIEW) {
-  const { width, height } = viewport;
-  return [{ x: 0, y: 0 }, { x: width, y: 0 }, { x: width, y: height }, { x: 0, y: height }].map((corner) => screenToGround(viewpoint, corner, viewport, view));
+// The four corners of what the panels leave free on the screen, seen on the ground; in the isometric view they make a diamond.
+export function cameraFootprint(viewpoint, viewport, insets = NO_INSETS, view = ISOMETRIC_VIEW) {
+  const left = insets.left;
+  const right = viewport.width - insets.right;
+  const top = insets.top;
+  const bottom = viewport.height - insets.bottom;
+  const corners = [{ x: left, y: top }, { x: right, y: top }, { x: right, y: bottom }, { x: left, y: bottom }];
+  return corners.map((corner) => screenToGround(viewpoint, corner, viewport, view));
 }
+
+export const minimapFootprint = (frame, viewpoint, viewport, insets = NO_INSETS) => cameraFootprint(viewpoint, viewport, insets).map((corner) => toMinimap(frame, corner));

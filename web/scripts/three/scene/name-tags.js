@@ -1,7 +1,6 @@
 import { THREE } from "../kit.js";
 import { TAG_HEIGHT_ABOVE_HIP } from "../people/people.js";
 
-const NAME_TAG_MAX_WIDTH = 1.2;
 const NAMEPLATE_HEIGHT = 0.75;
 const VIEW_EDGE = 1;
 
@@ -29,24 +28,19 @@ export function createNameTag(key, onPick) {
   return { element: tag, name, title };
 }
 
-// A plate stands where its desk is in its own space (the room or the headquarters); the screen needs the world position.
-export function placeNameplate(plate, { x, z, hipY }, camera, space = null) {
+export function placeNameplate(plate, { x, z, hipY }, camera) {
   anchor.set(x, hipY + NAMEPLATE_HEIGHT, z);
-  if (space) {
-    space.updateWorldMatrix(true, false);
-    space.localToWorld(anchor);
-  }
   const { left, top } = screenPositionOf(camera);
   plate.style.left = left;
   plate.style.top = top;
 }
 
-export function createNameplate(nameplate, camera, space = null) {
+export function createNameplate(nameplate, camera) {
   const plate = document.createElement("span");
   plate.className = "name-tag reserved";
   plate.textContent = nameplate.role;
   plate.title = `Mesa de ${nameplate.role}: ninguém neste papel agora`;
-  placeNameplate(plate, nameplate, camera, space);
+  placeNameplate(plate, nameplate, camera);
   return plate;
 }
 
@@ -60,5 +54,3 @@ export function worldPointOnScreen(point, camera) {
   anchor.set(point.x, point.y, point.z);
   return screenPositionOf(camera);
 }
-
-export const nameTagMaxWidth = (camera) => `${(NAME_TAG_MAX_WIDTH / (camera.right - camera.left)) * 100}%`;

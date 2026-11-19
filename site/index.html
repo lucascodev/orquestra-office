@@ -53,7 +53,7 @@
       </nav>
       <a class="github-link" href="https://github.com/Lucascodev/orquestra-office">
         <svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 19c-4 1.5-4-2-6-2.5M15 21v-3.5c0-1 .1-1.4-.5-2 2.8-.3 5.5-1.4 5.5-6a4.6 4.6 0 0 0-1.3-3.2 4.2 4.2 0 0 0-.1-3.2s-1.1-.3-3.5 1.3a12 12 0 0 0-6.2 0C6.5 2.8 5.4 3.1 5.4 3.1a4.2 4.2 0 0 0-.1 3.2A4.6 4.6 0 0 0 4 9.5c0 4.6 2.7 5.7 5.5 6-.6.6-.6 1.2-.5 2V21"></path></svg>
-        GitHub
+        <span class="github-label">GitHub</span>
       </a>
     </div>
   </div>
@@ -74,14 +74,18 @@
 
 <section class="container demo" id="demo" aria-labelledby="demo-title">
   <figure class="demo-figure">
-    <div class="demo-frame">
+    <div class="demo-frame" data-demo>
       <div class="demo-bar">
         <h2 class="demo-label" id="demo-title"><span class="dot" aria-hidden="true"></span>Demo ao vivo</h2>
         <span class="demo-hint">Roda no navegador, com dados de exemplo</span>
-        <a class="demo-open" href="demo/?modo=demo&amp;vista=sede">Abrir em tela cheia</a>
+        <a class="demo-open" href="demo/?modo=demo&amp;vista=sede" hidden data-demo-live>Abrir em tela cheia</a>
       </div>
-      <a class="skip-link" href="#recursos">Pular a demo</a>
-      <iframe class="demo-view" src="demo/?modo=demo&amp;vista=sede" title="Demonstração do escritório com dados de exemplo" loading="lazy"></iframe>
+      <div class="demo-preview" data-demo-preview>
+        <img class="demo-preview-image" src="assets/sede.png" width="1120" height="680" alt="A Sede vista de cima: o prédio em pixel art com as salas dos projetos e os agentes nas mesas" loading="lazy" decoding="async">
+        <a class="button button-primary demo-preview-open" href="demo/?modo=demo&amp;vista=sede">Abrir a demo em tela cheia</a>
+      </div>
+      <a class="skip-link" href="#recursos" hidden data-demo-live>Pular a demo</a>
+      <iframe class="demo-view" data-demo-src="demo/?modo=demo&amp;vista=sede" title="Demonstração do escritório com dados de exemplo" hidden data-demo-live></iframe>
     </div>
     <figcaption class="demo-caption">Clique num personagem para abrir a ficha com o terminal, o histórico e as aprovações.</figcaption>
   </figure>
@@ -216,7 +220,7 @@
         </div>
         <div class="install-panel" role="tabpanel" id="painel-docker" aria-labelledby="aba-docker" tabindex="0" data-install-way="docker">
 <pre class="shell"><span class="shell-comment"># 1. baixe o projeto</span>
-<span data-command>git clone https://github.com/Lucascodev/orquestra-office</span>
+<span data-command>git clone https://github.com/<wbr>Lucascodev/<wbr>orquestra-office</span>
 <span data-command>cd orquestra-office</span>
 
 <span class="shell-comment"># 2. suba o coletor e instale os hooks</span>

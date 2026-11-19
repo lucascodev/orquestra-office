@@ -22,11 +22,14 @@ export function insetsAroundPanels(viewport, { left = [], right = [], top = [], 
   };
 }
 
-// The request alert sits in the top row between the brand and the accounts: centered on the screen when it fits, slid or narrowed
-// to fit the gap otherwise, and lowered under the row when the gap is too tight to read a command.
+// The request alert sits in the top row between the brand and the accounts: centered on the screen, narrowed around the center
+// while a command still reads, slid or narrowed to fit the gap otherwise, and lowered under the row when even that is too tight.
 export function alertPlacement({ viewportWidth, left = null, right = null }, gap = PANEL_GAP) {
   const from = (left?.right ?? 0) + gap;
   const to = (right?.left ?? viewportWidth) - gap;
+  const center = viewportWidth / 2;
+  const centeredWidth = Math.min(ALERT_WIDTH, 2 * Math.min(center - from, to - center));
+  if (centeredWidth >= MIN_ALERT_WIDTH) return { isLowered: false, left: center - centeredWidth / 2, width: centeredWidth };
   const width = Math.min(ALERT_WIDTH, to - from);
   if (width < MIN_ALERT_WIDTH) return { isLowered: true, left: null, width: null };
   const centered = (viewportWidth - width) / 2;

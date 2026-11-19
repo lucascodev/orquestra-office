@@ -1,0 +1,5 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Relatar uma falha de segurança (Report a vulnerability)
+    url: https://github.com/lucascodev/orquestra-office/security/advisories/new
+    about: Relato privado pelo GitHub. Não abra issue pública para falha de segurança.

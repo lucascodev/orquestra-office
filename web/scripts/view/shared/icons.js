@@ -1,5 +1,4 @@
 const PATHS = {
-  back: `<path d="M15 6l-6 6 6 6"/>`,
   close: `<path d="M6 6l12 12M18 6L6 18"/>`,
   plus: `<path d="M12 5v14M5 12h14"/>`,
   stop: `<rect x="7" y="7" width="10" height="10" rx="1"/>`,

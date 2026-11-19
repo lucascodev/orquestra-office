@@ -1,3 +1,5 @@
+import { PERSONAL_ACCOUNT, WORK_ACCOUNT } from "./demo-accounts.js";
+
 const MIN = 60_000;
 const HOUR = 60 * MIN;
 const FIRST_HOUR = 8;
@@ -44,8 +46,8 @@ function demoAccounts(now) {
     sevenDay: { usedPercentage: sevenDay, resetsAt: now + 70 * HOUR },
   });
   return {
-    "1a2b3c4d5e6f": { id: "1a2b3c4d5e6f", label: "Pessoal", rateLimits: reading(37, 84), updatedAt: now },
-    "6f5e4d3c2b1a": { id: "6f5e4d3c2b1a", label: "Trabalho", rateLimits: reading(12, 41), updatedAt: now },
+    [PERSONAL_ACCOUNT.id]: { ...PERSONAL_ACCOUNT, rateLimits: reading(37, 84), updatedAt: now },
+    [WORK_ACCOUNT.id]: { ...WORK_ACCOUNT, rateLimits: reading(12, 41), updatedAt: now },
   };
 }
 

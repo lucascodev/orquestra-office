@@ -1,0 +1,23 @@
+<header class="panel-head sheet-head hq-drawer-head">
+      <div class="sheet-identity" data-slot="identity"></div>
+      <button type="button" class="icon-btn" data-close aria-label="Fechar a ficha" title="Fechar a ficha (Esc)"><svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+    </header>
+    <div class="sheet-body hq-drawer-body">
+      <section class="hq-island-part" aria-labelledby="hq-island-team-title">
+        <h3 class="hq-heading" id="hq-island-team-title">Quem está nesta ilha</h3>
+        <ul class="hq-island-team" data-slot="team"></ul>
+      </section>
+      <section class="hq-island-part" aria-labelledby="hq-island-day-title">
+        <h3 class="hq-heading" id="hq-island-day-title">Hoje nesta ilha</h3>
+        <dl class="hq-island-day" data-slot="day"></dl>
+      </section>
+      <fieldset class="hq-island-part hq-theme-picker">
+        <legend class="hq-heading">Tema da ilha</legend>
+        <div class="hq-theme-grid"><label class="hq-theme"><input type="radio" name="island-theme" value="startup"><span class="hq-swatch" style="--swatch:#b4bcd8;--swatch-edge:#8f9bc4" aria-hidden="true"></span>Laboratório</label><label class="hq-theme"><input type="radio" name="island-theme" value="cafe"><span class="hq-swatch" style="--swatch:#a9c2a0;--swatch-edge:#9a6a44" aria-hidden="true"></span>Café</label><label class="hq-theme"><input type="radio" name="island-theme" value="biblioteca"><span class="hq-swatch" style="--swatch:#a35458;--swatch-edge:#5a3a24" aria-hidden="true"></span>Biblioteca</label><label class="hq-theme"><input type="radio" name="island-theme" value="garagem"><span class="hq-swatch" style="--swatch:#7d8594;--swatch-edge:#3e4148" aria-hidden="true"></span>Garagem</label><label class="hq-theme"><input type="radio" name="island-theme" value="estacao"><span class="hq-swatch" style="--swatch:#5f6f98;--swatch-edge:#8fd8ff" aria-hidden="true"></span>Estação espacial</label><label class="hq-theme"><input type="radio" name="island-theme" value="jardim"><span class="hq-swatch" style="--swatch:#dfc08f;--swatch-edge:#c9a878" aria-hidden="true"></span>Jardim</label><label class="hq-theme"><input type="radio" name="island-theme" value="fliperama"><span class="hq-swatch" style="--swatch:#40308a;--swatch-edge:#6a4fd0" aria-hidden="true"></span>Fliperama</label></div>
+      </fieldset>
+      <div class="hq-drawer-actions">
+        <button type="button" class="btn btn-sm btn-secondary" data-new-session-here hidden>Nova sessão nesta pasta</button>
+        <button type="button" class="btn btn-sm btn-ghost" data-close-room>Fechar sala</button>
+      </div>
+      <p class="muted hq-drawer-note">Fechar tira a ilha do mapa. Ela volta sozinha quando uma sessão desta pasta trabalhar de novo.</p>
+    </div>

@@ -1,12 +1,12 @@
 # Escritórios dos agentes
 
-Um escritório em pixel art para cada projeto em que você abre o Claude Code ou o Codex. Cada sessão senta numa mesa, os subagentes sentam ao lado dela, e o boneco mostra o que está acontecendo: digitando, lendo, pedindo sua permissão, esperando você, em pausa ou bloqueado.
+Uma sede em pixel art onde cada projeto em que você abre o Claude Code ou o Codex ganha uma ilha de mesas. Cada sessão senta numa mesa, os subagentes sentam ao lado dela, e o boneco mostra o que está acontecendo: digitando, lendo, pedindo sua permissão, esperando você, em pausa ou bloqueado.
 
 ## O que dá para fazer
 
 | No escritório | Claude Code | Codex |
 |---|---|---|
-| Personagem e sala por projeto | sim | sim |
+| Personagem e ilha por projeto | sim | sim |
 | Atividade ao vivo | sim | só o fim de cada turno |
 | Aprovar ou recusar um pedido de permissão | sim | não |
 | Responder perguntas do agente | sim | não |
@@ -16,9 +16,9 @@ Um escritório em pixel art para cada projeto em que você abre o Claude Code ou
 | Uso de 5 h e semanal | sim | não |
 | Tokens e custo do dia | sim | não |
 
-Clique num personagem, ou no nome dele na lista "Quem está aqui", para abrir a ficha. É nela que ficam os botões de aprovar e recusar, as opções de resposta, a caixa de mensagem e o histórico.
+Clique num personagem, ou no nome dele na ficha da ilha ou na busca (`Ctrl K`), para abrir a ficha do agente, numa gaveta à direita do mapa. É nela que ficam as opções de resposta, a caixa de mensagem e o histórico. Os pedidos de permissão aparecem também no aviso no alto da tela, com "Permitir" e "Negar".
 
-Para alargar o painel lateral, passe o mouse na borda esquerda dele e arraste. A largura fica guardada no navegador; duplo clique na borda volta ao padrão, e com o foco na borda as setas também mudam a largura.
+Para alargar a gaveta, passe o mouse na borda esquerda dela e arraste. A largura fica guardada no navegador; duplo clique na borda volta ao padrão, e com o foco na borda as setas também mudam a largura.
 
 ### Terminal da ficha
 
@@ -35,14 +35,15 @@ Para alargar o painel lateral, passe o mouse na borda esquerda dele e arraste. A
 - O Claude Code manda cada evento para ele pelos hooks configurados no `~/.claude/settings.json` (vale para todos os projetos). A atividade vai pelo `curl` do sistema, em segundo plano, sem atrasar as ferramentas. Pedidos de permissão, perguntas e o fim do turno passam por `hooks/office-decision.mjs`, que assina o pedido e só aceita uma resposta assinada pelo coletor.
 - O Codex manda um aviso no fim de cada turno pelo `notify` do `~/.codex/config.toml`. O Codex só avisa o fim do turno, então aparece com menos detalhe que o Claude Code.
 - Hooks, coletor e executor se reconhecem por um segredo que o instalador cria em `~/.orquestra-office/secret`. Cada navegador que abre o escritório precisa estar pareado (veja [Parear navegadores e aparelhos](#parear-navegadores-e-aparelhos)).
-- O projeto é a pasta onde a sessão começou. Cada projeto novo ganha um escritório próprio em pixel art visto de cima, com um dos 7 temas (Laboratório, Café, Biblioteca, Garagem, Estação espacial, Jardim, Fliperama). Dá para trocar o modelo na própria página.
-- O escritório tem ilhas de baias de até 6 lugares (as sessões e seus subagentes sentam juntos, e os lugares livres ficam à vista), sala de reunião, lounge, copa e arquivo. Cada pessoa leva uma etiqueta com o nome, o título e a cor do status.
+- O projeto é a pasta onde a sessão começou. Todos os projetos dividem a mesma Sede, um escritório térreo aberto visto de cima, e cada projeto ganha uma ilha de 6 lugares na área de trabalho (um projeto com mais gente ganha mais de uma ilha). As sessões e seus subagentes sentam juntos, e os lugares livres ficam à vista.
+- Cada ilha tem um dos 7 temas (Laboratório, Café, Biblioteca, Garagem, Estação espacial, Jardim, Fliperama), que pinta o tapete, as mesas e as cadeiras dela. O tema se escolhe na ficha da ilha, aberta pelo nome do projeto na lista de salas ou com um clique na ilha.
+- Em volta das ilhas ficam as áreas comuns, de todos os projetos: sala de reuniões, copa, sala de jogos, lounge e recepção, e o quintal na frente do prédio. Cada pessoa leva uma etiqueta com o nome, o título e a cor do status, e quem tem mensagens na fila mostra quantas na etiqueta e na ficha da ilha.
 - A interface segue o Orquestra Design System: os mesmos tokens de cor, tipografia, espaço e raio (`web/styles/tokens.css`), status sempre com glifo e texto, e o painel de terminal do app.
 - Uma sessão aberta num worktree entra no escritório do repositório principal, e os papéis definidos em `.claude/agents` do projeto ganham mesa com o nome mesmo quando ninguém está no papel. Só os nomes dos arquivos são lidos.
 
 ### Vida no escritório
 
-O boneco reage ao que o agente está fazendo e se move pela sala.
+O boneco reage ao que o agente está fazendo e se move pela Sede.
 
 | O agente está | O boneco |
 |---|---|
@@ -59,22 +60,21 @@ O boneco reage ao que o agente está fazendo e se move pela sala.
 | acabou de terminar o turno | recosta na cadeira por alguns segundos, com o balão de visto |
 | em pausa ou esperando sua resposta | levanta e vai tomar café na copa, depois segue a rotina de tempo livre |
 | livre | vai para o sofá do lounge, depois segue a rotina de tempo livre |
-| encerrado | sai pela porta |
+| encerrado | sai pela porta da frente |
 
 **Quem trabalha fica sentado.** Só o tempo livre tira alguém da cadeira. Se chega trabalho para quem está longe da mesa, a pessoa volta apressada. Se as mesas mudam de lugar (um subagente entra ou sai), quem estava sentado já aparece na mesa nova, sem levantar.
 
-Quem está em pausa, esperando sua resposta ou livre não fica parado. Depois de recostar um pouco na mesa, cada um troca de atividade a cada 30 a 55 segundos, num ritmo e numa ordem próprios e sem dois ocuparem o mesmo lugar:
+Quem está em pausa, esperando sua resposta ou livre não fica parado. Depois de recostar um pouco na mesa, cada um troca de atividade a cada 30 a 55 segundos, num ritmo e numa ordem próprios e sem dois ocuparem o mesmo lugar, mesmo sendo de projetos diferentes:
 
 - tomar café na copa ou água no bebedouro;
-- olhar pela janela;
-- procurar um livro na estante ou uma pasta no arquivo;
-- tirar cópias na copiadora;
-- escrever no quadro da sala de reunião ou sentar à mesa de reunião;
-- regar as plantas;
+- olhar pela janela da copa;
+- escrever no quadro da sala de reuniões ou sentar à mesa de reunião;
+- jogar pingue-pongue ou fliperama na sala de jogos, ou descansar no pufe;
 - cochilar no sofá do lounge;
+- regar as plantas;
 - alongar na própria mesa, quando todos os lugares estão ocupados.
 
-As atividades disponíveis dependem do que o tema tem na sala: um tema sem estante não tem a atividade da estante. Quem precisa de você ou está bloqueado continua na mesa.
+As atividades são as mesmas para todos os projetos, qualquer que seja o tema da ilha. Quem precisa de você ou está bloqueado continua na mesa.
 
 Cada pessoa tem um temperamento próprio, fixo pelo agente: quanto tempo fica sentada depois de terminar, de quanto em quanto tempo troca de atividade, a velocidade do passo, o ritmo da digitação e do piscar. Por isso ninguém se move em sincronia com o colega ao lado. Além disso:
 
@@ -88,11 +88,11 @@ Os bonecos conversam entre si, com balão de fala e falando um de cada vez, vira
 
 - **Delegação.** Quando um subagente começa, o agente principal se vira para ele e passa a tarefa ("Bia, pode pegar essa pra mim?"), e o subagente responde. Os dois continuam sentados, porque estão trabalhando.
 - **Entrega.** Quando o subagente termina, ele leva o resultado em mãos até a mesa do agente principal, avisa que está pronto, ouve o agradecimento e só então sai pela porta. Se o agente principal não estiver na mesa, o subagente vai direto embora.
-- **Papo no tempo livre.** Quem está livre e para perto de outra pessoa (no café, no sofá, na janela) puxa conversa. O papo continua enquanto estiverem juntos, mudando de assunto de tempos em tempos.
+- **Papo no tempo livre.** Quem está livre e para perto de outra pessoa na mesma área (no café, no sofá, na sala de jogos) puxa conversa, inclusive com gente de outro projeto. Uma divisória separa as conversas: quem está na copa não conversa com quem está na sala de jogos, mesmo encostado na parede. O papo continua enquanto estiverem juntos, mudando de assunto de tempos em tempos.
 
 Quem está conversando não mostra balão de pensamento.
 
-Quem chega depois que a sala já está aberta entra pela porta e anda até a mesa. Todos caminham pelos corredores, sem atravessar as mesas. Com "reduzir movimento" ligado no sistema, ninguém anda: cada um aparece direto no lugar.
+Quem chega depois que a Sede já está aberta entra pela recepção e anda até a mesa. Todos caminham pelos corredores, sem atravessar paredes, divisórias, ilhas ou móveis. Com "reduzir movimento" ligado no sistema, ninguém anda: cada um aparece direto no lugar.
 
 ### Abrir sessões pelo escritório
 
@@ -102,7 +102,7 @@ Hooks só observam uma sessão que você abriu no terminal. Para ter terminal ao
 node runner/src/main.js
 ```
 
-Com ele ligado, a página mostra "Abrir sessão…". Você informa a pasta do projeto e a primeira mensagem, e o executor abre o Claude Code nessa pasta em modo de fluxo. Na ficha do agente aparecem o terminal ao vivo (o texto chega enquanto o agente escreve), "Interromper" e "Encerrar sessão". As permissões dessas sessões chegam ao escritório como as de qualquer outra.
+Com ele ligado, a página mostra "Nova sessão" no alto e na ficha de cada ilha. Você informa a pasta do projeto e a primeira mensagem, e o executor abre o Claude Code nessa pasta em modo de fluxo. Na ficha do agente aparecem o terminal ao vivo (o texto chega enquanto o agente escreve), "Interromper" e "Encerrar sessão". As permissões dessas sessões chegam ao escritório como as de qualquer outra.
 
 - É o Claude Code em modo não interativo, não a tela do terminal: não há comandos de barra nem a interface do Claude Code, só a conversa.
 - O executor escuta em `127.0.0.1:8421` e só atende quem traz um token dele. A página pareada consegue o token sozinha: pede um desafio ao executor, o coletor assina o desafio com o segredo e o executor troca a assinatura por um token de 12 horas. Um processo qualquer da máquina, sem o segredo, não abre sessão nem manda mensagem. Variáveis: `OFFICE_RUNNER_PORT`, `OFFICE_ORIGINS`, `CLAUDE_BIN`, `OFFICE_RUNNER_MODEL` e `OFFICE_SECRET_FILE` (padrão `~/.orquestra-office/secret`).
@@ -126,8 +126,8 @@ Nas sessões abertas pelo escritório, a mensagem chega na hora. Nas sessões qu
 
 O Claude Code só entrega esses números para a linha de status do terminal. O instalador configura a linha de status do escritório (`hooks/office-statusline.mjs`), que repassa os números ao coletor e mostra no terminal o modelo, o uso das janelas de 5 h e semanal e o custo da sessão.
 
-- As janelas de 5 h e semanal aparecem no topo da página. Elas só existem para assinantes do claude.ai e depois da primeira resposta da sessão.
-- "Tokens hoje" e "custo hoje" são por projeto e contam o que foi gasto com o escritório ligado. O custo é a estimativa do próprio Claude Code, a preço de tabela.
+- As janelas de 5 h e semanal aparecem no canto de cima da página, um anel por conta. Elas só existem para assinantes do claude.ai e depois da primeira resposta da sessão.
+- Os tokens e o custo do dia ficam em "Hoje nesta ilha", na ficha de cada ilha, e contam o que foi gasto com o escritório ligado. O custo é a estimativa do próprio Claude Code, a preço de tabela.
 - Se você já tem uma linha de status sua, o instalador não mexe nela e avisa. Sem a linha de status do escritório, esses números ficam vazios.
 
 ## O que fica guardado
@@ -237,7 +237,7 @@ A página não tem etapa de build: as bibliotecas ficam copiadas em `web/vendor`
 
 | Biblioteca | Versão | Para quê |
 |---|---|---|
-| three.js | r187 | a sala em 3D |
+| three.js | r187 | a Sede em 3D |
 | marked | 18.1.3 | markdown das respostas no terminal |
 | DOMPurify | 3.4.17 | limpar o HTML gerado do markdown antes de mostrar |
 | highlight.js | 11.12.0 (build ES do `@highlightjs/cdn-assets`) | cores de sintaxe |

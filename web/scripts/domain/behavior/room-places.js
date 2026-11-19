@@ -1,7 +1,7 @@
 import {
   AT_DESK_WITH_NOTHING_TO_DO, busyReactionOf, freeTimePreferences, freeTimeReaction, HANDING_OVER, isHandingOver, isWindingDown, JUST_FINISHED,
 } from "./agent-reactions.js";
-import { besideDeskStop, roomSpots } from "../room/room-spots.js";
+import { besideDeskStop } from "../room/room-spots.js";
 
 const NO_PREVIOUS = new Map();
 
@@ -99,8 +99,4 @@ export function placeAgents({ agents, now, spots, freeSince, previous = NO_PREVI
     if (handoff) places.set(agent.key, handoff);
   }
   return places;
-}
-
-export function assignPlaces(agents, now, layout, freeSince) {
-  return placeAgents({ agents, now, spots: roomSpots(layout), freeSince });
 }

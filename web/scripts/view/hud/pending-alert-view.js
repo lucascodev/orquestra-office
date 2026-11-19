@@ -26,6 +26,11 @@ export function arrivalsText(arrivals) {
   return `${arrivals.length} pedidos novos. ${arrivalText(first.requester, first.intent)}`;
 }
 
+export function requestsButtonLabel(count) {
+  if (count === 0) return "Pedidos: nenhum esperando você";
+  return count === 1 ? "Pedidos: 1 esperando você" : `Pedidos: ${count} esperando você`;
+}
+
 export const warningText = (requester) => `Faltam 30 segundos para o pedido de ${whoOf(requester)} voltar ao terminal.`;
 
 function stepButtons({ previousId, nextId, total }) {

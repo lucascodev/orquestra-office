@@ -1,7 +1,7 @@
 import { teamsOf } from "../room/desk-islands.js";
 import { ISLAND_SEATS } from "./island-grid.js";
 
-// Creation order and not sortedProjects: that one moves projects up when they need you, and the islands would jump around.
+// Creation order, never urgency: an island that moved whenever its project needed you would make the whole map jump around.
 const byCreation = (a, b) => (a.createdAt ?? 0) - (b.createdAt ?? 0) || a.key.localeCompare(b.key);
 const byStart = (a, b) => a.startedAt - b.startedAt || a.key.localeCompare(b.key);
 
