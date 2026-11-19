@@ -1,0 +1,62 @@
+name: Sugerir uma funcionalidade
+description: Uma ideia nova ou uma melhoria no que já existe. (Suggest a feature.)
+title: "[ideia] "
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Obrigado pela sugestão. Issues em inglês também são bem-vindas (English is fine).
+
+        Antes de abrir, procure nas issues abertas e fechadas para ver se a ideia já apareceu. Lembre que esta issue é pública: não cole segredo, configuração real nem texto das suas sessões.
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: Qual problema isso resolve
+      description: O que você tenta fazer hoje e onde o escritório atrapalha ou não ajuda.
+      placeholder: Quando tenho três sessões pedindo permissão ao mesmo tempo, não sei qual chegou primeiro.
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposal
+    attributes:
+      label: O que você propõe
+      description: Como seria o comportamento, do ponto de vista de quem usa.
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternativas que você considerou
+    validations:
+      required: false
+
+  - type: dropdown
+    id: component
+    attributes:
+      label: Parte envolvida
+      multiple: true
+      options:
+        - Página do escritório (web)
+        - Coletor (porta 8420)
+        - Executor (127.0.0.1:8421)
+        - Hooks do Claude Code
+        - Notify do Codex
+        - Landing
+        - Não sei
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: constraints
+    attributes:
+      label: Restrições do projeto
+      description: Veja o [CONTRIBUTING.md](https://github.com/lucascodev/orquestra-office/blob/main/CONTRIBUTING.md).
+      options:
+        - label: Entendo que o projeto não usa dependências npm e que a página não tem etapa de build.
+          required: true
+        - label: Posso abrir um pull request com essa mudança.
+          required: false
