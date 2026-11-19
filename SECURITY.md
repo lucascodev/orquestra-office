@@ -1,91 +1,91 @@
-# Política de segurança
+**English** | [Português (Brasil)](SECURITY.pt-BR.md)
 
-> **English.** Only the `main` branch is supported; there are no released versions yet. Report vulnerabilities privately through GitHub: open the **Security** tab of this repository and click **Report a vulnerability** ([direct link](https://github.com/lucascodev/orquestra-office/security/advisories/new)). Do not open a public issue. In scope: the hook installers that write to your Claude Code and Codex configuration, the collector on port 8420, permission decisions, device pairing and the hook authentication design, and the runner on `127.0.0.1:8421`. The threat model is summarized below and detailed in [ADR 0002](docs/adr/0002-autenticacao-hooks-e-painel.md).
+# Security policy
 
-O Orquestra Office roda na sua máquina e mexe em coisas sensíveis: grava na configuração do Claude Code e do Codex, recebe comandos e respostas das ferramentas, e decide pedidos de permissão em nome de quem usa. Este documento diz o que é suportado, como relatar uma falha e o que conta como falha.
+Orquestra Office runs on your machine and handles sensitive things: it writes to your Claude Code and Codex configuration, receives commands and tool output, and decides permission requests on behalf of its user. This document says what is supported, how to report a vulnerability and what counts as one.
 
-## Versões suportadas
+## Supported versions
 
-| Versão | Suportada |
+| Version | Supported |
 |---|---|
-| `main` | sim |
-| qualquer outra branch, fork ou cópia antiga | não |
+| `main` | yes |
+| any other branch, fork or old copy | no |
 
-O projeto ainda não tem versão publicada. A correção de uma falha entra na `main`, e quem usa atualiza a pasta e roda de novo os comandos de instalação do [README](README.md).
+The project has no released version yet. A fix lands on `main`, and users update their folder and run the install commands from the [README](README.md#install) again.
 
-## Como relatar
+## Reporting a vulnerability
 
-Use o relato privado de vulnerabilidade do GitHub:
+Use GitHub's private vulnerability reporting:
 
-1. Abra a aba **Security** do repositório [lucascodev/orquestra-office](https://github.com/lucascodev/orquestra-office).
-2. Clique em **Report a vulnerability** ([link direto](https://github.com/lucascodev/orquestra-office/security/advisories/new)).
-3. Preencha o relato. Ele fica visível só para você e para o mantenedor.
+1. Open the **Security** tab of the [lucascodev/orquestra-office](https://github.com/lucascodev/orquestra-office) repository.
+2. Click **Report a vulnerability** ([direct link](https://github.com/lucascodev/orquestra-office/security/advisories/new)).
+3. Fill in the report. Only you and the maintainer can see it.
 
-Não abra issue pública, pull request nem comentário sobre uma falha que ainda não foi corrigida. O projeto não tem canal de e-mail.
+Do not open a public issue, pull request or comment about a vulnerability that has not been fixed yet. The project has no email channel.
 
-Ajuda muito trazer:
+It helps a lot to include:
 
-- o componente afetado (hooks, coletor, executor, página) e o commit da `main` que você testou;
-- sistema operacional, versão do Node e se o coletor roda no Docker ou direto pelo Node;
-- os passos para reproduzir, de preferência com um comando ou script mínimo;
-- o impacto: o que quem ataca precisa ter (outra página no navegador, um aparelho na rede, outro usuário da máquina) e o que consegue fazer.
+- the affected component (hooks, collector, runner, page) and the `main` commit you tested;
+- operating system, Node version and whether the collector runs in Docker or directly with Node;
+- steps to reproduce, ideally with a minimal command or script;
+- the impact: what the attacker needs (another page in the browser, a device on the network, another user on the machine) and what they can do.
 
-Não mande segredo real, conteúdo do seu `settings.json` nem texto de sessões no relato. Dados fictícios bastam para reproduzir.
+Do not send real secrets, the contents of your `settings.json` or session text in the report. Fictional data is enough to reproduce.
 
-### O que esperar
+### What to expect
 
-O projeto é mantido por uma pessoa, então não há prazo garantido. A meta é confirmar o recebimento em até 7 dias e combinar com você, no próprio relato, a correção e a data de divulgação. Quando a correção entra na `main`, o aviso de segurança é publicado no repositório, com crédito a quem relatou, se você quiser.
+The project is maintained by one person, so there is no guaranteed deadline. The goal is to acknowledge the report within 7 days and to agree with you, in the report itself, on the fix and the disclosure date. When the fix lands on `main`, a security advisory is published in the repository, crediting the reporter if you wish.
 
-## Escopo
+## Scope
 
-Contam como falha de segurança, entre outras:
+These count as security vulnerabilities, among others:
 
-- **Hooks e instaladores** (`hooks/`). Os instaladores gravam no `settings.json` do Claude Code e no `config.toml` do Codex, fazem backup e anotam o que gravaram em `orquestra-office.json`. Exemplos: o instalador apagar ou alterar um hook que não é do escritório, gravar um comando que o shell interpreta, expor o backup (que pode ter tokens do `env`) a outro usuário, ou um hook gravado executar algo plantado no repositório aberto.
-- **Coletor** (porta 8420). Recebe os eventos dos hooks, guarda o estado e serve a página e a API. Exemplos: outra página aberta no navegador ler ou alterar o estado, um dado que deveria ficar só na memória ir para o disco, um corpo de requisição derrubar o processo, ou o coletor ficar acessível fora de `127.0.0.1` sem o modo LAN ligado.
-- **Decisões de permissão.** O coletor segura pedidos de permissão, perguntas do agente e mensagens que entram no fim do turno. Exemplos: aprovar um pedido sem ser quem usa o escritório, reescrever o comando que o agente pediu, gravar regra de permissão ou trocar o modo de permissão do Claude Code, ou injetar texto com o rótulo de mensagem do usuário.
-- **Pareamento e autenticação dos hooks**, como desenhados no [ADR 0002](docs/adr/0002-autenticacao-hooks-e-painel.md): assinatura HMAC entre hooks e coletor, cookie de aparelho pareado em `/api/*`, códigos de pareamento de uso único e rotação do segredo. Falha no desenho também conta.
-- **Executor** (`127.0.0.1:8421`). Abre sessões do Claude Code em modo de fluxo. Exemplos: um processo ou página que não é o escritório abrir sessão, mandar mensagem, interromper ou encerrar uma sessão.
-- **Uso das bibliotecas copiadas em `web/vendor`** de um jeito que abra uma falha, por exemplo HTML de uma resposta do agente que chega à página sem passar pelo DOMPurify.
+- **Hooks and installers** (`hooks/`). The installers write to Claude Code's `settings.json` and Codex's `config.toml`, back them up and record what they wrote in `orquestra-office.json`. Examples: the installer deleting or changing a hook that is not the office's, writing a command the shell interprets, exposing the backup (which may hold tokens from `env`) to another user, or a written hook running something planted in the open repository.
+- **Collector** (port 8420). It receives hook events, keeps the state and serves the page and the API. Examples: another page open in the browser reading or changing the state, data that should stay in memory reaching the disk, a request body crashing the process, or the collector being reachable outside `127.0.0.1` without LAN mode turned on.
+- **Permission decisions.** The collector holds permission requests, agent questions and messages delivered at the end of a turn. Examples: approving a request without being the office's user, rewriting the command the agent asked for, saving a permission rule or changing Claude Code's permission mode, or injecting text labeled as a user message.
+- **Pairing and hook authentication**, as designed in [ADR 0002](docs/adr/0002-autenticacao-hooks-e-painel.md) (in Portuguese): HMAC signatures between hooks and collector, the paired-device cookie on `/api/*`, single-use pairing codes and secret rotation. Flaws in the design count too.
+- **Runner** (`127.0.0.1:8421`). It opens Claude Code sessions in streaming mode. Examples: a process or page that is not the office opening a session, sending a message, interrupting or ending a session.
+- **Use of the libraries copied into `web/vendor`** in a way that opens a vulnerability, for example HTML from an agent reply reaching the page without going through DOMPurify.
 
-## Modelo de ameaça
+## Threat model
 
-Resumo da seção 1.4 do [ADR 0002](docs/adr/0002-autenticacao-hooks-e-painel.md). O princípio: **o escritório não pode dar a ninguém, nem ao próprio agente, um poder que o Claude Code ainda não deu.**
+A summary of section 1.4 of [ADR 0002](docs/adr/0002-autenticacao-hooks-e-painel.md). The principle: **the office must not give anyone, not even the agent itself, a power that Claude Code has not already given.**
 
-Quem está no modelo:
+In the model:
 
-1. outra página aberta no navegador;
-2. outro aparelho na rede local;
-3. outro usuário do sistema, ou um processo dele, inclusive ocupando a porta 8420 com o coletor parado;
-4. o caminho de rede até um `OFFICE_URL` remoto;
-5. o próprio agente usando um comando já liberado (por exemplo `curl`) para conseguir um poder que o Claude Code não deu a ele, como aprovar os próprios pedidos.
+1. another page open in the browser;
+2. another device on the local network;
+3. another user of the system, or one of their processes, including one holding port 8420 while the collector is stopped;
+4. the network path to a remote `OFFICE_URL`;
+5. the agent itself using an already allowed command (for example `curl`) to gain a power Claude Code did not give it, such as approving its own requests.
 
-### Situação na `main`
+### Status on `main`
 
-A fase S do ADR 0002 está na `main`.
+Phase S of ADR 0002 is on `main`.
 
-- **Segredo.** O instalador cria `~/.orquestra-office/secret`, legível só pelo dono no macOS e no Linux, e nunca o sobrescreve sem `--rotate-secret`. O coletor lê o mesmo arquivo, montado como `secret` do Compose no Docker. Girar o segredo invalida os aparelhos pareados, os tokens do executor e os hooks com a chave antiga.
-- **Hooks.** Nenhum hook do escritório é do tipo `http`. A atividade vai pelo `curl` do sistema, sem shell, com um token de portador lido de um arquivo, que só vale nas rotas de atividade. Permissão, pergunta e fim do turno passam por `hooks/office-decision.mjs`, que assina o pedido com HMAC-SHA256 e só aceita resposta assinada com a mesma chave e ligada ao nonce do pedido. Sem essa resposta, o pedido vai para o terminal. O script nunca devolve `updatedPermissions`, `additionalContext` nem `interrupt`, e só devolve `updatedInput` para `AskUserQuestion`, montado com as perguntas que ele mesmo recebeu.
-- **Hooks antigos.** Um pedido sem token ou sem assinatura recebe `200 {}`, não registra, segura nem entrega nada, e acende na página o aviso de hooks de uma versão antiga. Token ou assinatura errados recebem `401`.
-- **Painel.** Todo `/api/*` exige o cookie de um aparelho pareado (`HttpOnly`, `SameSite=Strict`, `Path=/api`), também em `127.0.0.1`. O primeiro navegador é pareado por `node hooks/open-office.mjs`, que pede um desafio de uso único (30 segundos) e um código de uso único (2 minutos) com pedidos assinados. Os outros aparelhos são pareados por QR ou link de uso único, gerado num aparelho já pareado. O disco guarda só o hash do cookie, e só uma página pareada conta como espectador e segura pedidos.
-- **Executor.** Todo pedido, menos `/health`, exige um token de 12 horas, que a página obtém trocando um desafio de uso único assinado pelo coletor.
-- **Coletor.** Escuta só em `127.0.0.1` por padrão, e o `compose.yaml` publica a porta só nesse endereço. Confere `Host` contra DNS rebinding, recusa leitura e ação vindas de outro site (`Sec-Fetch-Site` e `Origin`) e ação sem `Origin`, impede que outra página enquadre o escritório (`frame-ancestors`), limita o tamanho do corpo e o número de espectadores.
-- **Endereço.** Os hooks só aceitam um endereço desta máquina, e `localhost` vira `127.0.0.1`. O endereço fica gravado no comando de cada hook; nenhum deles lê `OFFICE_URL` durante a sessão. Endereço remoto exige `--allow-remote-office` e `https://`.
-- **Instaladores.** Gravam de forma atômica, mexem só no que o escritório gravou e recusam uma pasta com caractere que o shell interpreta.
+- **Secret.** The installer creates `~/.orquestra-office/secret`, readable only by its owner on macOS and Linux, and never overwrites it without `--rotate-secret`. The collector reads the same file, mounted as a Compose `secret` in Docker. Rotating the secret invalidates paired devices, runner tokens and hooks holding the old key.
+- **Hooks.** No office hook is of type `http`. Activity goes through the system `curl`, without a shell, with a bearer token read from a file that is only valid on the activity routes. Permission requests, questions and the end of a turn go through `hooks/office-decision.mjs`, which signs the request with HMAC-SHA256 and only accepts a reply signed with the same key and bound to the request's nonce. Without that reply, the request goes to the terminal. The script never returns `updatedPermissions`, `additionalContext` or `interrupt`, and only returns `updatedInput` for `AskUserQuestion`, built from the questions it received itself.
+- **Old hooks.** A request without a token or signature gets `200 {}`, records, holds and delivers nothing, and turns on the old-hooks warning in the page. A wrong token or signature gets `401`.
+- **Panel.** Every `/api/*` route requires the cookie of a paired device (`HttpOnly`, `SameSite=Strict`, `Path=/api`), on `127.0.0.1` too. The first browser is paired by `node hooks/open-office.mjs`, which asks for a single-use challenge (30 seconds) and a single-use code (2 minutes) with signed requests. Other devices are paired with a single-use QR code or link, generated on a device that is already paired. The disk only keeps the cookie's hash, and only a paired page counts as a viewer and holds requests.
+- **Runner.** Every request except `/health` requires a 12-hour token, which the page gets by exchanging a single-use challenge signed by the collector.
+- **Collector.** It listens only on `127.0.0.1` by default, and `compose.yaml` publishes the port only on that address. It checks `Host` against DNS rebinding, refuses reads and actions from another site (`Sec-Fetch-Site` and `Origin`) and actions without `Origin`, prevents other pages from framing the office (`frame-ancestors`), and limits the body size and the number of viewers.
+- **Address.** Hooks only accept an address on this machine, and `localhost` becomes `127.0.0.1`. The address is written into each hook's command; none of them reads `OFFICE_URL` during the session. A remote address requires `--allow-remote-office` and `https://`.
+- **Installers.** They write atomically, only touch what the office wrote and refuse a folder with characters the shell interprets.
 
-Limites conhecidos, registrados no ADR 0002:
+Known limits, recorded in ADR 0002:
 
-- O coletor lembra os nonces só enquanto está de pé. Quem capturou um pedido assinado de `Stop`, permissão ou pergunta, ocupando a porta com o coletor parado, consegue repeti-lo depois: esvazia a fila de mensagens daquela sessão ou cria um pedido pendente falso, sem decidir nada em sessão nenhuma. O bootstrap do pareamento não tem esse problema, porque exige um desafio de uso único.
-- No modo LAN, que é HTTP, quem escuta a rede consegue copiar o cookie de um aparelho pareado.
-- Cookies não separam portas: outro servidor em `127.0.0.1` recebe o cookie em `/api`. É código local, fora do escopo abaixo.
+- The collector only remembers nonces while it is running. Someone who captured a signed `Stop`, permission or question request, by holding the port while the collector was stopped, can replay it later: it empties that session's message queue or creates a fake pending request, without deciding anything in any session. Pairing bootstrap does not have this problem, because it requires a single-use challenge.
+- In LAN mode, which is plain HTTP, anyone sniffing the network can copy the cookie of a paired device.
+- Cookies do not separate ports: another server on `127.0.0.1` receives the cookie on `/api`. That is local code, out of scope below.
 
-Relatos sobre esses limites ajudam quando trazem um caminho que o ADR não descreve.
+Reports about these limits help when they bring a path the ADR does not describe.
 
-## Fora do escopo
+## Out of scope
 
-- Código rodando como o mesmo usuário do sistema que lê ou edita arquivos de propósito. Ele já pode editar `~/.claude/settings.json` e se dar qualquer permissão, e o escritório não tem como impedir.
-- Quem escuta o tráfego da rede local no modo LAN, que é HTTP. O README avisa para ligar o modo LAN só em rede confiável.
-- Riscos que o README já documenta como escolha de quem usa: modo LAN em rede não confiável, `--allow-remote-office` apontando para um servidor que você não controla, e o backup do `settings.json` com os mesmos tokens do original.
-- Falhas no Claude Code, no Codex ou nas bibliotecas de `web/vendor` em si. Relate ao projeto de origem; se o jeito como o escritório usa a biblioteca abre a falha, aí é escopo.
-- Os dados de exemplo do modo demo e da landing, que são fictícios e públicos.
-- Negação de serviço que exige acesso local e só derruba o próprio escritório, sem afetar a sessão do Claude Code. Os hooks já seguem quando o coletor não responde.
-- Relatório automático de ferramenta sem demonstração de impacto neste projeto.
+- Code running as the same system user that reads or edits files on purpose. It can already edit `~/.claude/settings.json` and grant itself any permission, and the office has no way to prevent that.
+- Someone sniffing local network traffic in LAN mode, which is plain HTTP. The README says to turn LAN mode on only in a trusted network.
+- Risks the README and the [guide](docs/guide.md) already document as the user's choice: LAN mode on an untrusted network, `--allow-remote-office` pointing to a server you do not control, and the `settings.json` backup holding the same tokens as the original.
+- Vulnerabilities in Claude Code, Codex or the `web/vendor` libraries themselves. Report them to the upstream project; if the way the office uses a library opens the vulnerability, it is in scope.
+- The sample data of demo mode and the landing page, which is fictional and public.
+- Denial of service that requires local access and only brings down the office itself, without affecting the Claude Code session. Hooks already carry on when the collector does not answer.
+- Automated tool reports without a demonstrated impact on this project.
