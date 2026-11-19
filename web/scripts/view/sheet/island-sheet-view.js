@@ -9,6 +9,7 @@ const COST_NOTE = "Estimativa do próprio Claude Code, a preço de tabela.";
 const CLOSE_NOTE = "Fechar tira a ilha do mapa. Ela volta sozinha quando uma sessão desta pasta trabalhar de novo.";
 const NOBODY_HERE = "Ninguém trabalhando aqui agora. Abra o Claude Code ou o Codex nesta pasta e o time aparece.";
 const SUBAGENT = "subagente";
+const SPOKEN_SEPARATOR = ", ";
 
 const swatchOf = (theme) => `<span class="hq-swatch" style="--swatch:${esc(theme.rug)};--swatch-edge:${esc(theme.divider)}" aria-hidden="true"></span>`;
 
@@ -69,6 +70,14 @@ function queueChip(queued) {
   return text ? `\n      <span class="hq-member-queue">${esc(text)}</span>` : "";
 }
 
+// Seen as a mark and a number, heard as a sentence: the mark and the number alone would read as symbols.
+function workChip(className, { kind = null, icon, text, spoken }) {
+  const signal = kind ? ` data-signal="${esc(kind)}"` : "";
+  const shown = [icon, text].filter(Boolean).map(esc).join(" ");
+  const heard = spoken ? `<span class="sr-only">${SPOKEN_SEPARATOR}${esc(spoken)}</span>` : "";
+  return `<span class="${className}"${signal}><span aria-hidden="true">${shown}</span>${heard}</span>`;
+}
+
 function memberItem(member) {
   const { glyph, color, sentence } = STATUS[member.status];
   const role = member.kind === "subagent" ? `${member.label} · ${SUBAGENT}` : member.label;
@@ -76,6 +85,7 @@ function memberItem(member) {
       <span class="hq-glyph" style="color:${esc(color)}" aria-hidden="true">${esc(glyph)}</span>
       <span class="hq-member-name"><b>${esc(member.name)}</b> <span class="muted">${esc(role)}</span></span>
       <span class="hq-member-status">${esc(sentence)}</span>${queueChip(member.queued)}
+      ${workChip("hq-member-checklist", member.work.checklist)}${workChip("hq-member-tests", member.work.lastRun)}
     </button></li>`;
 }
 

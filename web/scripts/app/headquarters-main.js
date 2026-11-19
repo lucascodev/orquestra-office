@@ -29,6 +29,7 @@ const isMeasuring = params.get(MEASURE_PARAM) === MEASURE_ON;
 const showStats = isMeasuring ? createFrameMeter(office) : () => {};
 const headquarters = createHeadquartersRenderer({
   onFrame: showStats, describeStatus, isMeasuring,
+  clockNow: () => page.clockNow(),
   onPick: (key) => page.openAgentFromMap(key),
   onPickIsland: (projectKey) => page.openIslandFromMap(projectKey),
   onFollowChange: (key) => page.showFollowing(key),

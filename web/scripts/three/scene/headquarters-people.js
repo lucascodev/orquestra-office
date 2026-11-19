@@ -7,6 +7,7 @@ import { areaOfPoint } from "../../domain/headquarters/area-of-point.js";
 import { bubbleDetail, figureDetail } from "../../domain/headquarters/figure-detail.js";
 import { tagDetail } from "../../domain/headquarters/label-detail.js";
 import { queuedCountOf, queuedText } from "../../domain/office/queued-messages.js";
+import { agentWorkSignalOf, NO_WORK_SIGNAL } from "../../domain/work-signals/agent-work-signal.js";
 import { group } from "../kit.js";
 import { createCrowd } from "../people/crowd.js";
 import { createPerson, isWalking, placeAt, removePerson, setReaction, standAt, stepPerson, walkTo } from "../people/people.js";
@@ -39,7 +40,7 @@ function createReceptionist(parent) {
 
 // Everyone in the building: one figure per agent, created when the agent shows up and kept until it is gone, so people walk
 // across the whole headquarters instead of being rebuilt with each island.
-export function createHeadquartersPeople({ scene, tagLayer, onPick, describeStatus, isMotionReduced }) {
+export function createHeadquartersPeople({ scene, tagLayer, onPick, describeStatus, isMotionReduced, clockNow }) {
   const root = group(scene);
   const people = new Map();
   const reactionSince = new Map();
@@ -73,7 +74,7 @@ export function createHeadquartersPeople({ scene, tagLayer, onPick, describeStat
   }
 
   function meet(agent) {
-    const entry = { person: createPerson(root, agent), tag: createNameTag(agent.key, onPick), bubble: createThoughtBubble() };
+    const entry = { person: createPerson(root, agent), tag: createNameTag(agent.key, onPick), bubble: createThoughtBubble(), signal: NO_WORK_SIGNAL };
     // Sixty Tab stops on the map help nobody: the keyboard reaches each agent through the Ctrl K search instead.
     entry.tag.element.tabIndex = -1;
     tagLayer.append(entry.tag.element, entry.bubble.element);
@@ -139,13 +140,43 @@ export function createHeadquartersPeople({ scene, tagLayer, onPick, describeStat
     }
   }
 
+  // The signal takes the place of the label under the name; the queue stays, since it asks something of the person.
+  function showSignal(entry, signal) {
+    const { element, mark, text } = entry.tag.signal;
+    entry.signal = signal;
+    element.hidden = !signal.kind;
+    if (signal.kind) entry.tag.element.dataset.signal = signal.kind;
+    else delete entry.tag.element.dataset.signal;
+    mark.textContent = signal.icon;
+    text.textContent = signal.text;
+  }
+
   function label(agent) {
-    const { tag } = people.get(agent.key);
+    const entry = people.get(agent.key);
+    const { tag } = entry;
     const queue = queuedText(queuedCountOf(outbox, agent.key));
+    const signal = agentWorkSignalOf(agent, clockNow());
+    showSignal(entry, signal);
     tag.element.dataset.status = agent.status;
     tag.name.textContent = agent.name;
-    tag.title.textContent = [agent.label, queue].filter(Boolean).join(" · ");
+    tag.title.textContent = [signal.kind ? "" : agent.label, queue].filter(Boolean).join(" · ");
     tag.element.title = [agent.name, agent.label, describeStatus(agent.status), queue].filter(Boolean).join(" · ");
+  }
+
+  // Runs every second: the clock of a running test moves, and the passes and the writing go away after a minute. Only the
+  // signal's own text is touched, and only when it changed, so sixty agents cost sixty comparisons and a write or two.
+  function refreshSignals() {
+    const now = clockNow();
+    for (const agent of agents) {
+      const entry = people.get(agent.key);
+      if (!entry) continue;
+      const signal = agentWorkSignalOf(agent, now);
+      if (signal.kind !== entry.signal.kind) label(agent);
+      else if (signal.text !== entry.signal.text) {
+        entry.signal = signal;
+        entry.tag.signal.text.textContent = signal.text;
+      }
+    }
   }
 
   function show(next, seconds) {
@@ -252,5 +283,5 @@ export function createHeadquartersPeople({ scene, tagLayer, onPick, describeStat
   const personOf = (key) => people.get(key)?.person ?? null;
   const tagOf = (key) => people.get(key)?.tag.element ?? null;
 
-  return { show, arrange, step, follow, highlight, bodies, personOf, tagOf, destinations, hasPeople: () => people.size > 0 };
+  return { show, arrange, step, follow, highlight, refreshSignals, bodies, personOf, tagOf, destinations, hasPeople: () => people.size > 0 };
 }

@@ -267,3 +267,42 @@
   .hq-sheet-body .hq-account + .hq-account { padding-left: 0; padding-top: var(--space-5); border-left: 0; border-top: 1px solid var(--border-strong); }
   .hq-sheet-body .hq-accounts .btn { height: 40px; }
 }
+
+/* sinais no mapa */
+/* The tests and the checklist on the tag over the figure, in the legend, in the island's sheet and in the day's timeline.
+   Each signal has its own mark besides its colour, and the marks are kept as text glyphs, never as colour emoji. */
+:root { --signal-writing: #c7a6ff; }
+[data-signal="testing"] { --signal-color: var(--info); }
+[data-signal="tests-failed"] { --signal-color: var(--danger); }
+[data-signal="tests-passed"], [data-signal="plan-approved"] { --signal-color: var(--success); }
+[data-signal="writing-tests"] { --signal-color: var(--signal-writing); }
+[data-signal="checklist"] { --signal-color: var(--accent); }
+.work-mark, .name-tag-signal-mark { color: var(--signal-color, var(--muted)); font-family: var(--font-sans), "Segoe UI Symbol"; font-weight: 700; font-variant-emoji: text; }
+
+/* Whoever needs you keeps the warning border, and the followed agent its focus ring; everybody else takes the signal's colour. */
+.hq-tags .name-tag[data-signal]:not([data-status="needs_you"], .is-followed) { border-color: var(--signal-color); }
+.hq-tags .name-tag .name-tag-signal { display: flex; align-items: center; gap: var(--space-2); min-width: 0; color: var(--text); font-weight: 600; font-variant-numeric: tabular-nums; }
+.hq-tags .name-tag .name-tag-signal > span { display: block; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.hq-tags .name-tag .name-tag-signal > .name-tag-signal-mark { flex: none; font-size: 13px; line-height: 1; }
+.hq-tags .name-tag .name-tag-signal[hidden], .hq-tags .name-tag small:empty { display: none; }
+
+.hq-legend-work { margin-top: var(--space-2); padding-top: var(--space-3); border-top: 1px solid var(--border); }
+.hq-legend-list .work-mark { font-size: 13px; }
+
+/* With the two marks the row no longer fits a phone: the status sentence gives way first, as the name already does, and the
+   list's column stays as wide as the sheet instead of growing to the row's whole text. */
+.hq-island-team { grid-template-columns: minmax(0, 1fr); }
+.hq-member-status { flex-shrink: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.hq-member-checklist, .hq-member-tests { flex: none; color: var(--muted); font: 11px var(--font-mono); white-space: nowrap; }
+.hq-member-tests { min-width: 5ch; color: var(--subtle); text-align: right; }
+.hq-member-tests[data-signal] { color: var(--signal-color); }
+
+.hq-day-event { display: flex; align-items: center; gap: var(--space-4); padding-top: var(--space-3); border-top: 1px solid var(--border); font-size: 12px; }
+.hq-day-event-time { flex: none; color: var(--subtle); font: 11px var(--font-mono); }
+.hq-day-event-text { flex: 1; min-width: 0; margin: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.hq-day-event .work-mark { font-size: 13px; }
+.hq-day-event .btn { flex: none; }
+@media (max-width: 719px) {
+  .hq-day-event-text { white-space: normal; }
+  .hq-day-event .btn { height: 36px; }
+}

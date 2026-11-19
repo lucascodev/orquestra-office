@@ -22,10 +22,24 @@ export function createNameTag(key, onPick) {
   const text = document.createElement("span");
   const name = document.createElement("b");
   const title = document.createElement("small");
-  text.append(name, title);
+  const signal = createSignalLine();
+  text.append(name, signal.element, title);
   tag.append(document.createElement("i"), text);
   tag.addEventListener("click", () => onPick(key));
-  return { element: tag, name, title };
+  return { element: tag, name, title, signal };
+}
+
+// The line of the tests and the checklist: a mark the screen reader skips, since the words after it already say the same.
+function createSignalLine() {
+  const element = document.createElement("small");
+  element.className = "name-tag-signal";
+  element.hidden = true;
+  const mark = document.createElement("span");
+  mark.className = "name-tag-signal-mark";
+  mark.setAttribute("aria-hidden", "true");
+  const text = document.createElement("span");
+  element.append(mark, text);
+  return { element, mark, text };
 }
 
 export function placeNameplate(plate, { x, z, hipY }, camera) {

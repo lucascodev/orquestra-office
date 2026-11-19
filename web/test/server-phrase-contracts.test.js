@@ -187,9 +187,12 @@ describe("phrases the page writes from the collector's and the runner's fields",
 });
 
 const DEMO_ONLY_ACTION_IDS = ["no-task"];
+// The actions of docs/arquitetura/checklist-plano-testes.md, section 2. The page and the collector are built in parallel, so these
+// may not be in the collector's AGENT_ACTION yet; once they are, the tests above already require their phrases.
+const TESTS_AND_PLAN_ACTION_IDS = ["running-tests", "writing-tests", "tests-passed", "tests-failed", "plan-approved"];
 
 const PHRASE_SETS = [
-  { name: "agent actions", catalog: AGENT_ACTIONS, publishedIds: Object.values(AGENT_ACTION), demoOnlyIds: DEMO_ONLY_ACTION_IDS },
+  { name: "agent actions", catalog: AGENT_ACTIONS, publishedIds: Object.values(AGENT_ACTION), demoOnlyIds: [...DEMO_ONLY_ACTION_IDS, ...TESTS_AND_PLAN_ACTION_IDS] },
   { name: "tool summaries", catalog: TOOL_SUMMARIES, publishedIds: Object.values(TOOL_SUMMARY), demoOnlyIds: [] },
   { name: "request intents", catalog: REQUEST_INTENTS, publishedIds: Object.values(TOOL_SUMMARY), demoOnlyIds: [] },
   { name: "terminal notes", catalog: TERMINAL_NOTES, publishedIds: [...Object.values(ENTRY_TEXT), ...Object.values(SESSION_ENTRY)], demoOnlyIds: [] },
@@ -212,6 +215,22 @@ describe("ids the collector and the runner publish", () => {
       assert.deepEqual(Object.keys(catalog).filter((id) => !known.has(id)), []);
     });
   }
+
+  it("include the test and plan actions of the contract, each with a phrase", () => {
+    const missing = TESTS_AND_PLAN_ACTION_IDS.filter((id) => !Object.hasOwn(AGENT_ACTIONS, id) || !isFilledPhrase(AGENT_ACTIONS[id]));
+    assert.deepEqual(missing, []);
+  });
+
+  it("write the test and plan actions with and without their subject", () => {
+    const phrases = TESTS_AND_PLAN_ACTION_IDS.flatMap((actionId) => [agentActionText({ actionId, subject: "x" }), logEntryText({ at: 1, actionId, subject: null })]);
+    assert.deepEqual(phrases, [
+      "rodando os testes com x", "rodando os testes",
+      "escrevendo o teste x", "escrevendo um teste",
+      "rodou os testes: x passaram", "rodou os testes: todos passaram",
+      "rodou os testes: x falharam", "rodou os testes: houve falhas",
+      "teve o plano aprovado", "teve o plano aprovado",
+    ]);
+  });
 
   it("never repeat a terminal note between the collector and the runner, which share one catalog", () => {
     const runnerIds = new Set(Object.values(SESSION_ENTRY));
