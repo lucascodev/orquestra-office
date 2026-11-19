@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
+import { FRAMEWORK_IDS } from "../../collector/src/work/domain/values/frameworks.js";
 import { TEST_FRAMEWORKS } from "../scripts/data/text/pt-br/test-frameworks.js";
 import { agentActionText } from "../scripts/domain/office/agent-action-text.js";
 import { testFrameworkName } from "../scripts/domain/work-sheet/test-framework-name.js";
@@ -8,9 +9,11 @@ import { renderTestsTab } from "../scripts/view/sheet/tests-tab-view.js";
 
 const DAY_START = 0;
 
-// The contract test against the collector's FRAMEWORK_IDS comes in with the merge of the collector's branch, which exports
-// that list; until then the ids below are the ones the collector's frameworkOf accepts today.
 describe("names of the test frameworks", () => {
+  it("cover exactly the framework ids the collector may send", () => {
+    assert.deepEqual(Object.keys(TEST_FRAMEWORKS).sort(), [...FRAMEWORK_IDS].sort());
+  });
+
   const names = [
     ["node-test", "node:test"], ["mixed", "vários"], ["jest", "Jest"], ["vitest", "Vitest"], ["pytest", "pytest"], ["go", "Go"],
     ["cargo", "Cargo"], ["dotnet", ".NET"], ["maven", "Maven"], ["gradle", "Gradle"], ["mocha", "Mocha"], ["rspec", "RSpec"],
