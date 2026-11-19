@@ -200,6 +200,19 @@ test("the plan text is read through its own route, never through the office stat
   assert.deepEqual(state.projects["/tmp/demo"].agents["claude:s1"].plan.version, 1);
 }));
 
+test("a test command sent by the hooks shows as running and then as the last run of the agent", () => withOffice(async (base) => {
+  const call = { ...SESSION, tool_name: "Bash", tool_use_id: "b1", tool_input: { command: "cd web && API_TOKEN=abc npm test" } };
+  await postActivity(base, "/events/claude", { ...call, hook_event_name: "PreToolUse" });
+  const agentIn = async () => (await stateOf(base)).projects["/tmp/demo"].agents["claude:s1"];
+  assert.deepEqual([(await agentIn()).actionId, (await agentIn()).tests.running.command], ["running-tests", "npm test"]);
+
+  await postActivity(base, "/events/claude", { ...call, hook_event_name: "PostToolUseFailure", error: "Exit code 1" });
+  const { tests, actionId } = await agentIn();
+  assert.equal(tests.running, null);
+  assert.deepEqual([actionId, tests.lastRun.command, tests.lastRun.isOk], ["tests-failed", "npm test", false]);
+  assert.ok(!JSON.stringify(await stateOf(base)).includes("API_TOKEN"));
+}));
+
 test("an agent without a plan, or one nobody knows, has no plan through the route", () => withOffice(async (base) => {
   await postActivity(base, "/events/claude", { ...SESSION, hook_event_name: "SessionStart" });
   assert.deepEqual(await planOf(base, "claude:s1"), { plan: null });

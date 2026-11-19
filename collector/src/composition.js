@@ -75,6 +75,7 @@ export function createOffice({ webDir, dataDir = null, holdMs, allowedHosts = []
     isSecretMissing: () => officeKey.isMissing(),
   });
 
+  // At the merge, parseTestOutput from work/domain/test-output.js is passed here; until then runs have no counts.
   const activity = createRecordActivity({ store, history });
   const hasViewers = () => {
     applyCurrentKey();
