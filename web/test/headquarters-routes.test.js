@@ -48,13 +48,25 @@ const catalogOf = (spots) => [
   ["exit", spots.exit],
 ];
 
+const SAMPLES_PER_STRETCH = 10;
+const wayInOf = (stop) => [{ x: stop.laneX ?? stop.x, z: stop.laneZ ?? stop.z }, ...(stop.approach ?? []), { x: stop.x, z: stop.z }];
+const pointsAlong = (path) => [path[0], ...path.slice(1).flatMap((to, i) => Array.from({ length: SAMPLES_PER_STRETCH }, (_, step) => {
+  const t = (step + 1) / SAMPLES_PER_STRETCH;
+  return { x: path[i].x + (to.x - path[i].x) * t, z: path[i].z + (to.z - path[i].z) * t };
+}))];
+
 describe("headquarters walkways", () => {
   for (let projectCount = 1; projectCount <= MAX_PROJECTS; projectCount += 1) {
-    it(`never cut through a wall, a partition, an island or furniture with ${projectCount} project(s)`, () => {
+    it(`never cut through a wall, a partition, an island or furniture, other than the seat a way in ends on, with ${projectCount} project(s)`, () => {
       const layout = layoutHeadquarters(officeWith(projectCount));
       const { graph } = headquartersRoutes(layout);
       const obstacles = obstaclesOf(layout);
-      const blocked = graph.edges.flatMap(([a, b]) => blockedSegments([graph.nodes[a], graph.nodes[b]], obstacles, {}));
+      const stops = catalogOf(headquartersSpots(layout)).map(([, stop]) => stop);
+      const spotAt = (node) => (stops.some((stop) => isSame(stop, node)) ? node : undefined);
+      const blocked = graph.edges.flatMap(([a, b]) => {
+        const [from, to] = [graph.nodes[a], graph.nodes[b]];
+        return blockedSegments([from, to], obstacles, { from: spotAt(from), to: spotAt(to) });
+      });
       assert.deepEqual(blocked, []);
     });
   }
@@ -118,6 +130,35 @@ describe("headquarters routes", () => {
     const path = headquartersRoutes(layout).routeFor(halfway, spots.freeTime.get("arcade")[0]);
     assert.deepEqual(path[0], { x: 12, z: 7 });
     assert.deepEqual(blockedSegments([halfway, ...path], obstaclesOf(layout), {}), []);
+  });
+
+  for (let projectCount = 1; projectCount <= MAX_PROJECTS; projectCount += 1) {
+    it(`brings someone called to a desk halfway along any way in or out of a spot around everything, with ${projectCount} project(s)`, () => {
+      const layout = layoutHeadquarters(officeWith(projectCount));
+      const spots = headquartersSpots(layout);
+      const { routeFor } = headquartersRoutes(layout);
+      const obstacles = obstaclesOf(layout);
+      const farthestDesk = [...spots.desks.values()].at(-1);
+      const failures = [];
+      for (const [name, stop] of catalogOf(spots).filter(([, stop]) => !stop.isDesk)) {
+        for (const point of pointsAlong(wayInOf(stop))) {
+          if (isSame(point, farthestDesk)) continue;
+          const path = routeFor(point, farthestDesk);
+          const where = `${name} at ${JSON.stringify(point)}`;
+          if (path.length === 0 || !isSame(path.at(-1), farthestDesk)) failures.push(`${where}: no way`);
+          else failures.push(...blockedSegments([point, ...path], obstacles, { from: point, to: farthestDesk }).map((blocked) => `${where}: ${blocked}`));
+        }
+      }
+      assert.deepEqual(failures, []);
+    });
+  }
+
+  it("walks someone caught behind the coffee table on the way to the sofa out the way they came", () => {
+    const layout = layoutHeadquarters(officeWith(4));
+    const desk = headquartersSpots(layout).desks.values().next().value;
+    const behindTheTable = { x: 22.5, z: 2.6 };
+    const path = headquartersRoutes(layout).routeFor(behindTheTable, desk);
+    assert.deepEqual(path.slice(0, 3), [{ x: 23.5, z: 2.6 }, { x: 24.4, z: 2.6 }, { x: 24.4, z: 5.2 }]);
   });
 
   it("joins the walkway on its own side of a wall, even when the one behind the wall is nearer", () => {

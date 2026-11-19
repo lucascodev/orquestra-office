@@ -5,6 +5,7 @@ import { FREE_TIME, freeTimePreferences } from "../scripts/domain/behavior/agent
 import { temperamentOf } from "../scripts/domain/behavior/agent-temperament.js";
 import { freshestThoughts, thoughtAt } from "../scripts/domain/behavior/agent-thoughts.js";
 import { createFreeTimeClock } from "../scripts/domain/behavior/free-time-clock.js";
+import { planMovement } from "../scripts/domain/behavior/movement-plan.js";
 import { assignPlaces, placeAgents } from "../scripts/domain/behavior/room-places.js";
 import { fidgetAt } from "../scripts/domain/behavior/seated-fidgets.js";
 import { layoutHeadquarters } from "../scripts/domain/headquarters/headquarters-layout.js";
@@ -136,6 +137,42 @@ describe("where agents go in the headquarters", () => {
     assert.equal(placesIn([...keepers, latecomer], { previous }).places.get(latecomer.key).stop.id, lastOfNext.id);
   });
 
+  it("lets someone keep a spot of a later choice when the earlier ones are full, even against a newcomer with a smaller key", () => {
+    const onSofa = ["claude:s0", "claude:s1", "claude:s2"].map((key) => hqAgent(key, "idle"));
+    const keeper = hqAgent("claude:z1", "idle");
+    const newcomer = hqAgent("claude:a0", "break");
+    const agents = [...onSofa, keeper, newcomer];
+    const { spots } = placesIn(agents);
+    const on = (stop) => ({ stop, isFreeTime: true });
+    const previous = new Map([...onSofa.map((agent, i) => [agent.key, on(spots.freeTime.get("sofa")[i])]), [keeper.key, on(spots.freeTime.get("coffee")[0])]]);
+    const { places } = placesIn(agents, { previous });
+    assert.deepEqual(onSofa.map((agent) => places.get(agent.key).stop.id), ["lounge:sofa:0", "lounge:sofa:1", "lounge:sofa:2"]);
+    assert.equal(places.get(keeper.key).stop.id, "pantry:coffee:0");
+    assert.equal(places.get(newcomer.key).stop.id, "pantry:coffee:1");
+  });
+
+  it("lets someone keep the only spot of an activity against a newcomer with a smaller key", () => {
+    const spotOf = (activityId) => ({ id: `${activityId}:0`, activityId, x: 0, z: 0 });
+    const sofa = spotOf("sofa");
+    const coffee = spotOf("coffee");
+    const onSofa = hqAgent("claude:k", "idle");
+    const keeper = hqAgent("claude:z", "idle");
+    const newcomer = hqAgent("claude:a", "break");
+    const agents = [onSofa, keeper, newcomer];
+    const spots = {
+      activities: ["sofa", "coffee"],
+      freeTime: new Map([["sofa", [sofa]], ["coffee", [coffee]]]),
+      desks: new Map(agents.map((agent) => [agent.key, { isDesk: true, x: 0, z: 0 }])),
+      exit: { x: 0, z: 0 },
+    };
+    const freeSince = new Map(agents.map((agent) => [agent.key, agent.updatedAt]));
+    const previous = new Map([[onSofa.key, { stop: sofa, isFreeTime: true }], [keeper.key, { stop: coffee, isFreeTime: true }]]);
+    const places = placeAgents({ agents, now: NOW, spots, freeSince, previous });
+    assert.equal(places.get(onSofa.key).stop.id, sofa.id);
+    assert.equal(places.get(keeper.key).stop.id, coffee.id);
+    assert.equal(places.get(newcomer.key).stop.isDesk, true);
+  });
+
   it("leaves the spot once the first choice is something else", () => {
     const agent = hqAgent("claude:p0-a", "idle");
     const { spots } = placesIn([agent]);
@@ -162,6 +199,17 @@ describe("where agents go in the headquarters", () => {
     assert.equal(handoff.reaction, "handingOver");
     assert.equal(handoff.stop.z, desk.z);
     assert.ok(Math.abs(handoff.stop.x - desk.x) < 1);
+  });
+
+  it("seats a working subagent whose main agent is gone at a desk of its project, so it can be walked there", () => {
+    const orphan = hqAgent("claude:p0-gone:s1", "working", { kind: "subagent", parentKey: "claude:gone" });
+    const { spots, places } = placesIn([hqAgent("claude:p0-here", "working"), orphan]);
+    const place = places.get(orphan.key);
+    assert.equal(place.stop, spots.desks.get(orphan.key));
+    assert.equal(place.stop.isDesk, true);
+    const person = { stop: null, position: null, isWalking: false, isHurrying: false, lastSeen: { x: 12, z: 7, wasAtDesk: false } };
+    const room = { door: spots.arrival, hasVisited: true, routeFor: (from, to) => [{ x: to.x, z: to.z }] };
+    assert.equal(planMovement({ person, place, room, isMotionReduced: false }).kind, "walk");
   });
 
   it("walks someone who left out through the main door", () => {

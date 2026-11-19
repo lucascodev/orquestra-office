@@ -1,9 +1,10 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
+import { HEADQUARTERS_ACTIVITIES as CATALOGED_ACTIVITIES } from "../scripts/data/headquarters-areas.js";
 import { FREE_TIME, freeTimePreferences } from "../scripts/domain/behavior/agent-reactions.js";
 import { areaOfPoint } from "../scripts/domain/headquarters/area-of-point.js";
 import { layoutHeadquarters } from "../scripts/domain/headquarters/headquarters-layout.js";
-import { headquartersSpots } from "../scripts/domain/headquarters/headquarters-spots.js";
+import { HEADQUARTERS_ACTIVITIES, headquartersSpots } from "../scripts/domain/headquarters/headquarters-spots.js";
 import { STANDING_HIP } from "../scripts/domain/room/room-dimensions.js";
 
 const NOW = 1_800_000_000_000;
@@ -133,6 +134,11 @@ describe("free time activities", () => {
     const known = new Set(FREE_TIME.map((activity) => activity.id));
     assert.ok(spots.activities.every((id) => known.has(id)));
     assert.deepEqual([...spots.activities].sort(), [...spots.freeTime.keys()].sort());
+  });
+
+  it("keeps the list of headquarters activities with the plan's data and still answers for it where the spots are made", () => {
+    assert.equal(HEADQUARTERS_ACTIVITIES, CATALOGED_ACTIVITIES);
+    assert.deepEqual(spotsOf(officeWith(4)).spots.activities, CATALOGED_ACTIVITIES);
   });
 
   it("orders each agent's activities only among the ones the catalog offers", () => {

@@ -1,9 +1,9 @@
-import { CONVIVENCE_SPOTS, FREE_TIME_SPOTS, RECEPTION_WATER_SPOT, RECEPTIONIST } from "../../data/headquarters-areas.js";
+import { CONVIVENCE_SPOTS, FREE_TIME_SPOTS, HEADQUARTERS_ACTIVITIES, RECEPTION_WATER_SPOT, RECEPTIONIST } from "../../data/headquarters-areas.js";
 import { CHAIR_HIP, PUFF_HIP, SOFA_HIP, STANDING_HIP } from "../room/room-dimensions.js";
 import { seatStop } from "../room/room-spots.js";
 import { atDepth } from "./facade-offsets.js";
 
-export const HEADQUARTERS_ACTIVITIES = ["coffee", "water", "window", "board", "meeting", "pingpong", "arcade", "puff", "sofa", "plant"];
+export { HEADQUARTERS_ACTIVITIES };
 
 const FACING = { front: 0, back: Math.PI, east: Math.PI / 2, west: -Math.PI / 2 };
 const POSTURES = {

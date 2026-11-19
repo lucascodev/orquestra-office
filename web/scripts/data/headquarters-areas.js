@@ -107,6 +107,8 @@ export const CONVIVENCE_CORNERS = [
 
 export const RECEPTION_WATER_COOLER = { id: "reception-water-cooler", kind: "waterCooler", areaId: "reception", x: 25, fromFront: 3, w: 0.8, d: 1.2, height: 1.1 };
 
+export const HEADQUARTERS_ACTIVITIES = ["coffee", "water", "window", "board", "meeting", "pingpong", "arcade", "puff", "sofa", "plant"];
+
 // "access" is where a spot leaves the walkways; "approach" lists the turns from there, walked backwards on the way out.
 const PANTRY_AISLE = { x: 10.7, z: 5.2 };
 const MEETING_AISLE = { x: 0.9, z: 5.2 };

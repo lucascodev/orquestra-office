@@ -4,6 +4,7 @@ import {
 } from "./room-dimensions.js";
 
 const COFFEE_SPOTS = 3;
+const ROOM_AREA = "room";
 const ROOM_ACTIVITIES = ["coffee", "water", "window", "books", "filing", "copier", "board", "meeting", "sofa", "plant"];
 const FACING_CAMERA = 0;
 const FACING_WALL = Math.PI;
@@ -69,7 +70,7 @@ function freeTimeSpots(layout) {
   const spots = new Map();
   for (const [activityId, stop] of [...wall, ...meetingStops(layout), ...loungeStops(layout), ...plantStops(layout)]) {
     const listed = spots.get(activityId) ?? [];
-    spots.set(activityId, [...listed, { id: `${activityId}:${listed.length}`, activityId, ...stop }]);
+    spots.set(activityId, [...listed, { id: `${activityId}:${listed.length}`, activityId, areaId: ROOM_AREA, ...stop }]);
   }
   return spots;
 }

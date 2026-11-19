@@ -47,6 +47,11 @@ describe("walk graph", () => {
     assert.deepEqual(nearestOnGraph(graph, p(5, 1.9), behindWall), { x: 5, z: 0, edge: [0, 1] });
   });
 
+  it("enters the destination's stretch from its nearer end, even when the other end was listed first", () => {
+    const graph = walkGraphOf([[p(20, 0), p(10, 0)], [p(0, 0), p(10, 0)]]);
+    assert.deepEqual(shortestWalk(graph, p(1, 0), p(15, 0)), [p(1, 0), p(10, 0), p(15, 0)]);
+  });
+
   it("returns no way at all between parts that do not touch", () => {
     const graph = walkGraphOf([[p(0, 0), p(5, 0)], [p(0, 9), p(5, 9)]]);
     assert.deepEqual(shortestWalk(graph, p(1, 0), p(4, 9)), []);
