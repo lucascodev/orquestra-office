@@ -65,7 +65,7 @@ As entradas `tests-passed`, `tests-failed` e `plan-approved` vão para `agent.lo
 
 O pedido pendente de `ExitPlanMode`, montado a partir do `PermissionRequest` assinado, leva `plan` (até 20 000 caracteres, com segredos mascarados), `planLength` e `isPlanTruncated`. É esse texto que o alerta mostra, nunca o do `PreToolUse`, que chega pela via de atividade. O texto da versão mais recente fica só em memória e sai por `GET /api/agents/plan?key=<agentKey>`, com pareamento, devolvendo `{ text, version, state, proposedAt, decidedAt }` ou `{ plan: null }`.
 
-Os ids de framework são um enum fixo; o de `node --test` é `node-test`, e uma saída com vários frameworks dá `mixed`.
+Os ids de framework são um enum fixo, exportado como `FRAMEWORK_IDS` em `collector/src/work/domain/values/frameworks.js`: os do leitor de saída (`TEST_FRAMEWORK`) mais os que só o comando nomeia (`COMMAND_FRAMEWORK`). O de `node --test` é `node-test`, e uma saída com vários frameworks dá `mixed`.
 
 ## 3. Como o coletor reconhece
 
