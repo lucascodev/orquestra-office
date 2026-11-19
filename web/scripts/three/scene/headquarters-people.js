@@ -4,6 +4,7 @@ import { planMovement } from "../../domain/behavior/movement-plan.js";
 import { placeAgents } from "../../domain/behavior/room-places.js";
 import { createConversationTracker } from "../../domain/conversations/conversation-tracker.js";
 import { areaOfPoint } from "../../domain/headquarters/area-of-point.js";
+import { tagDetail } from "../../domain/headquarters/label-detail.js";
 import { group } from "../kit.js";
 import { createPerson, isWalking, placeAt, removePerson, setReaction, standAt, stepPerson, walkTo } from "../people/people.js";
 import { createNameTag, headPositionOf } from "./name-tags.js";
@@ -14,6 +15,7 @@ const LEAVING = "leaving";
 const RECEPTIONIST_KEY = "headquarters:receptionist";
 const RECEPTIONIST_REACTION = "typing";
 const RECEPTIONIST_TAG = "recepção";
+const FIGURANT_STATUS = "idle";
 
 function createFigurantTag(text) {
   const tag = document.createElement("span");
@@ -47,6 +49,7 @@ export function createHeadquartersPeople({ scene, tagLayer, onPick, describeStat
   let spots = null;
   let routeFor = () => [];
   let hasShownPeople = false;
+  let followedKey = null;
 
   function forget(key) {
     const { person, tag, bubble } = people.get(key);
@@ -166,6 +169,10 @@ export function createHeadquartersPeople({ scene, tagLayer, onPick, describeStat
     });
   }
 
+  function showDetail(element, detail) {
+    if (element.dataset.detail !== detail) element.dataset.detail = detail;
+  }
+
   function pinTag(element, person, camera) {
     const position = headPositionOf(person, camera);
     element.hidden = !person.root.visible || !position.isInView;
@@ -174,13 +181,15 @@ export function createHeadquartersPeople({ scene, tagLayer, onPick, describeStat
     return position;
   }
 
-  // Only people on screen think out loud, and only the three freshest of them.
-  function follow(camera, seconds) {
+  // Only people on screen think out loud, and only the three freshest of them. From afar the tags shrink to their status dot.
+  function follow(camera, seconds, scale) {
     pinTag(receptionistTag, receptionist, camera);
+    showDetail(receptionistTag, tagDetail({ scale, status: FIGURANT_STATUS, isFollowed: false }));
     const byKey = new Map(agents.map((agent) => [agent.key, agent]));
     const thinking = [];
     const speeches = new Map();
     for (const [key, { person, tag }] of people) {
+      showDetail(tag.element, tagDetail({ scale, status: byKey.get(key)?.status, isFollowed: key === followedKey }));
       const { left, top, isInView } = pinTag(tag.element, person, camera);
       if (!isInView) continue;
       if (person.conversation) {
@@ -201,7 +210,8 @@ export function createHeadquartersPeople({ scene, tagLayer, onPick, describeStat
     }
   }
 
-  function highlight(followedKey) {
+  function highlight(nextFollowedKey) {
+    followedKey = nextFollowedKey;
     for (const [key, { tag }] of people) {
       const isFollowed = key === followedKey;
       tag.element.classList.toggle("is-followed", isFollowed);

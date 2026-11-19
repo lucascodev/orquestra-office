@@ -2,6 +2,7 @@ import { boundsToFrameAt, wholeHeadquartersBounds } from "../../domain/camera/fr
 import { panBy, screenToGround, zoomAt } from "../../domain/camera/viewpoint.js";
 import { layoutHeadquarters } from "../../domain/headquarters/headquarters-layout.js";
 import { headquartersSpots } from "../../domain/headquarters/headquarters-spots.js";
+import { areaLabelDetail } from "../../domain/headquarters/label-detail.js";
 import { headquartersRoutes } from "../../domain/navigation/headquarters-routes.js";
 import { isScreenLit } from "../../domain/office/agent-status.js";
 import { buildCommonRooms } from "../furniture/common-rooms.js";
@@ -222,8 +223,9 @@ export function createHeadquartersRenderer({ onFrame = () => {}, onPick = () => 
     if (rig.step(now)) isDirty = true;
     if (!isDirty) return;
     isDirty = false;
-    people.follow(rig.camera, now / 1000);
-    labels.place(rig.camera);
+    const { scale } = rig.viewpoint();
+    people.follow(rig.camera, now / 1000, scale);
+    labels.place(rig.camera, areaLabelDetail(scale));
     renderer.render(scene, rig.camera);
     onFrame({ calls: renderer.info.render.calls, triangles: renderer.info.render.triangles });
   }

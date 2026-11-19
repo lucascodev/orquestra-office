@@ -15,6 +15,18 @@
 .hq-instructions, .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
 .name-tag.is-followed { z-index: 3; border-color: var(--focus); box-shadow: 0 0 0 1px var(--focus); }
 
+/* From afar a tag is only its status dot, or the dot and the name of whoever needs you; hovering or focusing brings it back whole. */
+.hq-tags .name-tag, .hq-labels .name-tag { touch-action: none; }
+.name-tag[data-detail="dot"], .name-tag[data-detail="name"] { gap: var(--space-2); padding: 3px; box-shadow: none; }
+.name-tag[data-detail="name"] { z-index: 2; padding: 1px 6px 1px 4px; }
+.name-tag[data-detail="dot"] > span, .name-tag[data-detail="name"] small { display: none; }
+.name-tag[data-detail="dot"]:is(:hover, :focus-visible), .name-tag[data-detail="name"]:is(:hover, :focus-visible) { z-index: 4; gap: var(--space-3); padding: 2px 8px 3px 7px; box-shadow: var(--shadow-tag); }
+.name-tag[data-detail="dot"]:is(:hover, :focus-visible) > span { display: grid; }
+.name-tag[data-detail="name"]:is(:hover, :focus-visible) small { display: block; }
+.name-tag.is-figurant[data-detail="dot"] { display: none; }
+.hq-labels[data-detail="compact"] :is(.area-label.is-area, .area-label.is-free-island, .area-label-detail, .name-tag.reserved) { display: none; }
+.hq-labels[data-detail="compact"] .area-label { padding: 0 4px; font-size: 9px; opacity: 0.85; }
+
 /* Floating panels. The layer lets the map take every press that does not land on a panel. */
 .hq-hud { --hq-gap: var(--space-6); --hq-left-width: 220px; --hq-capsule-height: 40px; position: absolute; inset: 0; z-index: 2; pointer-events: none; font-size: 13px; }
 .hq-hud > * { pointer-events: auto; }

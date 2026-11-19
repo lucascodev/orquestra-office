@@ -2,18 +2,21 @@ import { cameraCommandFor, wheelZoomFactor } from "../../domain/camera/camera-co
 
 const DRAG_THRESHOLD_PX = 4;
 const PRIMARY_BUTTON = 0;
+const TAG = ".name-tag";
 
 const distanceBetween = ([a, b]) => Math.hypot(a.x - b.x, a.y - b.y);
 const middleOf = ([a, b]) => ({ x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 });
 
 // Mouse, touch and keyboard on the map, turned into camera intents: a press that travels less than a few pixels is a click.
-// Presses and drags belong to the drawing surface, so the name tags above it keep their own clicks; the wheel and the keys
-// belong to the whole map region. Points are in CSS pixels from the top left corner of the region.
+// A press on a name tag stays the tag's click unless it turns into a drag or a pinch, which then moves the camera like any
+// other; the click that would follow such a drag is swallowed. Points are in CSS pixels from the top left corner of the region.
 export function attachCameraInput({ surface, region }, { pan, zoomAt, zoomAtCenter, frameAt, frameWhole, stopFollowing, pick }) {
   const pointers = new Map();
   let pressedAt = null;
   let isDragging = false;
   let lastPinch = null;
+  let startedOnTag = false;
+  let swallowsClick = false;
 
   const pointOf = (event) => {
     const rect = region.getBoundingClientRect();
@@ -22,13 +25,24 @@ export function attachCameraInput({ surface, region }, { pan, zoomAt, zoomAtCent
 
   function onPointerDown(event) {
     if (event.pointerType === "mouse" && event.button !== PRIMARY_BUTTON) return;
-    surface.setPointerCapture(event.pointerId);
+    const isOnTag = Boolean(event.target.closest?.(TAG));
+    if (!isOnTag && event.target !== surface) return;
+    if (!isOnTag) surface.setPointerCapture(event.pointerId);
     pointers.set(event.pointerId, pointOf(event));
     if (pointers.size === 1) {
       pressedAt = pointOf(event);
       isDragging = false;
+      startedOnTag = isOnTag;
+      swallowsClick = false;
     }
     lastPinch = null;
+  }
+
+  function startDragging() {
+    if (isDragging) return;
+    isDragging = true;
+    swallowsClick = startedOnTag;
+    for (const id of pointers.keys()) if (!surface.hasPointerCapture(id)) surface.setPointerCapture(id);
   }
 
   function pinch() {
@@ -47,12 +61,12 @@ export function attachCameraInput({ surface, region }, { pan, zoomAt, zoomAtCent
     const point = pointOf(event);
     pointers.set(event.pointerId, point);
     if (pointers.size >= 2) {
-      isDragging = true;
+      startDragging();
       pinch();
       return;
     }
     if (!isDragging && Math.hypot(point.x - pressedAt.x, point.y - pressedAt.y) < DRAG_THRESHOLD_PX) return;
-    isDragging = true;
+    startDragging();
     pan(point.x - previous.x, point.y - previous.y);
   }
 
@@ -61,7 +75,7 @@ export function attachCameraInput({ surface, region }, { pan, zoomAt, zoomAtCent
     pointers.delete(event.pointerId);
     lastPinch = null;
     if (pointers.size > 0) return;
-    if (!isDragging && event.type === "pointerup") pick(pointOf(event));
+    if (!isDragging && !startedOnTag && event.type === "pointerup") pick(pointOf(event));
     pressedAt = null;
     isDragging = false;
   }
@@ -82,10 +96,18 @@ export function attachCameraInput({ surface, region }, { pan, zoomAt, zoomAtCent
     if (command.kind === "stopFollowing") stopFollowing();
   }
 
-  surface.addEventListener("pointerdown", onPointerDown);
-  surface.addEventListener("pointermove", onPointerMove);
-  surface.addEventListener("pointerup", onPointerUp);
-  surface.addEventListener("pointercancel", onPointerUp);
+  function onClick(event) {
+    if (!swallowsClick) return;
+    swallowsClick = false;
+    event.stopPropagation();
+    event.preventDefault();
+  }
+
+  region.addEventListener("pointerdown", onPointerDown);
+  region.addEventListener("pointermove", onPointerMove);
+  region.addEventListener("pointerup", onPointerUp);
+  region.addEventListener("pointercancel", onPointerUp);
+  region.addEventListener("click", onClick, true);
   surface.addEventListener("dblclick", (event) => frameAt(pointOf(event)));
   region.addEventListener("wheel", onWheel, { passive: false });
   region.addEventListener("keydown", onKeyDown);
