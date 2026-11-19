@@ -215,7 +215,7 @@ Para atualizar uma delas, baixe o pacote do npm, confira o hash `integrity` do r
 
 A landing fica em `site/`, com a página em português em `site/index.html` e a em inglês em `site/en/index.html`. O `site/assemble.mjs` monta o site publicado: a landing na raiz e o escritório em `demo/`, que abre em modo demo dentro da página.
 
-As páginas trazem o marcador `OWNER` no lugar do dono do repositório no GitHub, nos links e nos endereços do GitHub Pages. Troque `OWNER` pelo usuário ou pela organização dona do repositório nas duas páginas. Enquanto ele existir, a montagem para com erro e o deploy não acontece.
+As páginas apontam para o repositório `Lucascodev/orquestra-office` e para o endereço `https://lucascodev.github.io/orquestra-office/`. Num fork, troque esses dois nas duas páginas. Se sobrar o marcador `OWNER` numa página, a montagem para com erro e o deploy não acontece.
 
 Para ver o site montado antes de publicar:
 
