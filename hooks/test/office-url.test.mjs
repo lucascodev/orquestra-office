@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { DEFAULT_OFFICE_URL, installerOfficeUrl, officeUrlFrom, parseOfficeUrl } from "../lib/office-url.mjs";
+import { DEFAULT_OFFICE_URL, installerOfficeUrl, officeUrlFromArguments, parseOfficeUrl } from "../lib/office-url.mjs";
 
 const REFUSED_ANYWHERE = {
   "not a url": /not a URL/,
@@ -15,7 +15,7 @@ const REMOTE_HTTPS = "https://office.example.com:9443";
 
 test("defaults to the office on this machine", () => {
   assert.equal(DEFAULT_OFFICE_URL, "http://127.0.0.1:8420");
-  assert.equal(officeUrlFrom({}), DEFAULT_OFFICE_URL);
+  assert.equal(officeUrlFromArguments([]), DEFAULT_OFFICE_URL);
 });
 
 test("accepts a loopback address and returns its normalized origin", () => {
@@ -58,11 +58,12 @@ test("the installer treats an empty OFFICE_URL as unset and reports a bad one", 
   assert.deepEqual(installerOfficeUrl({ OFFICE_URL: REMOTE_HTTPS }, { allowRemote: true }), { origin: REMOTE_HTTPS });
 });
 
-test("a hook uses a loopback OFFICE_URL, the default when it is blank, and nothing when it is refused", () => {
-  assert.equal(officeUrlFrom({ OFFICE_URL: "http://localhost:1234/" }), "http://localhost:1234");
-  assert.equal(officeUrlFrom({ OFFICE_URL: "" }), DEFAULT_OFFICE_URL);
-  assert.equal(officeUrlFrom({ OFFICE_URL: "   " }), DEFAULT_OFFICE_URL);
-  for (const raw of ["http://evil.example", REMOTE_HTTPS, ...Object.keys(REFUSED_ANYWHERE)]) {
-    assert.equal(officeUrlFrom({ OFFICE_URL: raw }), null, raw);
+test("a hook takes the --office-url the installer wrote, the default without one, and nothing when it is refused", () => {
+  assert.equal(officeUrlFromArguments(["--office-url", "http://localhost:1234/"]), "http://localhost:1234");
+  assert.equal(officeUrlFromArguments(["--office-url", REMOTE_HTTPS]), REMOTE_HTTPS);
+  assert.equal(officeUrlFromArguments([]), DEFAULT_OFFICE_URL);
+  for (const raw of ["", "   ", "http://evil.example", ...Object.keys(REFUSED_ANYWHERE)]) {
+    assert.equal(officeUrlFromArguments(["--office-url", raw]), null, raw);
   }
+  assert.equal(officeUrlFromArguments(["--office-url"]), null);
 });

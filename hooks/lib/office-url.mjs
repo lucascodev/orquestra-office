@@ -1,7 +1,9 @@
+import { parseArgs } from "node:util";
 import { envValue } from "./env-value.mjs";
 
 export const DEFAULT_OFFICE_URL = "http://127.0.0.1:8420";
 export const ALLOW_REMOTE_FLAG = "--allow-remote-office";
+export const OFFICE_URL_OPTION = "office-url";
 
 const WEB_PROTOCOLS = new Set(["http:", "https:"]);
 const SECURE_PROTOCOL = "https:";
@@ -36,6 +38,13 @@ export function installerOfficeUrl(env, options) {
   return raw === undefined ? { origin: DEFAULT_OFFICE_URL } : parseOfficeUrl(raw, options);
 }
 
-// Hooks read OFFICE_URL at run time, where a project's .claude/settings.json can set it. A refused value turns the hook off
-// instead of falling back, so a session aimed elsewhere never ends up reported to this machine's office.
-export const officeUrlFrom = (env) => installerOfficeUrl(env).origin ?? null;
+// Hooks take the address the installer wrote into their command, never OFFICE_URL: a project's .claude/settings.json can set
+// environment variables, and with one point the activity token at a server it chose. The installer already vetted the address,
+// remote ones included. Without the argument (installs from before it existed) the default office is used; a refused value
+// turns the hook off instead of falling back.
+export function officeUrlFromArguments(args) {
+  const { values } = parseArgs({ args, options: { [OFFICE_URL_OPTION]: { type: "string" } }, strict: false });
+  const raw = values[OFFICE_URL_OPTION];
+  if (raw === undefined) return DEFAULT_OFFICE_URL;
+  return typeof raw === "string" ? parseOfficeUrl(raw, { allowRemote: true }).origin ?? null : null;
+}

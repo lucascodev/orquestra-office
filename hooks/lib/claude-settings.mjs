@@ -12,21 +12,22 @@ const BACKGROUND_ACTIVITY_EVENTS = [
   "Notification", "StopFailure", "SubagentStart", "SubagentStop",
 ];
 
-const scriptCommand = (hooksDir, file) => `node "${join(hooksDir, file)}"`;
+// The office address, and for decisions the secret path, go into the command itself: the scripts read nothing from the environment.
+const scriptCommand = ({ hooksDir, officeUrl }, file) => `node "${join(hooksDir, file)}" --office-url "${officeUrl}"`;
 
-// The office address and the secret path go into the command itself: the decision script reads nothing from the environment.
-const decisionCommand = ({ hooksDir, officeUrl, secretFile }) => `${scriptCommand(hooksDir, DECISION_FILE)} --office-url "${officeUrl}" --secret-file "${secretFile}"`;
+const decisionCommand = (options) => `${scriptCommand(options, DECISION_FILE)} --secret-file "${options.secretFile}"`;
 
-function officeGroups({ officeUrl, hooksDir, curlPath, nullDevice, secretFile, activityHeaderFile }) {
+function officeGroups(options) {
+  const { officeUrl, curlPath, nullDevice, activityHeaderFile } = options;
   const activityArgs = curlPostArgs({ url: `${officeUrl}${OFFICE_ROUTES.activity}`, nullDevice, activityHeaderFile });
   // Background hooks never hold up a tool call, and curl in exec form costs a fraction of a node process (ADR 0002, S.0).
   const backgroundActivityHook = { type: "command", command: curlPath, args: activityArgs, async: true };
   // SessionEnd stays in the foreground: with -p, Claude Code kills background hooks when the session ends.
   const sessionEndHook = { type: "command", command: curlPath, args: activityArgs, timeout: SESSION_END_TIMEOUT_SECONDS, onFailure: "continue" };
-  const command = decisionCommand({ hooksDir, officeUrl, secretFile });
+  const command = decisionCommand(options);
   const decisionHook = { type: "command", command, timeout: DECISION_TIMEOUT_SECONDS, onFailure: "continue", statusMessage: DECISION_STATUS_MESSAGE };
   // SessionStart runs a script: it adds the repository root and the team's role names.
-  const sessionStartHook = { type: "command", command: scriptCommand(hooksDir, SESSION_START_FILE), timeout: SESSION_START_TIMEOUT_SECONDS };
+  const sessionStartHook = { type: "command", command: scriptCommand(options, SESSION_START_FILE), timeout: SESSION_START_TIMEOUT_SECONDS };
   return [
     ["SessionStart", { hooks: [sessionStartHook] }],
     ...BACKGROUND_ACTIVITY_EVENTS.map((event) => [event, { hooks: [backgroundActivityHook] }]),
@@ -37,7 +38,7 @@ function officeGroups({ officeUrl, hooksDir, curlPath, nullDevice, secretFile, a
   ];
 }
 
-const officeStatusline = (hooksDir) => ({ type: "command", command: scriptCommand(hooksDir, STATUSLINE_FILE) });
+const officeStatusline = (options) => ({ type: "command", command: scriptCommand(options, STATUSLINE_FILE) });
 
 const uniqueBy = (items, keyOf) => [...new Map(items.map((item) => [keyOf(item), item])).values()];
 
@@ -45,7 +46,7 @@ export function officeEntries(options) {
   const hooks = officeGroups(options).flatMap(([, group]) => group.hooks).filter((hook) => hook.type === "command");
   const execs = hooks.filter((hook) => Array.isArray(hook.args)).map(({ command, args }) => ({ command, args }));
   return {
-    commands: [...new Set([...hooks.filter((hook) => !hook.args).map((hook) => hook.command), officeStatusline(options.hooksDir).command])],
+    commands: [...new Set([...hooks.filter((hook) => !hook.args).map((hook) => hook.command), officeStatusline(options).command])],
     execs: uniqueBy(execs, (exec) => JSON.stringify(exec)),
   };
 }
@@ -71,7 +72,7 @@ export function withOfficeHooks(hooks, options) {
 export function withOfficeStatusline(settings, options) {
   const { statusLine, ...rest } = settings;
   if (isForeignStatusline(statusLine, options)) return settings;
-  return options.isRemoving ? rest : { ...rest, statusLine: officeStatusline(options.hooksDir) };
+  return options.isRemoving ? rest : { ...rest, statusLine: officeStatusline(options) };
 }
 
 export function withOfficeSettings(settings, options) {

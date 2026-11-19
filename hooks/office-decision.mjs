@@ -1,6 +1,6 @@
 import { parseArgs } from "node:util";
 import { permissionOutput, questionOutput, stopOutput } from "./lib/hook-output.mjs";
-import { parseOfficeUrl } from "./lib/office-url.mjs";
+import { OFFICE_URL_OPTION, parseOfficeUrl } from "./lib/office-url.mjs";
 import { readSecretFile } from "./lib/office-secret.mjs";
 import { readStdin } from "./lib/read-stdin.mjs";
 import { postSigned } from "./lib/signed-request.mjs";
@@ -52,8 +52,8 @@ function leaveToTerminal(reason) {
 // The address and the secret come from the arguments the installer wrote, never from the environment:
 // a project's .claude/settings.json can set environment variables, and with them point the hook at a key it chose.
 function settingsFromArguments() {
-  const { values } = parseArgs({ options: { "office-url": { type: "string" }, "secret-file": { type: "string" } }, strict: false });
-  const officeUrl = parseOfficeUrl(values["office-url"] ?? "", { allowRemote: true });
+  const { values } = parseArgs({ options: { [OFFICE_URL_OPTION]: { type: "string" }, "secret-file": { type: "string" } }, strict: false });
+  const officeUrl = parseOfficeUrl(values[OFFICE_URL_OPTION] ?? "", { allowRemote: true });
   if (!officeUrl.origin) leaveToTerminal(`no usable --office-url (${officeUrl.problem})`);
   const key = typeof values["secret-file"] === "string" ? readSecretFile(values["secret-file"]) : null;
   if (!key) leaveToTerminal("the office secret is missing or invalid; run node hooks/install-claude-hooks.mjs");

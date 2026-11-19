@@ -4,10 +4,10 @@ import { homedir } from "node:os";
 import { basename, dirname, join } from "node:path";
 import { activityAuthorizationOf } from "./lib/activity-authorization.mjs";
 import { canLookUpGitSafely } from "./lib/git-lookup.mjs";
-import { officeUrlFrom } from "./lib/office-url.mjs";
+import { officeUrlFromArguments } from "./lib/office-url.mjs";
 import { readStdin } from "./lib/read-stdin.mjs";
 
-const OFFICE_URL = officeUrlFrom(process.env);
+const OFFICE_URL = officeUrlFromArguments(process.argv.slice(2));
 const REPORT_TIMEOUT_MS = 1_500;
 const GIT_TIMEOUT_MS = 1_500;
 const TEAM_LIMIT = 40;

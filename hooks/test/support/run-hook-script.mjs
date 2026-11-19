@@ -35,11 +35,11 @@ export function runScript(scriptPath, { env = {}, args = [], input = "", cwd, no
 
 export const runHookScript = (scriptName, options) => runScript(join(HOOKS_DIR, scriptName), options);
 
-export async function runRecordingFetch(t, scriptName, { env = {}, input = "" } = {}) {
+export async function runRecordingFetch(t, scriptName, { env = {}, args = [], input = "" } = {}) {
   const dir = mkdtempSync(join(tmpdir(), "office-fetch-"));
   t.after(() => rmSync(dir, { recursive: true, force: true }));
   const log = join(dir, "fetch.log");
-  const result = await runHookScript(scriptName, { env: { ...env, FETCH_LOG: log }, input, nodeArgs: ["--import", RECORD_FETCH] });
+  const result = await runHookScript(scriptName, { env: { ...env, FETCH_LOG: log }, args, input, nodeArgs: ["--import", RECORD_FETCH] });
   const urls = existsSync(log) ? readFileSync(log, "utf8").split("\n").filter(Boolean) : [];
   return { ...result, urls };
 }

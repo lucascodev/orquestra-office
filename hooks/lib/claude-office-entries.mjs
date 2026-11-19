@@ -11,7 +11,8 @@ export const OFFICE_ROUTES = Object.freeze({
 });
 
 const escapeRegExp = (text) => text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-const scriptCommandPattern = (file) => new RegExp(`^node "[^"]*[\\\\/]${escapeRegExp(file)}"$`);
+// Before the manifest the scripts took no argument; the optional address is the one the installer writes since then.
+const scriptCommandPattern = (file) => new RegExp(`^node "[^"]*[\\\\/]${escapeRegExp(file)}"( --office-url "[^"]*")?$`);
 const SESSION_START_COMMAND = scriptCommandPattern(SESSION_START_FILE);
 const STATUSLINE_COMMAND = scriptCommandPattern(STATUSLINE_FILE);
 const DECISION_COMMAND = new RegExp(`^node "[^"]*[\\\\/]${escapeRegExp(DECISION_FILE)}" `);

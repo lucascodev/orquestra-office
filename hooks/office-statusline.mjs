@@ -1,10 +1,10 @@
 import { homedir } from "node:os";
 import { activityAuthorizationOf } from "./lib/activity-authorization.mjs";
-import { officeUrlFrom } from "./lib/office-url.mjs";
+import { officeUrlFromArguments } from "./lib/office-url.mjs";
 import { readStdin } from "./lib/read-stdin.mjs";
 import { statusLineText } from "./lib/status-line-text.mjs";
 
-const OFFICE_URL = officeUrlFrom(process.env);
+const OFFICE_URL = officeUrlFromArguments(process.argv.slice(2));
 const REPORT_TIMEOUT_MS = 800;
 
 const AUTHORIZATION = OFFICE_URL === null ? null : activityAuthorizationOf(homedir());

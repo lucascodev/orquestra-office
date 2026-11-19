@@ -13,8 +13,10 @@ const MACHINE = { curlPath: CURL, nullDevice: "/dev/null", secretFile: SECRET_FI
 const INSTALL = { isRemoving: false, officeUrl: OFFICE_URL, hooksDir: HOOKS_DIR, ...MACHINE };
 const ACTIVITY_ARGS = ["-s", "--noproxy", "*", "-m", "3", "-o", "/dev/null", "-H", `@${HEADER_FILE}`, "-H", "Content-Type: application/json", "--data-binary", "@-", `${OFFICE_URL}/events/claude`];
 const DECISION_COMMAND = `node "${join(HOOKS_DIR, "office-decision.mjs")}" --office-url "${OFFICE_URL}" --secret-file "${SECRET_FILE}"`;
-const SESSION_START_COMMAND = `node "${join(HOOKS_DIR, "office-session-start.mjs")}"`;
-const STATUSLINE_COMMAND = `node "${join(HOOKS_DIR, "office-statusline.mjs")}"`;
+const SESSION_START_COMMAND = `node "${join(HOOKS_DIR, "office-session-start.mjs")}" --office-url "${OFFICE_URL}"`;
+const STATUSLINE_COMMAND = `node "${join(HOOKS_DIR, "office-statusline.mjs")}" --office-url "${OFFICE_URL}"`;
+const HTTP_ERA_SESSION_START_COMMAND = `node "${join(HOOKS_DIR, "office-session-start.mjs")}"`;
+const HTTP_ERA_STATUSLINE_COMMAND = `node "${join(HOOKS_DIR, "office-statusline.mjs")}"`;
 const BACKGROUND_EVENTS = ["UserPromptSubmit", "PreToolUse", "PostToolUse", "PostToolUseFailure", "Notification", "StopFailure", "SubagentStart", "SubagentStop"];
 const REMOVE = { ...INSTALL, isRemoving: true };
 const USER_STATUSLINE = { type: "command", command: "my-statusline" };
@@ -99,7 +101,7 @@ test("the user's status line stays untouched on install and on remove", () => {
 test("the office status line is added on install and taken out on remove", () => {
   const installed = withOfficeStatusline({ theme: "dark" }, INSTALL);
 
-  assert.deepEqual(installed, { theme: "dark", statusLine: { type: "command", command: `node "${join(HOOKS_DIR, "office-statusline.mjs")}"` } });
+  assert.deepEqual(installed, { theme: "dark", statusLine: { type: "command", command: STATUSLINE_COMMAND } });
   assert.equal(isForeignStatusline(installed.statusLine, INSTALL), false);
   assert.equal(isForeignStatusline(undefined, INSTALL), false);
   assert.deepEqual(withOfficeStatusline(installed, REMOVE), { theme: "dark" });
@@ -111,7 +113,24 @@ test("an install from another folder, made before the manifest existed, is repla
   const reinstalled = withOfficeSettings(fromOldFolder, INSTALL);
 
   assert.deepEqual(reinstalled, withOfficeSettings({}, INSTALL));
-  assert.deepEqual(sessionStartCommands(reinstalled), [`node "${join(HOOKS_DIR, "office-session-start.mjs")}"`]);
+  assert.deepEqual(sessionStartCommands(reinstalled), [SESSION_START_COMMAND]);
+});
+
+test("the session start and the status line carry the office address in the command, like the decision script", () => {
+  const atAnotherPort = { ...INSTALL, officeUrl: "http://localhost:1234" };
+  const { hooks, statusLine } = withOfficeSettings({}, atAnotherPort);
+
+  assert.equal(hooks.SessionStart[0].hooks[0].command, `node "${join(HOOKS_DIR, "office-session-start.mjs")}" --office-url "http://localhost:1234"`);
+  assert.equal(statusLine.command, `node "${join(HOOKS_DIR, "office-statusline.mjs")}" --office-url "http://localhost:1234"`);
+});
+
+test("an install from before the manifest, with the commands that took no address, is replaced without duplicating", () => {
+  const preManifest = {
+    statusLine: { type: "command", command: `node "${join(OTHER_HOOKS_DIR, "office-statusline.mjs")}"` },
+    hooks: { SessionStart: [{ hooks: [{ type: "command", command: `node "${join(OTHER_HOOKS_DIR, "office-session-start.mjs")}"`, timeout: 5 }] }] },
+  };
+
+  assert.deepEqual(withOfficeSettings(preManifest, INSTALL), withOfficeSettings({}, INSTALL));
 });
 
 test("entries recorded in the manifest are replaced even when they point at another office", () => {
@@ -171,9 +190,9 @@ const DECISION_HTTP = { timeout: 150, statusMessage: "Esperando vocÃª no escritÃ
 // The settings an install before ADR 0002 wrote: 12 http entries and the SessionStart script, plus the user's own hooks.
 const httpEraSettings = () => ({
   model: "opus",
-  statusLine: { type: "command", command: STATUSLINE_COMMAND },
+  statusLine: { type: "command", command: HTTP_ERA_STATUSLINE_COMMAND },
   hooks: {
-    SessionStart: [{ hooks: [{ type: "command", command: SESSION_START_COMMAND, timeout: 5 }] }],
+    SessionStart: [{ hooks: [{ type: "command", command: HTTP_ERA_SESSION_START_COMMAND, timeout: 5 }] }],
     ...Object.fromEntries(HTTP_ACTIVITY_EVENTS.map((event) => [event, [{ hooks: [httpHook("/events/claude")] }]])),
     Stop: [USER_STOP_GROUP, { hooks: [httpHook("/hooks/claude/stop")] }],
     PermissionRequest: [{ hooks: [httpHook("/hooks/claude/permission", DECISION_HTTP)] }],
@@ -182,7 +201,7 @@ const httpEraSettings = () => ({
 });
 const httpEraManifest = {
   urls: ["/events/claude", "/hooks/claude/stop", "/hooks/claude/permission", "/hooks/claude/question"].map((route) => `${OFFICE_URL}${route}`),
-  commands: [SESSION_START_COMMAND, STATUSLINE_COMMAND],
+  commands: [HTTP_ERA_SESSION_START_COMMAND, HTTP_ERA_STATUSLINE_COMMAND],
 };
 
 test("settings from the http era become the command layout, keeping the user's hooks", () => {

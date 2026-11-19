@@ -32,21 +32,21 @@ test("installs hooks and status line pointing at this hooks folder and the defau
 
   assert.equal(result.code, 0);
   const settings = readSettings(dir);
-  assert.equal(settings.statusLine.command, `node "${join(HOOKS_DIR, "office-statusline.mjs")}"`);
-  assert.equal(settings.hooks.SessionStart[0].hooks[0].command, `node "${join(HOOKS_DIR, "office-session-start.mjs")}"`);
+  assert.equal(settings.statusLine.command, `node "${join(HOOKS_DIR, "office-statusline.mjs")}" --office-url "${DEFAULT_OFFICE_URL}"`);
+  assert.equal(settings.hooks.SessionStart[0].hooks[0].command, `node "${join(HOOKS_DIR, "office-session-start.mjs")}" --office-url "${DEFAULT_OFFICE_URL}"`);
   assert.equal(settings.hooks.Stop[0].hooks[0].command, `node "${join(HOOKS_DIR, "office-decision.mjs")}" --office-url "${DEFAULT_OFFICE_URL}" --secret-file "${join(THROWAWAY_HOME, ".orquestra-office", "secret")}"`);
   assert.deepEqual(httpHookUrls(settings), []);
   assert.match(result.stdout, new RegExp(`show up at ${DEFAULT_OFFICE_URL}\\.`));
   assert.deepEqual(backupsIn(dir), []);
 });
 
-const DECISION_URL = / --office-url "([^"]+)" /;
+const OFFICE_URL_ARGUMENT = / --office-url "([^"]+)"/;
 const officeHooksOf = (settings) => Object.values(settings.hooks).flat().flatMap((group) => group.hooks);
-// Every address an install writes: the last curl argument of the activity hooks and the --office-url of the decision script.
-const officeUrlsIn = (settings) => officeHooksOf(settings).flatMap((hook) => {
-  if (Array.isArray(hook.args)) return [hook.args.at(-1)];
-  const decisionUrl = DECISION_URL.exec(hook.command ?? "")?.[1];
-  return decisionUrl ? [`${decisionUrl}/`] : [];
+// Every address an install writes: the last curl argument of the activity hooks and the --office-url of the node scripts.
+const officeUrlsIn = (settings) => [...officeHooksOf(settings), settings.statusLine].flatMap((hook) => {
+  if (Array.isArray(hook?.args)) return [hook.args.at(-1)];
+  const scriptUrl = OFFICE_URL_ARGUMENT.exec(hook?.command ?? "")?.[1];
+  return scriptUrl ? [`${scriptUrl}/`] : [];
 });
 const httpHookUrls = (settings) => officeHooksOf(settings).filter((hook) => hook.type === "http").map((hook) => hook.url);
 
@@ -269,8 +269,8 @@ test("an install from another folder, made before the manifest existed, is repla
   await install(dir);
 
   const settings = readSettings(dir);
-  assert.equal(settings.statusLine.command, `node "${join(HOOKS_DIR, "office-statusline.mjs")}"`);
-  assert.deepEqual(settings.hooks.SessionStart.flatMap((group) => group.hooks).map((hook) => hook.command), [`node "${join(HOOKS_DIR, "office-session-start.mjs")}"`]);
+  assert.equal(settings.statusLine.command, `node "${join(HOOKS_DIR, "office-statusline.mjs")}" --office-url "${DEFAULT_OFFICE_URL}"`);
+  assert.deepEqual(settings.hooks.SessionStart.flatMap((group) => group.hooks).map((hook) => hook.command), [`node "${join(HOOKS_DIR, "office-session-start.mjs")}" --office-url "${DEFAULT_OFFICE_URL}"`]);
   assert.equal(settings.hooks.Stop.length, 1);
 });
 
