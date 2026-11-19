@@ -40,12 +40,12 @@ test("creates config.toml with the office notify when there is none", async (t) 
   assert.deepEqual(backupsIn(dir), []);
 });
 
-test("uses OFFICE_URL from the environment, normalized to its origin, in the notify command", async (t) => {
+test("uses OFFICE_URL from the environment, normalized to its origin and with localhost as 127.0.0.1, in the notify command", async (t) => {
   const dir = codexHome(t);
 
   await install(dir, { OFFICE_URL: "http://LOCALHOST:1234/" });
 
-  assert.match(readConfig(dir), /"http:\/\/localhost:1234\/events\/codex"/);
+  assert.match(readConfig(dir), /"http:\/\/127\.0\.0\.1:1234\/events\/codex"/);
 });
 
 test("refuses a remote OFFICE_URL, exits 1 and writes nothing", async (t) => {

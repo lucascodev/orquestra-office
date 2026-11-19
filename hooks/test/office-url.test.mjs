@@ -20,8 +20,14 @@ test("defaults to the office on this machine", () => {
 
 test("accepts a loopback address and returns its normalized origin", () => {
   assert.deepEqual(parseOfficeUrl("http://127.0.0.1:8420/"), { origin: "http://127.0.0.1:8420" });
-  assert.deepEqual(parseOfficeUrl("HTTP://LOCALHOST:1234"), { origin: "http://localhost:1234" });
   assert.deepEqual(parseOfficeUrl("https://[::1]:8420"), { origin: "https://[::1]:8420" });
+});
+
+// On Windows localhost resolves to ::1 first, where another process could be listening and receive the tokens and the code.
+test("localhost becomes 127.0.0.1, the address the collector listens on", () => {
+  assert.deepEqual(parseOfficeUrl("HTTP://LOCALHOST:1234"), { origin: "http://127.0.0.1:1234" });
+  assert.deepEqual(parseOfficeUrl("http://localhost"), { origin: "http://127.0.0.1" });
+  assert.deepEqual(parseOfficeUrl("https://localhost:8420", { allowRemote: true }), { origin: "https://127.0.0.1:8420" });
 });
 
 test("refuses what is not a bare http or https origin, even with the remote flag", () => {
@@ -53,17 +59,21 @@ test("the installer treats an empty OFFICE_URL as unset and reports a bad one", 
   assert.deepEqual(installerOfficeUrl({}), { origin: DEFAULT_OFFICE_URL });
   assert.deepEqual(installerOfficeUrl({ OFFICE_URL: "" }), { origin: DEFAULT_OFFICE_URL });
   assert.deepEqual(installerOfficeUrl({ OFFICE_URL: "  " }), { origin: DEFAULT_OFFICE_URL });
-  assert.deepEqual(installerOfficeUrl({ OFFICE_URL: "http://localhost:1234" }), { origin: "http://localhost:1234" });
+  assert.deepEqual(installerOfficeUrl({ OFFICE_URL: "http://localhost:1234" }), { origin: "http://127.0.0.1:1234" });
   assert.match(installerOfficeUrl({ OFFICE_URL: "http://evil.example" }).problem, /--allow-remote-office/);
   assert.deepEqual(installerOfficeUrl({ OFFICE_URL: REMOTE_HTTPS }, { allowRemote: true }), { origin: REMOTE_HTTPS });
 });
 
 test("a hook takes the --office-url the installer wrote, the default without one, and nothing when it is refused", () => {
-  assert.equal(officeUrlFromArguments(["--office-url", "http://localhost:1234/"]), "http://localhost:1234");
+  assert.equal(officeUrlFromArguments(["--office-url", "http://127.0.0.1:1234/"]), "http://127.0.0.1:1234");
   assert.equal(officeUrlFromArguments(["--office-url", REMOTE_HTTPS]), REMOTE_HTTPS);
   assert.equal(officeUrlFromArguments([]), DEFAULT_OFFICE_URL);
   for (const raw of ["", "   ", "http://evil.example", ...Object.keys(REFUSED_ANYWHERE)]) {
     assert.equal(officeUrlFromArguments(["--office-url", raw]), null, raw);
   }
   assert.equal(officeUrlFromArguments(["--office-url"]), null);
+});
+
+test("a localhost --office-url written by an earlier install is read as 127.0.0.1, with no reinstall", () => {
+  assert.equal(officeUrlFromArguments(["--office-url", "http://localhost:1234"]), "http://127.0.0.1:1234");
 });

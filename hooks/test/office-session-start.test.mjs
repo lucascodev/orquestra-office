@@ -149,10 +149,10 @@ for (const officeUrl of REFUSED_OFFICE_URLS) {
   });
 }
 
-test("reports to the --office-url the installer wrote, normalized to its origin", async (t) => {
+test("reports to the --office-url the installer wrote, normalized to its origin and with localhost as 127.0.0.1", async (t) => {
   const urls = await requestedUrls(t, SCRIPT, { args: at("http://localhost:1234/"), input: JSON.stringify({ session_id: "x", cwd: tmpdir() }) });
 
-  assert.deepEqual(urls, ["http://localhost:1234/events/claude"]);
+  assert.deepEqual(urls, ["http://127.0.0.1:1234/events/claude"]);
 });
 
 test("without the office secret it reports nothing and prints nothing", async (t) => {

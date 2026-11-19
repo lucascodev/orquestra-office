@@ -52,14 +52,14 @@ const officeUrlsIn = (settings) => [...officeHooksOf(settings), settings.statusL
 });
 const httpHookUrls = (settings) => officeHooksOf(settings).filter((hook) => hook.type === "http").map((hook) => hook.url);
 
-test("uses OFFICE_URL from the environment, normalized to its origin, in every office hook", async (t) => {
+test("uses OFFICE_URL from the environment, normalized to its origin and with localhost as 127.0.0.1, in every office hook", async (t) => {
   const dir = configDir(t);
 
   await install(dir, { OFFICE_URL: "http://LOCALHOST:1234/" });
 
   const urls = officeUrlsIn(readSettings(dir));
   assert.ok(urls.length > 0);
-  assert.ok(urls.every((url) => url.startsWith("http://localhost:1234/")));
+  assert.ok(urls.every((url) => url.startsWith("http://127.0.0.1:1234/")));
 });
 
 for (const officeUrl of ["http://evil.example", "https://evil.example", "http://127.0.0.1:8420/x", "http://user:pw@127.0.0.1:8420"]) {

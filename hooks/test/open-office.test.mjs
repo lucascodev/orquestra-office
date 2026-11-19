@@ -44,14 +44,15 @@ test("asks the office for a code with a signed request and prints the link at th
   assert.match(result.stdout, new RegExp(`^http://127\\.0\\.0\\.1:${new URL(office.url).port}/#pair=${CODE}$`, "m"));
 });
 
-test("the link keeps the host of the office address it was given", async (t) => {
+test("a localhost office address gives a link to 127.0.0.1, never one the browser could send to ::1", async (t) => {
   const office = await startFakeOffice(t, { answer: bootstrapAnswer({ code: CODE, expiresAt: 1, urls: [] }) });
   const port = new URL(office.url).port;
 
   const result = await openOffice(`http://localhost:${port}`);
 
   assert.equal(result.code, 0);
-  assert.match(result.stdout, new RegExp(`^http://localhost:${port}/#pair=${CODE}$`, "m"));
+  assert.match(result.stdout, new RegExp(`^http://127\\.0\\.0\\.1:${port}/#pair=${CODE}$`, "m"));
+  assert.doesNotMatch(result.stdout, /localhost/);
 });
 
 test("without a challenge from the office it asks for no code and opens nothing", async (t) => {
