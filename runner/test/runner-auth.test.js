@@ -5,6 +5,7 @@ import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { runnerTicketMessage } from "../../collector/src/shared/auth/signed-message.js";
+import { createRunnerAuth } from "../src/auth/runner-auth.js";
 import { createRunner } from "../src/composition.js";
 import { fakeClaudeLauncher } from "./support/fake-claude-process.js";
 import { listenOnFetchablePort } from "./support/listen-on-fetchable-port.js";
@@ -127,7 +128,22 @@ test("without the secret no token is ever given", (t) => withRunner(t, async (ba
   assert.equal((await tokenOf(base)).status, 401);
 }, { secretFile: null }));
 
-test("the office page may send the Authorization header across origins", (t) => withRunner(t, async (base) => {
+const TOKEN_TTL_MS = 12 * 60 * 60_000;
+
+test("a session token works for 12 hours and not a moment more", () => {
+  let at = 1_000_000;
+  const auth = createRunnerAuth({ readOfficeKey: () => Buffer.from(SECRET, "base64url"), now: () => at });
+  const { nonce } = auth.issueChallenge();
+  const { token, expiresAt } = auth.openSession({ nonce, ticket: ticketFor(nonce) });
+
+  assert.equal(expiresAt, at + TOKEN_TTL_MS);
+  at += TOKEN_TTL_MS - 1;
+  assert.equal(auth.isValidToken(token), true);
+  at += 1;
+  assert.equal(auth.isValidToken(token), false);
+});
+
+test("the office page may send the Authorization header across origins",(t) => withRunner(t, async (base) => {
   const preflight = await fetch(`${base}/sessions`, { method: "OPTIONS", headers: { Origin: OFFICE, "Access-Control-Request-Method": "POST", "Access-Control-Request-Headers": "authorization" } });
 
   assert.match(preflight.headers.get("access-control-allow-headers"), /Authorization/);
