@@ -41,7 +41,7 @@ describe("activity reported by the collector", () => {
   const cases = [
     { tool: "Edit", input: { file_path: "C:\\repo\\src\\a.js" }, shown: "editando a.js", subject: "a.js" },
     { tool: "Read", input: { file_path: "/repo/README.md" }, shown: "lendo README.md", subject: "README.md" },
-    { tool: "Bash", input: { command: "npm test -- --watch" }, shown: "rodando npm", subject: "npm" },
+    { tool: "Bash", input: { command: "npm install --save-dev vitest" }, shown: "rodando npm", subject: "npm" },
     { tool: "Agent", input: { subagent_type: "code-reviewer" }, shown: "delegou para code-reviewer", subject: "code-reviewer" },
     { tool: "mcp__notion__search", input: {}, shown: "usando notion", subject: "notion" },
   ];

@@ -77,7 +77,9 @@ async function agentActions() {
     [tool("Grep"), "procurando no código"],
     [tool("Edit", { file_path: "/repo/a.js" }), "editando a.js"],
     [tool("Write"), "editando um arquivo"],
-    [tool("Bash", { command: "npm test" }), "rodando npm"],
+    [tool("Bash", { command: "npm install" }), "rodando npm"],
+    [tool("Bash", { command: "npm test" }), "rodando os testes com npm"],
+    [tool("Bash", { command: "npx vitest run" }), "rodando os testes com vitest"],
     [tool("Bash"), "rodando um comando"],
     [tool("Agent", { subagent_type: "code-reviewer" }), "delegou para code-reviewer"],
     [tool("Task"), "delegou uma tarefa"],
@@ -187,12 +189,10 @@ describe("phrases the page writes from the collector's and the runner's fields",
 });
 
 const DEMO_ONLY_ACTION_IDS = ["no-task"];
-// The actions of docs/arquitetura/checklist-plano-testes.md, section 2. The page and the collector are built in parallel, so these
-// may not be in the collector's AGENT_ACTION yet; once they are, the tests above already require their phrases.
 const TESTS_AND_PLAN_ACTION_IDS = ["running-tests", "writing-tests", "tests-passed", "tests-failed", "plan-approved"];
 
 const PHRASE_SETS = [
-  { name: "agent actions", catalog: AGENT_ACTIONS, publishedIds: Object.values(AGENT_ACTION), demoOnlyIds: [...DEMO_ONLY_ACTION_IDS, ...TESTS_AND_PLAN_ACTION_IDS] },
+  { name: "agent actions", catalog: AGENT_ACTIONS, publishedIds: Object.values(AGENT_ACTION), demoOnlyIds: DEMO_ONLY_ACTION_IDS },
   { name: "tool summaries", catalog: TOOL_SUMMARIES, publishedIds: Object.values(TOOL_SUMMARY), demoOnlyIds: [] },
   { name: "request intents", catalog: REQUEST_INTENTS, publishedIds: Object.values(TOOL_SUMMARY), demoOnlyIds: [] },
   { name: "terminal notes", catalog: TERMINAL_NOTES, publishedIds: [...Object.values(ENTRY_TEXT), ...Object.values(SESSION_ENTRY)], demoOnlyIds: [] },
@@ -216,9 +216,8 @@ describe("ids the collector and the runner publish", () => {
     });
   }
 
-  it("include the test and plan actions of the contract, each with a phrase", () => {
-    const missing = TESTS_AND_PLAN_ACTION_IDS.filter((id) => !Object.hasOwn(AGENT_ACTIONS, id) || !isFilledPhrase(AGENT_ACTIONS[id]));
-    assert.deepEqual(missing, []);
+  it("include the test and plan actions the collector publishes", () => {
+    assert.deepEqual(TESTS_AND_PLAN_ACTION_IDS.filter((id) => !Object.values(AGENT_ACTION).includes(id)), []);
   });
 
   it("write the test and plan actions with and without their subject", () => {
