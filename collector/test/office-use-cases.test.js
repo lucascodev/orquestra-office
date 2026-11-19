@@ -45,3 +45,8 @@ test("the public view hides the usage meters and shows what is pending and queue
   assert.deepEqual(view.outbox, { [MAIN_KEY]: 1 });
   assert.deepEqual(Object.keys(view.projects), Object.keys(store.snapshot().projects));
 });
+
+test("the public view says what time it is on the collector's clock", () => {
+  const view = createPublicOfficeView({ store: createOfficeStore(), decisions: createPendingDecisions(), outbox: createOutbox(), now: () => 1_234 })();
+  assert.equal(view.generatedAt, 1_234);
+});
