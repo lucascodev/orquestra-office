@@ -1,6 +1,7 @@
 import { isRecord } from "../shared/is-record.js";
 import { textOf, timeOf } from "../shared/field-values.js";
 import { testFileState } from "./test-file-state.js";
+import { testFrameworkName } from "./test-framework-name.js";
 import { testRunSummary } from "./test-run-summary.js";
 
 // One reader per field of agent.tests, shared by the tag over the figure, the island's sheet, the Testes tab and the timeline.
@@ -14,7 +15,7 @@ export function runningTestsOf(tests) {
   const running = testsField(tests, "running");
   const startedAt = isRecord(running) ? timeOf(running.startedAt) : null;
   if (startedAt === null) return null;
-  return { command: textOf(running.command), framework: textOf(running.framework), startedAt };
+  return { command: textOf(running.command), frameworkName: testFrameworkName(running.framework), startedAt };
 }
 
 export function lastTestRunOf(tests) {

@@ -1,5 +1,6 @@
 import { isRecord } from "../shared/is-record.js";
-import { countOf, textOf, timeOf } from "../shared/field-values.js";
+import { countOf, timeOf } from "../shared/field-values.js";
+import { testFrameworkName } from "./test-framework-name.js";
 
 const FAILED = "failed";
 const PASSED = "passed";
@@ -23,7 +24,7 @@ export function testRunSummary(run) {
     skipped: countOf(run.skipped),
     headlineCount: run.isOk ? passed : failuresWorthCounting(failed),
     hasCounts: passed !== null || failed !== null,
-    framework: textOf(run.framework),
+    frameworkName: testFrameworkName(run.framework),
     finishedAt: timeOf(run.finishedAt),
   };
 }

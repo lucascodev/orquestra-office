@@ -45,7 +45,7 @@ describe("checklist progress", () => {
 
 describe("test rounds", () => {
   it("counts the failures in the headline of a bad round and the passes in a good one", () => {
-    assert.deepEqual(pick(testRunSummary(failedRun), ["verdict", "headlineCount", "hasCounts", "framework"]), ["failed", 2, true, "vitest"]);
+    assert.deepEqual(pick(testRunSummary(failedRun), ["verdict", "headlineCount", "hasCounts", "frameworkName"]), ["failed", 2, true, "Vitest"]);
     assert.deepEqual(pick(testRunSummary(passedRun), ["verdict", "headlineCount", "isOk"]), ["passed", 250, true]);
   });
 
@@ -81,7 +81,7 @@ describe("test rounds", () => {
       runsToday: [{ finishedAt: NOW, label: "web", isOk: true, passed: 3 }, null, 7],
       files: [{ path: "a.test.js", action: "edited", failed: 1 }, { path: 3 }, "b.test.js"],
     }, { dayStart: NOW - MINUTE });
-    assert.deepEqual(overview.running, { command: "npx vitest", framework: "vitest", startedAt: NOW - 12_000 });
+    assert.deepEqual(overview.running, { command: "npx vitest", frameworkName: "Vitest", startedAt: NOW - 12_000 });
     assert.deepEqual(overview.lastRun.failures, [{ name: "x", location: "a.test.js:3", message: "boom" }]);
     assert.deepEqual(overview.runsToday.map((run) => [run.label, run.verdict, run.passed]), [["web", "passed", 3]]);
     assert.deepEqual(overview.files.map((file) => file.path), ["a.test.js"]);

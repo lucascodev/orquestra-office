@@ -136,7 +136,7 @@ describe("tabs of the agent's sheet", () => {
     }, { dayStart: TODAY }));
     assert.ok(html.includes(`<span class="work-clock" data-elapsed-since="${NOW - 12_000}"></span>`));
     assert.ok(html.includes('<code class="work-command">npx vitest &lt;src&gt;</code>'));
-    assert.ok(html.includes("<b>2 falharam · vitest</b><span class=\"work-muted\">18:42 · 4,1 s</span>"));
+    assert.ok(html.includes("<b>2 falharam · Vitest</b><span class=\"work-muted\">18:42 · 4,1 s</span>"));
     assert.ok(html.includes("<b>**keeps** &lt;b&gt;x&lt;/b&gt;</b>"));
     assert.ok(html.includes('<span class="work-failure-where">[a](https://evil.example):12</span>'));
     assert.ok(!html.includes("<a "));

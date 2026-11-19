@@ -16,7 +16,7 @@ const SEPARATOR = " · ";
 function runningSection(running) {
   if (!running) return "";
   const clock = `<span class="work-clock" data-elapsed-since="${running.startedAt}"></span>`;
-  const command = running.command ?? running.framework;
+  const command = running.command ?? running.frameworkName;
   return `<section class="work-card is-running" aria-label="${TESTS_TEXT.runningLabel}">
       <div class="work-card-head"><span class="work-mark" aria-hidden="true">${WORK_MARKS.testing}</span><b>${TESTS_TEXT.running}</b>${clock}</div>
       ${command ? `<code class="work-command">${esc(command)}</code>` : ""}
@@ -48,7 +48,7 @@ function failureOf(failure) {
 
 function lastRunSection(run) {
   if (!run) return "";
-  const headline = [countPhrase(TEST_VERDICTS[run.verdict], run.headlineCount), run.framework].filter(Boolean).join(SEPARATOR);
+  const headline = [countPhrase(TEST_VERDICTS[run.verdict], run.headlineCount), run.frameworkName].filter(Boolean).join(SEPARATOR);
   const when = [run.finishedAt === null ? "" : clockTime(run.finishedAt), formatTestDuration(run.durationMs)].filter(Boolean).join(SEPARATOR);
   const failures = run.failures.map(failureOf).join("");
   return `<section class="work-card" data-verdict="${run.verdict}" aria-label="${TESTS_TEXT.lastRunLabel}">
@@ -75,7 +75,7 @@ function runResultSpoken(run) {
 
 function runRow(run) {
   const time = run.finishedAt === null ? "" : clockTime(run.finishedAt);
-  return `<li class="work-row work-run" data-verdict="${run.verdict}"><time class="work-time">${time}</time><span class="work-mark" aria-hidden="true">${VERDICT_MARKS[run.verdict]}</span><span class="work-row-text">${esc(run.label ?? run.framework ?? TEST_RUN_FALLBACK_LABEL)}</span><span class="work-row-end" aria-hidden="true">${esc(runResult(run))}</span><span class="sr-only">: ${esc(runResultSpoken(run))}</span></li>`;
+  return `<li class="work-row work-run" data-verdict="${run.verdict}"><time class="work-time">${time}</time><span class="work-mark" aria-hidden="true">${VERDICT_MARKS[run.verdict]}</span><span class="work-row-text">${esc(run.label ?? run.frameworkName ?? TEST_RUN_FALLBACK_LABEL)}</span><span class="work-row-end" aria-hidden="true">${esc(runResult(run))}</span><span class="sr-only">: ${esc(runResultSpoken(run))}</span></li>`;
 }
 
 function runsSection(runs) {

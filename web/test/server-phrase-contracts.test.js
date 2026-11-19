@@ -81,7 +81,8 @@ async function agentActions() {
     [tool("Write"), "editando um arquivo"],
     [tool("Bash", { command: "npm install" }), "rodando npm"],
     [tool("Bash", { command: "npm test" }), "rodando os testes com npm"],
-    [tool("Bash", { command: "npx vitest run" }), "rodando os testes com vitest"],
+    [tool("Bash", { command: "npx vitest run" }), "rodando os testes com Vitest"],
+    [tool("Bash", { command: "node --test test/*.test.js" }), "rodando os testes com node:test"],
     [tool("Bash"), "rodando um comando"],
     [tool("Agent", { subagent_type: "code-reviewer" }), "delegou para code-reviewer"],
     [tool("Task"), "delegou uma tarefa"],
@@ -229,7 +230,7 @@ describe("ids the collector and the runner publish", () => {
       agentActionText({ actionId, subject: subjects[actionId] }), logEntryText({ at: 1, actionId, subject: null }),
     ]);
     assert.deepEqual(phrases, [
-      "rodando os testes com vitest", "rodando os testes",
+      "rodando os testes com Vitest", "rodando os testes",
       "escrevendo o teste a.test.js", "escrevendo um teste",
       "rodou os testes: 2 passaram", "rodou os testes: todos passaram",
       "rodou os testes: 2 falharam", "rodou os testes: houve falhas",
