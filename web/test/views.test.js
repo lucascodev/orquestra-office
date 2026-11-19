@@ -261,6 +261,15 @@ describe("headquarters island sheet", () => {
   it("says nobody works on an empty island and how the team shows up", () => {
     assert.match(renderIslandTeam([]), /Ninguém trabalhando aqui agora/);
   });
+
+  it("shows each person's checklist and last test run as a mark and a number, said in words to screen readers", () => {
+    const team = islandFacts(projectOf("c:/office", "orquestra-office", [
+      agentOf("claude:h1", { name: "Heitor", checklist: { items: [{ status: "completed" }, { status: "pending" }], updatedAt: NOW }, tests: { lastRun: { isOk: false, failed: 2, passed: 248, finishedAt: NOW } } }),
+      agentOf("claude:b1", { name: "Bia", checklist: { items: [{ status: "completed" }, { status: "completed" }], updatedAt: NOW }, tests: { lastRun: { isOk: true, failed: 0, passed: 461, finishedAt: NOW } } }),
+      agentOf("codex:t1", { name: "Tomás", source: "codex", label: "Codex", status: "break" }),
+    ])).team;
+    assertMatchesRecording("hq-island-work", renderIslandTeam(team));
+  });
 });
 
 describe("headquarters legend", () => {

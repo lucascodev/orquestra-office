@@ -13,4 +13,11 @@ export const WORK_SIGNALS = {
     writing: "escrevendo",
     results: "resultado dos testes",
   },
+  island: {
+    checklist: "{done}/{total}",
+    checklistSpoken: "{done} de {total} tarefas feitas",
+    failedSpoken: { one: "na última rodada, 1 teste falhou", other: "na última rodada, {count} testes falharam", unknown: "a última rodada de testes falhou" },
+    passedSpoken: { one: "na última rodada, 1 teste passou", other: "na última rodada, {count} testes passaram", unknown: "a última rodada de testes passou" },
+    missing: "—",
+  },
 };

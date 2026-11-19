@@ -288,3 +288,11 @@
 
 .hq-legend-work { margin-top: var(--space-2); padding-top: var(--space-3); border-top: 1px solid var(--border); }
 .hq-legend-list .work-mark { font-size: 13px; }
+
+/* With the two marks the row no longer fits a phone: the status sentence gives way first, as the name already does, and the
+   list's column stays as wide as the sheet instead of growing to the row's whole text. */
+.hq-island-team { grid-template-columns: minmax(0, 1fr); }
+.hq-member-status { flex-shrink: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.hq-member-checklist, .hq-member-tests { flex: none; color: var(--muted); font: 11px var(--font-mono); white-space: nowrap; }
+.hq-member-tests { min-width: 5ch; color: var(--subtle); text-align: right; }
+.hq-member-tests[data-signal] { color: var(--signal-color); }
