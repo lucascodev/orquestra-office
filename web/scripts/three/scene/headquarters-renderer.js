@@ -1,5 +1,5 @@
 import { boundsToFrameAt, wholeHeadquartersBounds } from "../../domain/camera/frame-target.js";
-import { panBy, screenToGround, zoomAt } from "../../domain/camera/viewpoint.js";
+import { centerBetweenPanels, panBy, screenToGround, zoomAt } from "../../domain/camera/viewpoint.js";
 import { layoutHeadquarters } from "../../domain/headquarters/headquarters-layout.js";
 import { headquartersSpots } from "../../domain/headquarters/headquarters-spots.js";
 import { areaLabelDetail } from "../../domain/headquarters/label-detail.js";
@@ -58,7 +58,9 @@ const islandPiece = (island) => batchStatic(buildIsland(new THREE.Group(), islan
 // The building, the common rooms and the yard as one static piece, one piece per island that is rebuilt alone when its project,
 // theme, occupants or screens change, and the people on top, who live through every rebuild.
 // While measuring, each frame waits for the GPU to finish, so the time read is the whole frame and not only the commands sent.
-export function createHeadquartersRenderer({ onFrame = () => {}, onPick = () => {}, describeStatus = (status) => status, isMeasuring = false } = {}) {
+export function createHeadquartersRenderer({
+  onFrame = () => {}, onPick = () => {}, onFollowChange = () => {}, describeStatus = (status) => status, isMeasuring = false,
+} = {}) {
   const stage = document.createElement("div");
   stage.className = "hq-stage";
   const canvas = document.createElement("canvas");
@@ -106,6 +108,7 @@ export function createHeadquartersRenderer({ onFrame = () => {}, onPick = () => 
   let lastStep = 0;
   let lastRoutineCheck = 0;
   let followedKey = null;
+  let followScale = 1;
 
   function replace(previous, next) {
     if (previous) {
@@ -182,14 +185,16 @@ export function createHeadquartersRenderer({ onFrame = () => {}, onPick = () => 
   }
 
   const groundOf = (person) => ({ x: person.root.position.x, z: person.root.position.z });
+  const followTargetOf = (person) => centerBetweenPanels({ point: groundOf(person), scale: followScale, viewport: rig.viewport(), insets: rig.insets() });
 
   function stopFollowing() {
     if (!followedKey) return;
     followedKey = null;
     people.highlight(null);
+    onFollowChange(null);
   }
 
-  // Following glides to the agent first and then sticks to the hip on every frame.
+  // Following glides to the agent first and then keeps the hip in the middle of what the panels leave free, on every frame.
   function keepFollowing() {
     if (!followedKey) return;
     const person = people.personOf(followedKey);
@@ -197,7 +202,7 @@ export function createHeadquartersRenderer({ onFrame = () => {}, onPick = () => 
       stopFollowing();
       return;
     }
-    const target = groundOf(person);
+    const target = followTargetOf(person);
     if (rig.isGliding()) {
       rig.retarget(target);
       return;
@@ -213,8 +218,9 @@ export function createHeadquartersRenderer({ onFrame = () => {}, onPick = () => 
     if (!person) return;
     followedKey = key;
     people.highlight(key);
-    const scale = Math.max(rig.viewpoint().scale, rig.limits().min * FOLLOW_MIN_ZOOM);
-    rig.glideTo({ target: groundOf(person), scale }, performance.now());
+    followScale = Math.max(rig.viewpoint().scale, rig.limits().min * FOLLOW_MIN_ZOOM);
+    rig.glideTo({ target: followTargetOf(person), scale: followScale }, performance.now());
+    onFollowChange(key);
     isDirty = true;
   }
 
@@ -300,6 +306,6 @@ export function createHeadquartersRenderer({ onFrame = () => {}, onPick = () => 
 
   return {
     element: stage, show, resize, invalidate, follow, stopFollowing, scene, rig, frame, frameWhole, zoomAtCenter, setFrameInsets,
-    layoutShown: () => layout, followedKey: () => followedKey, destinations: () => people.destinations(),
+    layoutShown: () => layout, followedKey: () => followedKey, destinations: () => people.destinations(), tagOf: (key) => people.tagOf(key),
   };
 }

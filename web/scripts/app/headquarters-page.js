@@ -5,6 +5,7 @@ import { layoutHeadquarters } from "../domain/headquarters/headquarters-layout.j
 import { accountUsage } from "../domain/office/account-usage.js";
 import { withBuildingAgentNames } from "../domain/office/agent-names.js";
 import { areaCensus } from "../domain/office/area-census.js";
+import { canReceiveMessages } from "../domain/office/can-receive-messages.js";
 import { dayTimeline } from "../domain/office/day-timeline.js";
 import { serverClockNow } from "../domain/office/pending-queue.js";
 import { renderAccounts } from "../view/hud/accounts-view.js";
@@ -12,6 +13,7 @@ import { renderAreaList } from "../view/hud/area-list-view.js";
 import { renderConnection } from "../view/hud/connection-view.js";
 import { renderDayTimeline } from "../view/hud/day-timeline-view.js";
 import { renderLegend } from "../view/hud/legend-view.js";
+import { createAgentDrawer } from "./agent-drawer.js";
 import { createPendingAlert } from "./pending-alert.js";
 
 const CENSUS_REFRESH_MS = 2_000;
@@ -21,7 +23,7 @@ const DAY_REFRESH_MS = 30_000;
 const FOCUS_KEYS = ["project", "area", "frame"];
 const DOCKED_PANELS = {
   left: [".hq-rooms", ".hq-legend"],
-  right: [],
+  right: [".hq-drawer"],
   top: [".hq-capsule", ".hq-alert", ".hq-accounts"],
   bottom: [".hq-day", ".hq-camera"],
 };
@@ -29,6 +31,8 @@ const EMPTY_STATE = {
   mode: "connecting", projects: {}, pending: [], outbox: {}, usage: null, accounts: null, timeline: null, generatedAt: null,
   runner: { isAvailable: false, liveAgents: {} },
 };
+
+const NO_MAP = { element: null, followedKey: () => null, follow: () => {}, stopFollowing: () => {}, tagOf: () => null };
 
 const startOfDay = (ms) => new Date(ms).setHours(0, 0, 0, 0);
 
@@ -95,7 +99,39 @@ export function createHeadquartersPage({ hud, headquarters, source, newSessionDi
     const isHere = Object.values(state.projects).some((project) => Object.hasOwn(project.agents, awaitedAgentKey));
     if (!isHere) return;
     headquarters.follow(awaitedAgentKey);
+    openAgent(awaitedAgentKey);
     awaitedAgentKey = null;
+  }
+
+  function findAgent(agentKey) {
+    const project = Object.values(state.projects).find((candidate) => Object.hasOwn(candidate.agents, agentKey));
+    return project ? { agent: project.agents[agentKey], project } : null;
+  }
+
+  function drawerContext({ agent, project }) {
+    const liveStatus = state.runner.liveAgents[agent.key] ?? null;
+    return {
+      request: state.pending.find((request) => request.agentKey === agent.key) ?? null,
+      queued: state.outbox[agent.key] ?? 0,
+      liveStatus,
+      canReceiveMessages: Boolean(liveStatus) || canReceiveMessages(agent),
+      projectName: project.name,
+      isFollowed: headquarters?.followedKey() === agent.key,
+    };
+  }
+
+  function openAgent(agentKey, { opener = null, focus = "close" } = {}) {
+    const found = findAgent(agentKey);
+    if (found) drawer.open(found.agent, drawerContext(found), { opener, focus });
+  }
+
+  const openAgentFromMap = (agentKey) => openAgent(agentKey, { opener: headquarters?.tagOf(agentKey) });
+
+  function updateDrawer() {
+    const openKey = drawer.openAgentKey();
+    if (!openKey) return;
+    const found = findAgent(openKey);
+    drawer.update(found?.agent ?? null, found ? drawerContext(found) : null);
   }
 
   function receive(next) {
@@ -104,6 +140,7 @@ export function createHeadquartersPage({ hud, headquarters, source, newSessionDi
     headquarters?.show(state.projects);
     render();
     pendingAlert.update(state);
+    updateDrawer();
     followArrival();
   }
 
@@ -121,7 +158,10 @@ export function createHeadquartersPage({ hud, headquarters, source, newSessionDi
 
   const pendingAlert = createPendingAlert({
     element: slot("alert"), announce, control: source, clockNow, onLeave: () => headquarters?.element.focus(),
+    onOpenAgent: (agentKey, button) => openAgent(agentKey, { opener: button, focus: "request" }),
   });
+
+  const drawer = createAgentDrawer({ drawer: slot("drawer"), control: source, map: headquarters ?? NO_MAP, onResize: () => fitMapBetweenPanels() });
 
   function frameRoom(button) {
     if (!headquarters) return;
@@ -191,5 +231,8 @@ export function createHeadquartersPage({ hud, headquarters, source, newSessionDi
   setInterval(renderDay, DAY_REFRESH_MS);
   render();
 
-  return { receive, awaitAgent, refitMap: fitMapBetweenPanels, clockNow, state: () => state };
+  return {
+    receive, awaitAgent, openAgentFromMap, showFollowing: (followedKey) => drawer.showFollowing(followedKey),
+    refitMap: fitMapBetweenPanels, clockNow, state: () => state,
+  };
 }

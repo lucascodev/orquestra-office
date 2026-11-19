@@ -1,12 +1,10 @@
 import { toolSummaryText } from "../../domain/terminal/tool-summary-text.js";
 import { esc } from "../shared/escape-html.js";
 import { formatCountdown } from "../shared/format.js";
-import { renderPendingCard } from "../sheet/pending-request-view.js";
 
 const COMMAND_TOOL = "Bash";
 const QUESTION = "question";
 const UNKNOWN_AGENT = "Um agente";
-const QUESTION_PANEL_ID = "hq-alert-question";
 
 const whoOf = (requester) => requester?.name ?? UNKNOWN_AGENT;
 
@@ -55,22 +53,24 @@ function permissionBody(request) {
         <button class="btn btn-sm btn-secondary" type="button" data-decide="deny" aria-keyshortcuts="N">Negar <kbd aria-hidden="true">N</kbd></button>
         <button class="btn btn-sm btn-primary" type="button" data-decide="allow" aria-keyshortcuts="A">Permitir <kbd aria-hidden="true">A</kbd></button>
       </div>
-      ${explained}
+      <div class="hq-alert-foot">${explained}
+        <button class="btn btn-sm btn-ghost" type="button" data-decide="terminal">Decidir no terminal</button>
+      </div>
       <p class="pending-error" role="alert" hidden></p>
     </div>`;
 }
 
-function questionBody(request, requesterName) {
+function questionBody(request) {
   const [first, ...others] = request.questions ?? [];
   const more = others.length > 0 ? ` <span class="hq-muted">e mais ${others.length}</span>` : "";
-  return `<div class="hq-alert-body">
+  return `<div class="hq-alert-body" data-pending="${esc(request.id)}">
       <div class="hq-alert-row"><p class="hq-alert-what">${esc(first?.question ?? toolSummaryText(request))}${more}</p>
-        <button class="btn btn-sm btn-primary" type="button" data-expand aria-expanded="false" aria-controls="${QUESTION_PANEL_ID}">Responder</button>
+        <button class="btn btn-sm btn-primary" type="button" data-open-agent="${esc(request.agentKey)}">Abrir a ficha e responder</button>
       </div>
-      <div class="hq-alert-question" id="${QUESTION_PANEL_ID}" hidden>${renderPendingCard(request, requesterName)}</div>
+      <p class="pending-error" role="alert" hidden></p>
     </div>`;
 }
 
-export function renderAlertBody(request, requester) {
-  return request.kind === QUESTION ? questionBody(request, whoOf(requester)) : permissionBody(request);
+export function renderAlertBody(request) {
+  return request.kind === QUESTION ? questionBody(request) : permissionBody(request);
 }

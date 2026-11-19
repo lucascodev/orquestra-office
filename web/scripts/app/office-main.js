@@ -26,7 +26,15 @@ const elements = {
 
 const source = createDataSource((next) => page.receive(next));
 
-const agentPanel = createAgentPanel({ team: elements.team, sheet: elements.sheet, control: source });
+const agentPanel = createAgentPanel({
+  sheet: elements.sheet,
+  control: source,
+  onOpen: () => { elements.team.hidden = true; },
+  onClose: (closedKey) => {
+    elements.team.hidden = false;
+    elements.team.querySelector(`[data-agent="${CSS.escape(closedKey)}"]`)?.focus();
+  },
+});
 
 const room = createRoomRenderer({ onPick: (key) => page.openAgent(key), describeStatus });
 

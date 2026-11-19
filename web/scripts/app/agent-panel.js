@@ -10,6 +10,13 @@ import { createTerminalPane } from "./terminal-pane.js";
 
 const MESSAGE_FAILED = "Não deu para enviar a mensagem.";
 const LIVE_STATUS = { starting: "abrindo a sessão…", working: "trabalhando…", idle: "aguardando sua mensagem", ended: "sessão encerrada" };
+const FIRST_ANSWER = "[data-pending] [data-option], [data-pending] input";
+
+const ROOM_SHEET = {
+  shell: (agent, context) => renderSheetShell(context),
+  identity: (agent) => renderAgentIdentity(agent, { mark: agentMark(agent), badge: statusBadge(agent), origin: originOf(agent) }),
+  facts: (agent) => renderAgentFacts(agent),
+};
 
 const logAsHistory = (agent) => (agent.log ?? []).map((item) => ({ at: item.at, kind: "note", text: logEntryText(item), detail: "" }));
 
@@ -18,7 +25,9 @@ function queueStatus(queued) {
   return queued === 1 ? "1 mensagem na fila, esperando o fim do turno." : `${queued} mensagens na fila, esperando o fim do turno.`;
 }
 
-export function createAgentPanel({ team, sheet, control }) {
+// The agent's sheet: the room shows it beside the team list, the headquarters in a drawer over the map. The view draws it,
+// onOpen and onClose place it on the page, and actions answer the buttons a view adds with data-action.
+export function createAgentPanel({ sheet, control, view = ROOM_SHEET, onOpen = () => {}, onClose = () => {}, actions = {} }) {
   let agentKey = null;
   let isLive = false;
   let shownRequestId = null;
@@ -34,8 +43,7 @@ export function createAgentPanel({ team, sheet, control }) {
     agentKey = null;
     stopWatching();
     sheet.hidden = true;
-    team.hidden = false;
-    team.querySelector(`[data-agent="${CSS.escape(closedKey)}"]`)?.focus();
+    onClose(closedKey);
   }
 
   function showRequest(request, agent) {
@@ -64,19 +72,24 @@ export function createAgentPanel({ team, sheet, control }) {
     });
   }
 
-  function open(agent, context) {
+  function placeFocus(target) {
+    const answer = target === "request" ? sheet.querySelector(FIRST_ANSWER) : null;
+    (answer ?? sheet.querySelector("[data-close]")).focus();
+  }
+
+  function open(agent, context, { focus = "close" } = {}) {
     stopWatching();
     agentKey = agent.key;
     isLive = Boolean(context.liveStatus);
     shownRequestId = null;
     historyStamp = null;
-    sheet.innerHTML = renderSheetShell({ canReceiveMessages: context.canReceiveMessages, isLive });
+    sheet.innerHTML = view.shell(agent, { ...context, isLive });
     terminal = createTerminalPane(sheet.querySelector("[data-pane]"));
-    team.hidden = true;
+    onOpen(agent);
     sheet.hidden = false;
     stopWatching = isLive ? watchLiveTerminal(agent) : () => {};
     update(agent, context);
-    sheet.querySelector("[data-close]").focus();
+    placeFocus(focus);
   }
 
   function update(agent, context) {
@@ -89,8 +102,8 @@ export function createAgentPanel({ team, sheet, control }) {
       open(agent, context);
       return;
     }
-    slot("identity").innerHTML = renderAgentIdentity(agent, { mark: agentMark(agent), badge: statusBadge(agent), origin: originOf(agent) });
-    slot("facts").innerHTML = renderAgentFacts(agent);
+    slot("identity").innerHTML = view.identity(agent, context);
+    slot("facts").innerHTML = view.facts(agent, context);
     showRequest(context.request, agent);
     const status = sheet.querySelector(".composer-status");
     if (status && status.dataset.error !== "true") status.textContent = queueStatus(context.queued);
@@ -123,6 +136,8 @@ export function createAgentPanel({ team, sheet, control }) {
     if (decide) return submitDecision(control, decide.closest("[data-pending]"), decide.dataset.decide);
     const live = event.target.closest("[data-live]");
     if (live) return LIVE_ACTIONS[live.dataset.live]?.(agentKey);
+    const action = event.target.closest("[data-action]");
+    if (action) return ownValueOf(actions, action.dataset.action)?.(agentKey, action);
     return undefined;
   });
 

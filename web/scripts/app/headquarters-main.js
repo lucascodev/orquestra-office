@@ -39,7 +39,11 @@ const office = document.getElementById("office");
 const hud = mountShell(office);
 const isMeasuring = params.get(MEASURE_PARAM) === MEASURE_ON;
 const showStats = isMeasuring ? createFrameMeter(office) : () => {};
-const headquarters = createHeadquartersRenderer({ onFrame: showStats, describeStatus, isMeasuring, onPick: (key) => headquarters.follow(key) });
+const headquarters = createHeadquartersRenderer({
+  onFrame: showStats, describeStatus, isMeasuring,
+  onPick: (key) => page.openAgentFromMap(key),
+  onFollowChange: (key) => page.showFollowing(key),
+});
 if (headquarters) office.prepend(headquarters.element);
 else office.textContent = NO_WEBGL;
 

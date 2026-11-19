@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import {
-  clampToMap, frameBounds, groundToScreen, ISOMETRIC_VIEW, panBy, screenToGround, TRANSITION_MS, transitionAt, zoomAt, zoomLimits,
+  centerBetweenPanels, clampToMap, frameBounds, groundToScreen, ISOMETRIC_VIEW, panBy, screenToGround, TRANSITION_MS, transitionAt, zoomAt, zoomLimits,
 } from "../scripts/domain/camera/viewpoint.js";
 
 const VIEWPORT = { width: 1440, height: 900 };
@@ -47,6 +47,15 @@ describe("framing", () => {
     const box = screenBox(framed(), MAP);
     close((box.left + box.right) / 2, INSETS.left + (VIEWPORT.width - INSETS.left - INSETS.right) / 2);
     close((box.top + box.bottom) / 2, INSETS.top + (VIEWPORT.height - INSETS.top - INSETS.bottom) / 2);
+  });
+
+  it("keeps a followed point in the middle of the free part of the screen, beside an open drawer", () => {
+    const point = { x: 12, z: 7 };
+    const drawerInsets = { ...INSETS, right: 420 };
+    const target = centerBetweenPanels({ point, scale: 40, viewport: VIEWPORT, insets: drawerInsets });
+    const onScreen = groundToScreen({ target, scale: 40 }, point, VIEWPORT);
+    close(onScreen.x, drawerInsets.left + (VIEWPORT.width - drawerInsets.left - drawerInsets.right) / 2);
+    close(onScreen.y, drawerInsets.top + (VIEWPORT.height - drawerInsets.top - drawerInsets.bottom) / 2);
   });
 
   it("comes much closer to frame a single island", () => {

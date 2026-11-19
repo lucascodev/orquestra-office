@@ -1,0 +1,29 @@
+<header class="panel-head sheet-head hq-drawer-head">
+      <div class="sheet-identity" data-slot="identity"></div>
+      <button type="button" class="icon-btn" data-close aria-label="Fechar a ficha" title="Fechar a ficha (Esc)"><svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+    </header>
+    <div class="sheet-body hq-drawer-body">
+      <div data-slot="pending"></div>
+      <p class="hq-drawer-status" data-slot="facts"></p>
+      <div class="hq-drawer-actions">
+        <button type="button" class="btn btn-sm btn-secondary" data-action="follow" aria-pressed="false">Seguir com a câmera</button>
+      </div>
+      <section class="pane" data-pane aria-label="Terminal e histórico, somente leitura">
+        <header class="pane-head"><span class="pane-title">Terminal e histórico</span>
+    <span class="pane-tools"><span class="badge">somente leitura</span>
+      <button type="button" class="icon-btn" data-expand aria-pressed="false" aria-label="Expandir terminal" title="Expandir"><svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/></svg></button></span>
+  </header>
+        <div class="pane-body" data-slot="history" tabindex="0"></div>
+        <button type="button" class="btn btn-sm btn-secondary pane-jump" data-jump hidden>↓ novas linhas</button>
+        <footer class="pane-foot" data-slot="history-foot"></footer>
+      </section>
+      <form class="composer">
+    <div class="field"><label for="agent-message">Mensagem para Ana</label>
+      <textarea class="textarea" id="agent-message" name="message" rows="3" maxlength="4000" required placeholder="Ex.: também atualize o README"></textarea></div>
+    <div class="composer-foot">
+      <span class="muted composer-hint">Chega quando o agente terminar o turno atual.</span>
+      <button class="btn btn-primary" type="submit">Enviar</button>
+    </div>
+    <p class="composer-status" role="status"></p>
+  </form>
+    </div>
