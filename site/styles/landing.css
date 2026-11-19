@@ -432,6 +432,32 @@ code {
   background: var(--bg-canvas);
 }
 
+.demo-preview {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  padding: 16px 16px 20px;
+  background: var(--bg-canvas);
+}
+
+.demo-preview-image {
+  width: 100%;
+  height: auto;
+}
+
+.demo-preview-open {
+  width: 100%;
+  max-width: 360px;
+}
+
+.demo-preview-open::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+}
+
 .demo-caption {
   margin: 12px 0 0;
   color: var(--muted);

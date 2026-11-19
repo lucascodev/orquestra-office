@@ -74,14 +74,18 @@
 
 <section class="container demo" id="demo" aria-labelledby="demo-title">
   <figure class="demo-figure">
-    <div class="demo-frame">
+    <div class="demo-frame" data-demo>
       <div class="demo-bar">
         <h2 class="demo-label" id="demo-title"><span class="dot" aria-hidden="true"></span>Demo ao vivo</h2>
         <span class="demo-hint">Roda no navegador, com dados de exemplo</span>
-        <a class="demo-open" href="demo/?modo=demo&amp;vista=sede">Abrir em tela cheia</a>
+        <a class="demo-open" href="demo/?modo=demo&amp;vista=sede" hidden data-demo-live>Abrir em tela cheia</a>
       </div>
-      <a class="skip-link" href="#recursos">Pular a demo</a>
-      <iframe class="demo-view" src="demo/?modo=demo&amp;vista=sede" title="Demonstração do escritório com dados de exemplo" loading="lazy"></iframe>
+      <div class="demo-preview" data-demo-preview>
+        <img class="demo-preview-image" src="assets/sede.png" width="1120" height="680" alt="A Sede vista de cima: o prédio em pixel art com as salas dos projetos e os agentes nas mesas" loading="lazy" decoding="async">
+        <a class="button button-primary demo-preview-open" href="demo/?modo=demo&amp;vista=sede">Abrir a demo em tela cheia</a>
+      </div>
+      <a class="skip-link" href="#recursos" hidden data-demo-live>Pular a demo</a>
+      <iframe class="demo-view" data-demo-src="demo/?modo=demo&amp;vista=sede" title="Demonstração do escritório com dados de exemplo" hidden data-demo-live></iframe>
     </div>
     <figcaption class="demo-caption">Clique num personagem para abrir a ficha com o terminal, o histórico e as aprovações.</figcaption>
   </figure>

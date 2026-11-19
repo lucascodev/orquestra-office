@@ -28,6 +28,8 @@ const DEFAULT_INSTALL_WAY = "docker";
 const UPCOMING_INSTALL_WAY = "npx";
 const UPCOMING_COMMAND = /npx orquestra-office/;
 const UPCOMING_COPYABLE_COMMAND = /<span data-command>npx orquestra-office<\/span>/;
+const DEMO_SOURCE = "data-demo-src";
+const WIDE_SCREEN_ONLY = "data-demo-live";
 
 const readPage = (page) => readFileSync(join(SITE_DIR, page.path), "utf8");
 const attribute = (tags, name, value) => tags.filter((tag) => tag.attributes.get(name) === value);
@@ -120,6 +122,19 @@ describe("landing pages", () => {
       const [copyButton] = startTags(shownHtml).filter((tag) => tag.attributes.has("data-copy-commands"));
       assert.ok(copyButton.attributes.has("data-install-way"), `${page.path}: the copy button shows on every tab`);
       assert.equal(isShownForWay(copyButton.attributes.get("data-install-way"), UPCOMING_INSTALL_WAY), false, page.path);
+    }
+  });
+
+  it("loads the live demo only from the script and keeps a link that opens it on narrow screens", () => {
+    for (const page of PAGES) {
+      const tags = startTags(readPage(page));
+      const [frame] = tags.filter((tag) => tag.name === "iframe");
+      assert.equal(frame.attributes.has("src"), false, `${page.path}: the demo loads before the script checks the screen width`);
+      assert.ok(frame.attributes.has(WIDE_SCREEN_ONLY) && frame.attributes.has("hidden"), `${page.path}: the demo frame shows without the script`);
+      const demoAddress = frame.attributes.get(DEMO_SOURCE);
+      assert.ok(demoAddress, `${page.path}: the demo frame has no address`);
+      const narrowScreenLinks = tags.filter((tag) => tag.name === "a" && tag.attributes.get("href") === demoAddress && !tag.attributes.has(WIDE_SCREEN_ONLY));
+      assert.equal(narrowScreenLinks.length, 1, `${page.path}: no link opens the demo on narrow screens`);
     }
   });
 
