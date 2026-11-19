@@ -1,24 +1,15 @@
+import {
+  CHECKOUT_COMMAND, CHECKOUT_FILES, HOOKS_COMMAND, HOOKS_FAILURES, PHYSICS_SUITE, RENDER_COMMAND, RENDER_FILES, WEB_CHECK_COMMAND,
+} from "./demo-test-suites.js";
+
 const SECOND = 1_000;
 const MIN = 60 * SECOND;
 const LOG_SIZE = 20;
 const RUNS_TODAY = 20;
-
-const HOOKS_COMMAND = "node --test hooks/test/*.test.mjs";
-const PHYSICS_COMMAND = "npx vitest run src/physics";
-// Longer than the 60 characters the collector keeps, so the demo shows a cut label too.
-const WEB_CHECK_COMMAND = "npm run check -- --reporter=dot --test-concurrency=4 --experimental-test-coverage";
-const PHYSICS_TEST = "src/physics/collision.test.ts";
-const JUMP_TEST = "src/physics/jump.test.ts";
-
-const failure = (name, location, message) => ({ name, location, message });
-const PHYSICS_FAILURES = [
-  failure("keeps the player on the platform after landing", `${PHYSICS_TEST}:84`, "expected 'falling' to be 'grounded'"),
-  failure("stops a jump at the ceiling", `${JUMP_TEST}:31`, "expected 3.2 to be less than or equal to 3"),
-];
-const HOOKS_FAILURES = [
-  failure("keeps someone else's notify running after the office's", "hooks/test/install-codex-notify.test.mjs:158", "Expected values to be strictly equal: 0 !== 1"),
-  failure("refuses a notify that cannot be chained", "hooks/test/install-codex-notify.test.mjs:190", "The input did not match the regular expression"),
-];
+// Under the minute the tag shows a pass or a test being written, with a tick of the demo to spare.
+const JUST_PASSED_AGO_MS = 20 * SECOND;
+const RENDER_DURATION_MS = 3_400;
+const WRITER_TICKS_PER_EDIT = 3;
 
 // As the collector writes it: the label of a round of today is its command, cut at 60 characters.
 const LABEL_LIMIT = 60;
@@ -68,6 +59,69 @@ export function testsThatFailed(now) {
   };
 }
 
+const passedRun = (suite, finishedAt, durationMs) => ({
+  command: suite.command, framework: suite.framework, startedAt: finishedAt - durationMs, finishedAt, durationMs,
+  isOk: true, ...suite.passing, failures: [],
+});
+
+// A test runner that is in the middle of a round when the demo opens, after a green one a few minutes before.
+export function testsRunningSince(now, suite) {
+  const lastRun = passedRun(suite, now - 3 * MIN, 4_100);
+  return {
+    running: { command: suite.command, framework: suite.framework, startedAt: now },
+    lastRun,
+    runsToday: [todayRun(lastRun.finishedAt, suite.command, suite.framework, { isOk: true, ...suite.passing })],
+    files: suite.files.map((path, index) => ({ path, action: "edited", at: now - (index + 1) * MIN, failed: 0 })),
+    lastTestFileAt: now - MIN,
+  };
+}
+
+// An agent whose suite has just gone green: the demo keeps the round under a minute old, so the ✓ never goes away.
+export function testsJustPassed(now) {
+  const lastRun = {
+    command: RENDER_COMMAND, framework: "vitest", startedAt: 0, finishedAt: 0, durationMs: RENDER_DURATION_MS,
+    isOk: true, passed: 64, failed: 0, skipped: 1, failures: [],
+  };
+  const tests = {
+    running: null,
+    lastRun,
+    runsToday: [
+      todayRun(0, RENDER_COMMAND, "vitest", { isOk: true, passed: 64, failed: 0, skipped: 1 }),
+      todayRun(now - 35 * MIN, RENDER_COMMAND, "vitest", { isOk: false, passed: 61, failed: 3, skipped: 1 }),
+    ],
+    files: RENDER_FILES.map((path, index) => ({ path, action: "edited", at: now - (index + 2) * MIN, failed: 0 })),
+    lastTestFileAt: now - 2 * MIN,
+  };
+  return justPassedAt(tests, now);
+}
+
+function justPassedAt(tests, now) {
+  const finishedAt = now - JUST_PASSED_AGO_MS;
+  const lastRun = { ...tests.lastRun, startedAt: finishedAt - tests.lastRun.durationMs, finishedAt };
+  const [latest, ...older] = tests.runsToday;
+  return { ...tests, lastRun, runsToday: [{ ...latest, finishedAt }, ...older] };
+}
+
+export function keepJustPassed(agent, now) {
+  if (agent.tests?.lastRun) agent.tests = justPassedAt(agent.tests, now);
+}
+
+// An agent writing new tests after a green round that is already a few minutes old.
+export function testsBeingWritten(now) {
+  const lastRun = {
+    command: CHECKOUT_COMMAND, framework: "jest", startedAt: now - 12 * MIN, finishedAt: now - 12 * MIN + 6_800, durationMs: 6_800,
+    isOk: true, passed: 118, failed: 0, skipped: 0, failures: [],
+  };
+  const [shipping] = CHECKOUT_FILES;
+  return {
+    running: null,
+    lastRun,
+    runsToday: [todayRun(lastRun.finishedAt, CHECKOUT_COMMAND, "jest", { isOk: true, passed: 118, failed: 0, skipped: 0 })],
+    files: [{ path: shipping, action: "created", at: now - 10 * SECOND, failed: null }],
+    lastTestFileAt: now - 10 * SECOND,
+  };
+}
+
 const emptyTests = () => ({ running: null, lastRun: null, runsToday: [], files: [], lastTestFileAt: null });
 
 function note(agent, now, actionId, subject) {
@@ -87,39 +141,46 @@ function touchTestFile(agent, path, now) {
   note(agent, now, "writing-tests", path.split("/").at(-1));
 }
 
-function startRun(agent, now) {
-  agent.tests = { ...(agent.tests ?? emptyTests()), running: { command: PHYSICS_COMMAND, framework: "vitest", startedAt: now } };
+function startRun(agent, now, suite) {
+  agent.tests = { ...(agent.tests ?? emptyTests()), running: { command: suite.command, framework: suite.framework, startedAt: now } };
   Object.assign(agent, { status: "working", activity: "terminal" });
-  note(agent, now, "running-tests", "vitest");
+  note(agent, now, "running-tests", suite.framework);
 }
 
-function finishRun(agent, now, isOk) {
+function finishRun(agent, now, suite, isOk) {
   const tests = agent.tests ?? emptyTests();
   const startedAt = tests.running?.startedAt ?? now;
-  const counts = isOk ? { passed: 50, failed: 0, skipped: 2 } : { passed: 46, failed: 2, skipped: 2 };
+  const counts = isOk ? suite.passing : suite.failing;
   const lastRun = {
-    command: PHYSICS_COMMAND, framework: "vitest", startedAt, finishedAt: now, durationMs: now - startedAt,
-    isOk, ...counts, failures: isOk ? [] : PHYSICS_FAILURES,
+    command: suite.command, framework: suite.framework, startedAt, finishedAt: now, durationMs: now - startedAt,
+    isOk, ...counts, failures: isOk ? [] : suite.failures,
   };
   const files = tests.files.map((file) => (file.action === "read" ? file : { ...file, failed: isOk ? 0 : 1 }));
-  const runsToday = [todayRun(now, PHYSICS_COMMAND, "vitest", { isOk, ...counts }), ...tests.runsToday].slice(0, RUNS_TODAY);
+  const runsToday = [todayRun(now, suite.command, suite.framework, { isOk, ...counts }), ...tests.runsToday].slice(0, RUNS_TODAY);
   agent.tests = { ...tests, running: null, lastRun, runsToday, files };
   Object.assign(agent, { status: "working", activity: isOk ? "editing" : "failed" });
   note(agent, now, isOk ? "tests-passed" : "tests-failed", isOk ? counts.passed : counts.failed);
 }
 
-// The demo's test runner goes round: writes a test, runs the suite for about twelve seconds, fails two, fixes them and passes.
+// A test runner of the demo goes round: writes a test, runs the suite for about twelve seconds, fails two, fixes them and passes.
 const TEST_CYCLE = [
-  (agent, now) => touchTestFile(agent, PHYSICS_TEST, now),
-  (agent, now) => touchTestFile(agent, JUMP_TEST, now),
+  (agent, now, suite) => touchTestFile(agent, suite.files[0], now),
+  (agent, now, suite) => touchTestFile(agent, suite.files[1], now),
   startRun, null, null,
-  (agent, now) => finishRun(agent, now, false),
-  (agent, now) => touchTestFile(agent, PHYSICS_TEST, now),
+  (agent, now, suite) => finishRun(agent, now, suite, false),
+  (agent, now, suite) => touchTestFile(agent, suite.files[0], now),
   null,
   startRun, null, null,
-  (agent, now) => finishRun(agent, now, true),
+  (agent, now, suite) => finishRun(agent, now, suite, true),
 ];
 
-export function tickTestRunner(agent, step, now) {
-  TEST_CYCLE[step % TEST_CYCLE.length]?.(agent, now);
+export function tickTestRunner(agent, step, now, suite = PHYSICS_SUITE) {
+  TEST_CYCLE[step % TEST_CYCLE.length]?.(agent, now, suite);
+}
+
+// The writer saves a test file every few ticks, always inside the minute the tag counts as writing.
+export function tickTestWriter(agent, step, now) {
+  if (step % WRITER_TICKS_PER_EDIT !== 0) return;
+  const path = CHECKOUT_FILES[(step / WRITER_TICKS_PER_EDIT) % CHECKOUT_FILES.length];
+  touchTestFile(agent, path, now);
 }

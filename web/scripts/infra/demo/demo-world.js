@@ -1,14 +1,24 @@
 import { PERSONAL_ACCOUNT, WORK_ACCOUNT } from "./demo-accounts.js";
 import { checkoutChecklist, notifyChecklist, physicsChecklist } from "./demo-checklists.js";
 import { approvedPlan, approvePlan, isDemoPlanRequest, planRequest, proposedPlan } from "./demo-plans.js";
-import { testsDoneLongAgo, testsThatFailed, tickTestRunner } from "./demo-tests.js";
+import { HOOKS_SUITE } from "./demo-test-suites.js";
+import {
+  keepJustPassed, testsBeingWritten, testsDoneLongAgo, testsJustPassed, testsRunningSince, testsThatFailed, tickTestRunner, tickTestWriter,
+} from "./demo-tests.js";
 
 const MIN = 60_000;
 const HOUR = 60 * MIN;
 const ORQUESTRA = "c:/projetos/orquestra";
 const PLATFORMER = "c:/projetos/jogo-de-plataforma";
+const STORE = "c:/projetos/loja-online";
 const PLANNER = "claude:e2";
 const TEST_RUNNER = "claude:d2";
+const HOOKS_RUNNER = "claude:a2";
+// Keys picked so that every agent the demo already had keeps the name it shows in the guide's pictures.
+const JUST_PASSED = "claude:d10";
+const TEST_WRITER = "claude:c10";
+// Three ticks ahead of the platformer's runner, the hooks runner is running whenever the other one is between rounds.
+const HOOKS_RUNNER_LEAD = 3;
 
 const did = (actionId, subject = null) => ({ actionId, subject });
 
@@ -116,6 +126,24 @@ const testRunner = (now) => agent(TEST_RUNNER, "Claude Code 2", "working", did("
   activity: "editing", checklist: physicsChecklist(now), plan: null, tests: null,
 });
 
+// Next to each other on the map, these three and the ones above show every sign over a figure at any moment of the demo.
+const hooksRunner = (now) => agent(HOOKS_RUNNER, "Claude Code 2", "working", did("running-tests", HOOKS_SUITE.framework), 0, {
+  activity: "terminal", checklist: null, plan: null, tests: testsRunningSince(now, HOOKS_SUITE),
+});
+
+const justPassed = (now) => {
+  const tests = testsJustPassed(now);
+  return agent(JUST_PASSED, "Claude Code 3", "working", did("tests-passed", tests.lastRun.passed), 0, {
+    activity: "editing", checklist: null, plan: null, tests,
+  });
+};
+
+const testWriter = (now) => {
+  const tests = testsBeingWritten(now);
+  const fileName = tests.files[0].path.split("/").at(-1);
+  return agent(TEST_WRITER, "Claude Code 2", "working", did("writing-tests", fileName), 0, { activity: "editing", checklist: null, plan: null, tests });
+};
+
 const NO_WORK_YET = { checklist: null, plan: null, tests: null };
 
 export function demoState() {
@@ -131,17 +159,20 @@ export function demoState() {
       [SHOWCASE]: showcaseProject(),
       [ORQUESTRA]: project(ORQUESTRA, "orquestra", "startup", 0, onAccount(PERSONAL_ACCOUNT, [
         mainAgent(now),
+        hooksRunner(now),
         sub("claude:a1", "s1", "code-reviewer", "reviewing", did("reading", "server.js"), 1),
         sub("claude:a1", "s2", "security-engineer", "reviewing", did("reading"), 2),
         agent("codex:b1", "Codex", "waiting", did("turn-finished-waiting"), 4, { source: "codex" }),
       ]), ["code-reviewer", "security-engineer", "test-engineer", "tech-writer", "board-keeper"]),
-      "c:/projetos/loja-online": project("c:/projetos/loja-online", "loja-online", "cafe", 3, onAccount(WORK_ACCOUNT, [
+      [STORE]: project(STORE, "loja-online", "cafe", 3, onAccount(WORK_ACCOUNT, [
         checkoutAgent(now),
+        testWriter(now),
         sub("claude:c1", "s3", "Explore", "break", did("task-delivered"), 6),
       ])),
-      "c:/projetos/jogo-de-plataforma": project("c:/projetos/jogo-de-plataforma", "jogo-de-plataforma", "fliperama", 12, onAccount(PERSONAL_ACCOUNT, [
+      [PLATFORMER]: project(PLATFORMER, "jogo-de-plataforma", "fliperama", 12, onAccount(PERSONAL_ACCOUNT, [
         agent("claude:d1", "Claude Code", "needs_you", did("asking-question"), 2, NO_WORK_YET),
         testRunner(now),
+        justPassed(now),
       ])),
       "c:/projetos/site-institucional": project("c:/projetos/site-institucional", "site-institucional", "jardim", 0, onAccount(WORK_ACCOUNT, [
         agent("claude:e1", "Claude Code", "idle", did("session-closed"), 40),
@@ -191,6 +222,18 @@ function act(agentToUpdate, status, { actionId, subject }, activity = agentToUpd
   agentToUpdate.log = [...agentToUpdate.log, { at: agentToUpdate.updatedAt, actionId, subject }].slice(-20);
 }
 
+function tickTestSigns(state, step, now) {
+  const agentOf = (projectKey, agentKey) => state.projects[projectKey]?.agents[agentKey];
+  const runner = agentOf(PLATFORMER, TEST_RUNNER);
+  if (runner) tickTestRunner(runner, step, now);
+  const hooks = agentOf(ORQUESTRA, HOOKS_RUNNER);
+  if (hooks) tickTestRunner(hooks, step + HOOKS_RUNNER_LEAD, now, HOOKS_SUITE);
+  const passed = agentOf(PLATFORMER, JUST_PASSED);
+  if (passed) keepJustPassed(passed, now);
+  const writer = agentOf(STORE, TEST_WRITER);
+  if (writer) tickTestWriter(writer, step, now);
+}
+
 export function tickDemo(state, step) {
   const main = state.projects[ORQUESTRA]?.agents["claude:a1"];
   if (main) {
@@ -198,8 +241,7 @@ export function tickDemo(state, step) {
     act(main, status, doing, activity);
   }
   if (state.projects[ORQUESTRA]) cycleHelper(state.projects[ORQUESTRA], step);
-  const runner = state.projects[PLATFORMER]?.agents[TEST_RUNNER];
-  if (runner) tickTestRunner(runner, step, Date.now());
+  tickTestSigns(state, step, Date.now());
   const walker = state.projects[SHOWCASE]?.agents[WALKER];
   if (walker && step % WALKER_TICKS_PER_STEP === 0) {
     const [status, activity, doing] = WALKER_ROUTINE[(step / WALKER_TICKS_PER_STEP) % WALKER_ROUTINE.length];

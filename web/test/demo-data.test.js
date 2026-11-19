@@ -17,6 +17,7 @@ import { planDocument } from "../scripts/domain/work-sheet/plan-document.js";
 import { planOfRequest } from "../scripts/domain/work-sheet/plan-request.js";
 import { planStatus } from "../scripts/domain/work-sheet/plan-status.js";
 import { testsOverview } from "../scripts/domain/work-sheet/tests-overview.js";
+import { agentWorkSignalOf } from "../scripts/domain/work-signals/agent-work-signal.js";
 import { demoPlanDocument } from "../scripts/infra/demo/demo-plans.js";
 import { createDemoAsker } from "../scripts/infra/demo/demo-requests.js";
 import { demoStressState } from "../scripts/infra/demo/demo-stress.js";
@@ -227,6 +228,25 @@ describe("checklist, plan and tests in the demonstration", () => {
     const [, , first, second, third] = starts;
     assert.ok(Number.isFinite(first));
     assert.deepEqual([second, third], [first, first]);
+  });
+
+  it("shows every sign over a different figure at any moment, from the start and between ticks, for rounds on end", (context) => {
+    const TICK_MS = 4_000;
+    const ROUNDS = 6;
+    const TEST_CYCLE_TICKS = 12;
+    const ALL_SIGNS = ["testing", "tests-failed", "tests-passed", "writing-tests", "checklist"];
+    context.mock.timers.enable({ apis: ["Date"], now: new Date("2026-11-18T16:40:00").getTime() });
+    const signsNow = (state) => agentsOf(state).map((agent) => agentWorkSignalOf(agent, Date.now()).kind).filter(Boolean);
+    const missingSigns = (state) => ALL_SIGNS.filter((kind) => !signsNow(state).includes(kind));
+    const state = demoState();
+    assert.deepEqual(missingSigns(state), [], "when the demo opens");
+    for (let step = 0; step < ROUNDS * TEST_CYCLE_TICKS; step += 1) {
+      context.mock.timers.tick(TICK_MS - 1);
+      assert.deepEqual(missingSigns(state), [], `just before tick ${step}`);
+      context.mock.timers.tick(1);
+      tickDemo(state, step);
+      assert.deepEqual(missingSigns(state), [], `right after tick ${step}`);
+    }
   });
 
   it("runs the tests of the platformer round and round: writes, runs, fails, fixes and passes", () => {
