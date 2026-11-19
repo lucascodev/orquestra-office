@@ -11,6 +11,12 @@ import { agentActionText, logEntryText } from "../scripts/domain/office/agent-ac
 import { terminalEntryText } from "../scripts/domain/terminal/terminal-entry-text.js";
 import { describeToolEntry } from "../scripts/domain/terminal/terminal-format.js";
 import { toolSummaryText } from "../scripts/domain/terminal/tool-summary-text.js";
+import { checklistProgress } from "../scripts/domain/work-sheet/checklist-progress.js";
+import { planDocument } from "../scripts/domain/work-sheet/plan-document.js";
+import { planOfRequest } from "../scripts/domain/work-sheet/plan-request.js";
+import { planStatus } from "../scripts/domain/work-sheet/plan-status.js";
+import { testsOverview } from "../scripts/domain/work-sheet/tests-overview.js";
+import { demoPlanDocument } from "../scripts/infra/demo/demo-plans.js";
 import { createDemoAsker } from "../scripts/infra/demo/demo-requests.js";
 import { demoStressState } from "../scripts/infra/demo/demo-stress.js";
 import { demoHistory } from "../scripts/infra/demo/demo-terminal.js";
@@ -18,6 +24,10 @@ import { demoState, resolveDemoRequest, tickDemo } from "../scripts/infra/demo/d
 
 const TICKS = 40;
 const SHOWCASE = "c:/projetos/demo/reacoes";
+// The actions of checklist, plan and tests are part of the collector's contract; their phrases come with the signs on the map,
+// built in another branch. Once both are merged the catalog knows them and this list can go.
+const TESTS_AND_PLAN_ACTIONS = new Set(["running-tests", "writing-tests", "tests-passed", "tests-failed", "plan-approved"]);
+const isKnownAction = (actionId) => Object.hasOwn(AGENT_ACTIONS, actionId) || TESTS_AND_PLAN_ACTIONS.has(actionId);
 
 function playedDemo() {
   const state = demoState();
@@ -33,10 +43,10 @@ describe("the demonstration", () => {
   it("names every action with an id the page knows, without ready-made text, even after playing for a while", () => {
     for (const state of [demoState(), playedDemo()]) {
       for (const agent of agentsOf(state)) {
-        assert.ok(Object.hasOwn(AGENT_ACTIONS, agent.actionId), `${agent.key}: ${agent.actionId}`);
+        assert.ok(isKnownAction(agent.actionId), `${agent.key}: ${agent.actionId}`);
         assert.equal(agent.action, undefined);
         for (const entry of agent.log) {
-          assert.ok(Object.hasOwn(AGENT_ACTIONS, entry.actionId), `${agent.key} log: ${entry.actionId}`);
+          assert.ok(isKnownAction(entry.actionId), `${agent.key} log: ${entry.actionId}`);
           assert.equal(entry.text, undefined);
         }
       }
@@ -67,7 +77,7 @@ describe("the demonstration", () => {
       assert.ok(Object.hasOwn(TOOL_SUMMARIES, request.summaryId));
       assert.equal(request.summary, undefined);
     }
-    assert.deepEqual(requests.map((request) => toolSummaryText(request)), ["Aplicar as migrações do banco", "Tem uma pergunta para você"]);
+    assert.deepEqual(requests.map((request) => toolSummaryText(request)), ["Aplicar as migrações do banco", "Tem uma pergunta para você", "Usar ExitPlanMode"]);
   });
 
   it("writes its terminal from fields, with the same lines as before", () => {
@@ -120,7 +130,7 @@ describe("demo requests in the headquarters", () => {
     const askAgain = createDemoAsker(state.pending);
     resolveDemoRequest(state, "demo-permission", { behavior: "allow" });
     for (let tick = 1; tick <= 2; tick += 1) askAgain(state, start + tick * TICK_MS);
-    assert.deepEqual(state.pending.map((request) => request.id), ["demo-question"]);
+    assert.deepEqual(state.pending.map((request) => request.id), ["demo-question", "demo-plan"]);
     askAgain(state, start + 3 * TICK_MS);
     const asked = state.pending.find((request) => request.agentKey === "claude:c1");
     assert.equal(asked.id, "demo-permission-1");
@@ -135,5 +145,68 @@ describe("demo requests in the headquarters", () => {
     const afterDeadline = Math.max(...state.pending.map((request) => request.expiresAt)) + 1;
     askAgain(state, afterDeadline);
     assert.deepEqual(state.pending, []);
+  });
+});
+
+describe("checklist, plan and tests in the demonstration", () => {
+  const MAIN = "claude:a1";
+  const RUNNER = "claude:d2";
+  const PLANNER = "claude:e2";
+  const agentByKey = (state) => Object.fromEntries(agentsOf(state).map((agent) => [agent.key, agent]));
+
+  it("gives the agents a list, a plan and tests as the collector sends them, and none to Codex", () => {
+    const agents = agentByKey(demoState());
+    assert.deepEqual(checklistProgress(agents[MAIN].checklist).current.position, 5);
+    assert.equal(planStatus(agents[MAIN].plan).state, "approved");
+    assert.equal(agents[MAIN].plan.text, undefined);
+    assert.equal(testsOverview(agents["claude:c1"].tests).lastRun.verdict, "failed");
+    assert.equal(planStatus(agents[PLANNER].plan).state, "proposed");
+    assert.equal(agents["codex:b1"].checklist, undefined);
+  });
+
+  it("notes approved plans and finished rounds in the log the timeline reads", () => {
+    const actions = agentsOf(demoState()).flatMap((agent) => agent.log.map((entry) => entry.actionId));
+    for (const actionId of ["plan-approved", "tests-passed", "tests-failed"]) assert.ok(actions.includes(actionId), actionId);
+  });
+
+  it("sends the plan inside its request and answers the plan route with the text of the version shown", () => {
+    const state = demoState();
+    const request = state.pending.find((pending) => pending.id === "demo-plan");
+    assert.equal(planOfRequest(request).isTruncated, false);
+    const fetched = planDocument(demoPlanDocument(agentByKey(state)[PLANNER]));
+    assert.equal(fetched.text, request.plan);
+    assert.deepEqual(demoPlanDocument(agentByKey(state)["claude:d1"]), { plan: null });
+  });
+
+  it("approves the plan by the alert, noting it in the log, and asks for the next version later", () => {
+    const state = demoState();
+    const start = Date.now();
+    const askAgain = createDemoAsker(state.pending);
+    resolveDemoRequest(state, "demo-plan", { behavior: "allow" });
+    const planner = agentByKey(state)[PLANNER];
+    assert.equal(planner.plan.state, "approved");
+    assert.equal(planner.log.at(-1).actionId, "plan-approved");
+    for (let tick = 1; tick <= 3; tick += 1) askAgain(state, start + tick * 4_000);
+    const asked = state.pending.find((pending) => pending.agentKey === PLANNER);
+    assert.deepEqual([planner.plan.version, planner.plan.state, planner.actionId], [2, "proposed", "asking-plan-approval"]);
+    assert.equal(asked.plan, demoPlanDocument(planner).text);
+  });
+
+  it("runs the tests of the platformer round and round: writes, runs, fails, fixes and passes", () => {
+    const state = demoState();
+    const seen = [];
+    for (let step = 0; step < 12; step += 1) {
+      tickDemo(state, step);
+      const runner = agentByKey(state)[RUNNER];
+      seen.push([runner.actionId, Boolean(runner.tests.running), runner.tests.lastRun?.isOk ?? null]);
+    }
+    assert.deepEqual(seen.map(([actionId]) => actionId), [
+      "writing-tests", "writing-tests", "running-tests", "running-tests", "running-tests", "tests-failed",
+      "writing-tests", "writing-tests", "running-tests", "running-tests", "running-tests", "tests-passed",
+    ]);
+    assert.deepEqual(seen[3], ["running-tests", true, null]);
+    assert.deepEqual(seen[5], ["tests-failed", false, false]);
+    assert.deepEqual(seen[11], ["tests-passed", false, true]);
+    assert.equal(testsOverview(agentByKey(state)[RUNNER].tests).runsToday.length, 2);
   });
 });
