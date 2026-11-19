@@ -4,6 +4,7 @@ import { countPhrase } from "../text/count-phrase.js";
 import { fillPhrase } from "../text/fill-phrase.js";
 import { checklistProgress } from "../work-sheet/checklist-progress.js";
 import { lastTestRunOf } from "../work-sheet/test-fields.js";
+import { hasWorkTabs } from "../work-sheet/work-tabs.js";
 
 const TEXT = WORK_SIGNALS.island;
 // A dash keeps the columns lined up; read out on every row it would only be noise.
@@ -25,5 +26,9 @@ function lastRunSummary(agent) {
 }
 
 // What the island's sheet shows of each agent's work: the checklist as done/total and the result of the last test run,
-// the passed count when it passed and the failed count when it failed, with a sentence for screen readers.
-export const agentWorkSummaryOf = (agent) => ({ checklist: checklistSummary(agent), lastRun: lastRunSummary(agent) });
+// the passed count when it passed and the failed count when it failed, with a sentence for screen readers. An agent without
+// tabs (Codex reports only the end of a turn) has none of this, so it gets no summary instead of two empty dashes.
+export function agentWorkSummaryOf(agent) {
+  if (!hasWorkTabs(agent)) return null;
+  return { checklist: checklistSummary(agent), lastRun: lastRunSummary(agent) };
+}

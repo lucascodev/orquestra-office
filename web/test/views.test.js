@@ -271,6 +271,13 @@ describe("headquarters island sheet", () => {
     ])).team;
     assertMatchesRecording("hq-island-work", renderIslandTeam(team));
   });
+
+  it("gives a Codex agent, which has no tabs, neither the checklist nor the tests chip", () => {
+    const html = renderIslandTeam(island().team);
+    const nara = html.split("</li>").find((item) => item.includes("<b>Nara</b>"));
+    assert.ok(!nara.includes("hq-member-checklist") && !nara.includes("hq-member-tests"));
+    assert.ok(html.split("</li>").find((item) => item.includes("<b>Caio</b>")).includes("hq-member-checklist"));
+  });
 });
 
 describe("headquarters legend", () => {

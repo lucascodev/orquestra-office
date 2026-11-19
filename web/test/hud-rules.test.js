@@ -326,13 +326,15 @@ describe("island sheet facts", () => {
   it("sums up each person's checklist and last test run, and nothing for a state saved before those fields", () => {
     const project = projectOf("c:/office", "orquestra-office", [
       agentOf("claude:Heitor", "working", {
+        source: "claude",
         checklist: { items: [{ status: "completed" }, { status: "in_progress" }, { status: "pending" }], updatedAt: NOW },
         tests: { running: null, lastRun: { isOk: false, passed: 248, failed: 2, finishedAt: NOW }, runsToday: [], files: [], lastTestFileAt: null },
       }),
-      agentOf("claude:Bia", "working"),
+      agentOf("claude:Bia", "working", { source: "claude" }),
+      agentOf("codex:Tomas", "working", { source: "codex" }),
     ]);
-    const work = Object.fromEntries(islandFacts(project).team.map(({ name, work: { checklist, lastRun } }) => [name, [checklist.text, lastRun.icon, lastRun.text]]));
-    assert.deepEqual(work, { Heitor: ["1/3", "✕", "2"], Bia: ["—", "", "—"] });
+    const work = Object.fromEntries(islandFacts(project).team.map(({ name, work }) => [name, work && [work.checklist.text, work.lastRun.icon, work.lastRun.text]]));
+    assert.deepEqual(work, { Heitor: ["1/3", "✕", "2"], Bia: ["—", "", "—"], Tomas: null });
   });
 
   it("counts the messages waiting in each person's queue, none for a key only the prototype knows", () => {
