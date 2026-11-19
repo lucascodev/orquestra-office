@@ -188,6 +188,24 @@ describe("islands per project", () => {
     assert.deepEqual(islands.map((island) => occupantsOf(island).filter(Boolean)), [["claude:here", orphan.key]]);
   });
 
+  it("groups subagents left behind by main agent in order of arrival, even on a browser without Map.groupBy", () => {
+    const agents = [
+      agentOf("claude:here", { startedAt: NOW - 10 * MINUTE }),
+      subagentOf("claude:x", "s1", { startedAt: NOW - 9 * MINUTE }),
+      subagentOf("claude:y", "s1", { startedAt: NOW - 8 * MINUTE }),
+      subagentOf("claude:x", "s2", { startedAt: NOW - 7 * MINUTE }),
+    ];
+    const project = projectOf("c:/orphans", agents);
+    const groupBy = Object.getOwnPropertyDescriptor(Map, "groupBy");
+    delete Map.groupBy;
+    try {
+      const islands = islandsOf(layoutHeadquarters(officeOf([project])), project.key);
+      assert.deepEqual(islands.map((island) => occupantsOf(island).filter(Boolean)), [["claude:here", "claude:x:s1", "claude:x:s2", "claude:y:s1"]]);
+    } finally {
+      Object.defineProperty(Map, "groupBy", groupBy);
+    }
+  });
+
   it("keeps the seat of someone who is leaving until the collector forgets them", () => {
     const project = projectOf("c:/leaving", [agentOf("claude:gone", { endedAt: NOW - MINUTE }), agentOf("claude:here")]);
     assert.deepEqual(occupantsOf(islandsOf(layoutHeadquarters(officeOf([project])), project.key)[0]).filter(Boolean), ["claude:gone", "claude:here"]);

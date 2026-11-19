@@ -10,7 +10,7 @@ function teamsWithOrphans(project) {
   const teams = teamsOf(project);
   const seated = new Set(teams.flat().map((agent) => agent.key));
   const orphans = Object.values(project.agents).filter((agent) => !seated.has(agent.key)).sort(byStart);
-  const orphanTeams = Map.groupBy(orphans, (agent) => agent.parentKey);
+  const orphanTeams = orphans.reduce((teamsByParent, agent) => teamsByParent.set(agent.parentKey, [...(teamsByParent.get(agent.parentKey) ?? []), agent]), new Map());
   return [...teams, ...orphanTeams.values()];
 }
 
