@@ -5,7 +5,9 @@ import { isSummaryCandidate } from "../summary-line.js";
 import { TEST_FRAMEWORK } from "../test-framework.js";
 
 const BANNER_CHARACTERS = "= ";
-const SUMMARY = /^(?:\d+ [a-z]+(?:,? \d+ [a-z]+)*|no tests ran) in \d+(?:\.\d+)?s(?: \([0-9:]+\))?$/;
+// A count names one or two words ("3 subtests passed" from pytest-subtests); the next count starts with a digit, so the
+// optional word never competes with it and the match stays linear.
+const SUMMARY = /^(?:\d+ [a-z]+(?: [a-z]+)?(?:,? \d+ [a-z]+(?: [a-z]+)?)*|no tests ran) in \d+(?:\.\d+)?s(?: \([0-9:]+\))?$/;
 const SECTION_HEADER = /^_+ (.+) _+$/;
 const SECTION_END = "=";
 const ERROR_LINE = /^E\s+(.+)$/;

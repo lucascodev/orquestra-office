@@ -130,6 +130,18 @@ test("keeps the failures it saw when the counts of a cut output are unknown", ()
   });
 });
 
+test("reads the pytest summary of a run with subtests, whose counts name two words", () => {
+  const output = [
+    "============================= test session starts =============================",
+    "collected 1 item",
+    "",
+    "test_x.py .                                                              [100%]",
+    "",
+    "===================== 1 passed, 3 subtests passed in 0.02s =====================",
+  ].join("\n");
+  assert.deepEqual(parseTestOutput(output), { framework: "pytest", passed: 1, failed: 0, skipped: 0, failures: [] });
+});
+
 test("sums the summaries of different frameworks and calls the run mixed", () => {
   const jest = parseTestOutput(readTestOutputFixture("jest/jest30-failures.txt"));
   const pytest = parseTestOutput(readTestOutputFixture("pytest/pytest8-failures.txt"));
