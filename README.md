@@ -32,8 +32,9 @@ Para alargar o painel lateral, passe o mouse na borda esquerda dele e arraste. A
 ## Como funciona
 
 - Um coletor pequeno (Node, sem dependências) roda no Docker em `http://localhost:8420`.
-- O Claude Code manda cada evento para ele pelos hooks do tipo `http`, configurados no `~/.claude/settings.json` (vale para todos os projetos).
+- O Claude Code manda cada evento para ele pelos hooks configurados no `~/.claude/settings.json` (vale para todos os projetos). A atividade vai pelo `curl` do sistema, em segundo plano, sem atrasar as ferramentas. Pedidos de permissão, perguntas e o fim do turno passam por `hooks/office-decision.mjs`, que assina o pedido e só aceita uma resposta assinada pelo coletor.
 - O Codex manda um aviso no fim de cada turno pelo `notify` do `~/.codex/config.toml`. O Codex só avisa o fim do turno, então aparece com menos detalhe que o Claude Code.
+- Hooks, coletor e executor se reconhecem por um segredo que o instalador cria em `~/.orquestra-office/secret`. Cada navegador que abre o escritório precisa estar pareado (veja [Parear navegadores e aparelhos](#parear-navegadores-e-aparelhos)).
 - O projeto é a pasta onde a sessão começou. Cada projeto novo ganha um escritório próprio em pixel art visto de cima, com um dos 7 temas (Laboratório, Café, Biblioteca, Garagem, Estação espacial, Jardim, Fliperama). Dá para trocar o modelo na própria página.
 - O escritório tem ilhas de baias de até 6 lugares (as sessões e seus subagentes sentam juntos, e os lugares livres ficam à vista), sala de reunião, lounge, copa e arquivo. Cada pessoa leva uma etiqueta com o nome, o título e a cor do status.
 - A interface segue o Orquestra Design System: os mesmos tokens de cor, tipografia, espaço e raio (`web/styles/tokens.css`), status sempre com glifo e texto, e o painel de terminal do app.
@@ -104,14 +105,15 @@ node runner/src/main.js
 Com ele ligado, a página mostra "Abrir sessão…". Você informa a pasta do projeto e a primeira mensagem, e o executor abre o Claude Code nessa pasta em modo de fluxo. Na ficha do agente aparecem o terminal ao vivo (o texto chega enquanto o agente escreve), "Interromper" e "Encerrar sessão". As permissões dessas sessões chegam ao escritório como as de qualquer outra.
 
 - É o Claude Code em modo não interativo, não a tela do terminal: não há comandos de barra nem a interface do Claude Code, só a conversa.
-- O executor escuta em `127.0.0.1:8421` e só aceita a página do escritório. Variáveis: `OFFICE_RUNNER_PORT`, `OFFICE_ORIGINS`, `CLAUDE_BIN` e `OFFICE_RUNNER_MODEL`.
+- O executor escuta em `127.0.0.1:8421` e só atende quem traz um token dele. A página pareada consegue o token sozinha: pede um desafio ao executor, o coletor assina o desafio com o segredo e o executor troca a assinatura por um token de 12 horas. Um processo qualquer da máquina, sem o segredo, não abre sessão nem manda mensagem. Variáveis: `OFFICE_RUNNER_PORT`, `OFFICE_ORIGINS`, `CLAUDE_BIN`, `OFFICE_RUNNER_MODEL` e `OFFICE_SECRET_FILE` (padrão `~/.orquestra-office/secret`).
 - As sessões abertas por ele são encerradas quando o executor para.
 
 ### Aprovar, recusar e responder
 
 Quando o Claude Code vai pedir uma permissão ou fazer uma pergunta, o hook segura o pedido no coletor e ele aparece no escritório. Você decide lá e a resposta volta para a sessão.
 
-- O pedido só é segurado se houver uma página do escritório aberta. Sem página aberta, ele vai direto para o terminal, como sempre.
+- O pedido só é segurado se houver uma página pareada do escritório aberta. Sem ela, ele vai direto para o terminal, como sempre.
+- Quem decide é só a página pareada. Se a resposta do coletor não vier assinada com o segredo desta máquina (coletor antigo, coletor parado e outro programa na porta 8420), o pedido vai para o terminal. Uma aprovação vinda do escritório nunca reescreve o comando, nunca grava regra de permissão e nunca muda o modo de permissão da sessão.
 - O coletor segura o pedido por até 120 segundos (variável `OFFICE_HOLD_SECONDS` do container). Sem resposta nesse prazo, ou se você clicar em "Decidir no terminal", o pedido volta para o terminal.
 - Enquanto o pedido está segurado, o terminal mostra "Esperando você no escritório".
 - Ao recusar, você pode escrever o motivo. O agente lê esse motivo.
@@ -132,9 +134,22 @@ O Claude Code só entrega esses números para a linha de status do terminal. O i
 
 **No disco** (volume `office-data`), só o necessário para desenhar o escritório: pasta do projeto, id da sessão, nome do subagente, nome da ferramenta, nome do arquivo (sem o caminho), o primeiro termo do comando (por exemplo `cargo`, nunca os argumentos) e os totais de tokens e custo.
 
-**Só na memória do coletor**, para o histórico e para você decidir com contexto: o texto dos seus pedidos, os comandos completos, a última resposta do agente em cada turno, os pedidos de permissão pendentes e as mensagens na fila. Nada disso vai para o disco, e tudo se perde quando o container reinicia. O histórico guarda no máximo 200 registros por sessão.
+**Aparelhos pareados** (`devices.json`, no mesmo volume): o nome do navegador, o endereço por onde foi aberto, as datas e o hash SHA-256 do cookie, nunca o cookie. Um aparelho sem uso por 30 dias sai da lista.
 
-Por padrão, o coletor só aceita conexões da sua máquina (`127.0.0.1`), e as ações de controle recusam pedidos vindos de outro site aberto no navegador.
+**Só na memória do coletor**, para o histórico e para você decidir com contexto: o texto dos seus pedidos, os comandos completos, a última resposta do agente em cada turno, os pedidos de permissão pendentes, as mensagens na fila e os códigos de pareamento ainda não usados. Nada disso vai para o disco, e tudo se perde quando o container reinicia. O histórico guarda no máximo 200 registros por sessão.
+
+**Na sua pasta pessoal** (`~/.orquestra-office`, criada pelo instalador e legível só pelo seu usuário): `secret`, a chave que hooks, coletor e executor compartilham, e `activity.header`, o cabeçalho com o token de atividade que o `curl` lê. O token fica num arquivo, e não na linha de comando, porque no macOS e no Linux qualquer usuário vê a linha de comando dos processos.
+
+Por padrão, o coletor só aceita conexões da sua máquina (`127.0.0.1`). Todo `/api/*` exige um navegador pareado, e as ações de controle recusam pedidos vindos de outro site aberto no navegador ou sem a origem da própria página.
+
+### Parear navegadores e aparelhos
+
+Cada navegador recebe um cookie de 90 dias, renovado sempre que a página carrega, também em `localhost`. Sem ele, a página mostra "Este navegador não está pareado".
+
+- **Neste computador:** rode `node hooks/open-office.mjs` na pasta do escritório. Ele pede um código ao coletor com um pedido assinado pelo segredo e abre o escritório já pareado no navegador padrão. Para outro navegador, copie o endereço que o comando mostra; ele vale uma vez, por 2 minutos.
+- **Em outro aparelho:** num navegador já pareado, clique em **Aparelhos** e depois em **Parear aparelho**. Leia o QR com o outro aparelho ou abra o link nele, também uma vez e por 2 minutos.
+- **Revogar:** em **Aparelhos**, "Revogar" desconecta o aparelho na hora; "Sair deste" desconecta o navegador atual.
+- **Girar o segredo** (`node hooks/install-claude-hooks.mjs --rotate-secret`) é o botão de pânico: invalida todos os aparelhos, os tokens do executor e qualquer hook com o segredo antigo. No Docker, rode `docker compose restart office` depois, porque o arquivo montado não muda dentro do container.
 
 ### Abrir na rede local
 
@@ -144,33 +159,48 @@ Para usar o escritório no celular, publique a porta também no IP da máquina n
 docker compose -f compose.yaml -f compose.lan.yaml up -d --build
 ```
 
-No celular, na mesma rede, abra `http://<OFFICE_LAN_IP>:8420`. Para voltar ao modo só local, rode `docker compose up -d` sem o segundo arquivo.
+Para usar no celular, pareie o aparelho pelo QR (**Aparelhos**, **Parear aparelho**, num navegador já pareado). O link do QR já aponta para `http://<OFFICE_LAN_IP>:8420`. Para voltar ao modo só local, rode `docker compose up -d` sem o segundo arquivo.
 
-- O escritório não tem senha. Qualquer aparelho na mesma rede consegue ver as sessões, aprovar permissões e mandar mensagens aos agentes. Só ligue em rede em que você confia.
-- Em HTTP pela rede, o navegador não diz de qual página veio cada pedido, então o coletor recusa a leitura que chega com o `Origin` de outro endereço. Uma `<img>` apontada para o escritório não manda `Origin`: outra página aberta num aparelho da rede ainda consegue contar como espectador, e enquanto ela estiver aberta os pedidos de permissão esperam no escritório em vez de ir direto para o terminal. Ela não consegue ler nada.
+- Um aparelho da rede que não foi pareado não vê nada: todo `/api/*` responde `401`, também para quem manda `Host: localhost`. As rotas dos hooks exigem o token ou a assinatura.
+- Pareado, o aparelho tem controle total: vê as sessões, aprova permissões e manda mensagens. Revogue em **Aparelhos** um aparelho perdido.
+- O modo rede é HTTP: quem escuta o tráfego da rede consegue copiar o cookie de um aparelho pareado. Só ligue em rede em que você confia.
+- Só páginas pareadas contam como espectador; uma página qualquer aberta na rede não segura pedidos de permissão longe do terminal.
 - Se o IP da máquina mudar, atualize `OFFICE_LAN_IP` no `.env` e suba de novo.
 - O executor continua só em `127.0.0.1`. "Abrir sessão…", terminal ao vivo, interromper e encerrar não funcionam pelo celular.
 
 ## Instalar
 
-Com o Node 22 ou mais novo, no PowerShell, nesta pasta:
+Com o Node 22 ou mais novo e o `curl` do sistema (o Windows 10 1803 ou mais novo já traz `C:\Windows\System32\curl.exe`; no macOS, `/usr/bin/curl`), no PowerShell, nesta pasta:
 
 ```powershell
-docker compose up -d --build
 node hooks/install-claude-hooks.mjs
 node hooks/install-codex-notify.mjs
+docker compose up -d --build
+node hooks/open-office.mjs
 ```
 
-Abra http://localhost:8420. As sessões do Claude Code e do Codex abertas **depois** da instalação aparecem sozinhas.
+Os instaladores vêm primeiro porque criam o segredo em `~/.orquestra-office/secret`, que o `compose.yaml` monta no container. O último comando abre o escritório já pareado no navegador padrão. As sessões do Claude Code e do Codex abertas **depois** da instalação aparecem sozinhas.
 
-Depois de atualizar esta pasta, rode de novo os três comandos: o primeiro reconstrói o coletor e os outros dois atualizam os hooks.
+Depois de atualizar esta pasta, rode de novo os dois instaladores e `docker compose up -d --build`.
 
-Os dois scripts só mexem no que o escritório gravou. As URLs e os comandos exatos ficam anotados em `orquestra-office.json`, na mesma pasta da configuração, e um hook seu que apenas se pareça com o do escritório fica onde está. Eles podem rodar de novo sem duplicar nada e, quando não há nada a mudar, não gravam nem fazem backup. O do Codex não sobrescreve um `notify` que você já tenha: ele avisa e não muda nada.
+### Atualizar de uma versão com hooks `http`
+
+Os hooks antigos do tipo `http` deixam de valer: o coletor novo responde a eles sem efeito, e a página avisa "Há hooks de uma versão antiga neste computador". Para migrar:
+
+1. Rode `node hooks/install-claude-hooks.mjs` uma vez para cada pasta de configuração do Claude Code que você usa (com `CLAUDE_CONFIG_DIR` apontando para ela) e `node hooks/install-codex-notify.mjs`. O instalador troca as entradas `http` pelas novas, cria o segredo e avisa que migrou.
+2. Reconstrua o coletor com `docker compose up -d --build`. Ele lê o segredo de `~/.orquestra-office/secret`; se o arquivo não existir, rode o instalador antes.
+3. Rode `node hooks/open-office.mjs` para parear o navegador. Pareie o celular pelo QR em **Aparelhos**.
+4. Reinicie o executor, se você usa: `node runner/src/main.js`.
+
+As sessões já abertas continuam com os hooks antigos até serem fechadas.
+
+Os dois scripts só mexem no que o escritório gravou. Os comandos exatos ficam anotados em `orquestra-office.json`, na mesma pasta da configuração, e um hook seu que apenas se pareça com o do escritório fica onde está. Eles podem rodar de novo sem duplicar nada e, quando não há nada a mudar, não gravam nem fazem backup. O do Codex não sobrescreve um `notify` que você já tenha: ele avisa e não muda nada.
 
 - **Backup.** Antes de gravar, cada script copia o arquivo para `settings.json.bak-<data>` ou `config.toml.bak-<data>` e guarda só os três backups mais recentes. A cópia é inteira: se o `env` do seu `settings.json` tiver tokens ou senhas, o backup também terá. No macOS e no Linux o backup fica legível só pelo seu usuário; no Windows ele herda as permissões da pasta.
 - **Gravação.** O arquivo é trocado de uma vez, e um `settings.json` que seja symlink continua symlink. Se o Claude Code salvar o arquivo enquanto o script roda, nada é gravado e o script pede para rodar de novo.
-- **Endereço.** Os hooks falam com `http://127.0.0.1:8420`. Para usar outra porta, defina `OFFICE_URL` antes de instalar, com um endereço desta máquina (`127.0.0.1`, `localhost` ou `[::1]`) e sem caminho. Endereço de outra máquina só com `--allow-remote-office` e `https://`, porque os hooks mandam para lá os comandos e as respostas das ferramentas e recebem de lá as decisões de permissão. Os dois scripts gravados (`office-session-start.mjs` e `office-statusline.mjs`) leem `OFFICE_URL` durante a sessão e só aceitam um endereço desta máquina; sem a variável, usam o padrão, e com outro valor não mandam nada.
-- **Pasta.** O caminho desta pasta vai dentro do comando gravado, então o instalador recusa um caminho com caracteres que o shell interpreta, como `$`, crase, aspas ou `;`.
+- **Endereço.** Os hooks falam com `http://127.0.0.1:8420`. Para usar outra porta, defina `OFFICE_URL` antes de instalar, com um endereço desta máquina (`127.0.0.1`, `localhost` ou `[::1]`) e sem caminho. Endereço de outra máquina só com `--allow-remote-office` e `https://`, porque os hooks mandam para lá os comandos e as respostas das ferramentas. O endereço e o caminho do segredo ficam gravados no comando da atividade e no de `office-decision.mjs`, que não lê nada do ambiente durante a sessão, já que o `.claude/settings.json` de um projeto pode definir variáveis de ambiente. Os outros dois scripts gravados (`office-session-start.mjs` e `office-statusline.mjs`) leem `OFFICE_URL` durante a sessão e só aceitam um endereço desta máquina; sem a variável, usam o padrão, e com outro valor não mandam nada.
+- **Pasta.** O caminho desta pasta e o do segredo vão dentro do comando gravado, então o instalador recusa um caminho com caracteres que o shell interpreta, como `$`, crase, aspas ou `;`.
+- **Segredo.** O instalador cria `~/.orquestra-office/secret` quando falta e nunca o sobrescreve; `--rotate-secret` troca a chave (veja [Parear navegadores e aparelhos](#parear-navegadores-e-aparelhos)). Rodado num terminal, o instalador do Claude Code termina abrindo o escritório já pareado, se o coletor responder.
 
 ## Desinstalar
 
@@ -180,9 +210,9 @@ node hooks/install-codex-notify.mjs --remove
 docker compose down
 ```
 
-O `--remove` tira só o que o escritório gravou e a anotação correspondente em `orquestra-office.json`. Se o arquivo de configuração não existir, ele não cria nada.
+O `--remove` tira só o que o escritório gravou e a anotação correspondente em `orquestra-office.json`. Se o arquivo de configuração não existir, ele não cria nada. O segredo fica onde está; para apagá-lo, remova a pasta `~/.orquestra-office` (no PowerShell, `Remove-Item -Recurse "$HOME\.orquestra-office"`; no macOS, `rm -r ~/.orquestra-office`).
 
-Se o container estiver parado, os hooks falham rápido e o Claude Code continua normalmente (`onFailure: "continue"`).
+Se o container estiver parado, a atividade se perde sem aviso, as decisões voltam para o terminal e o Claude Code continua normalmente.
 
 ## Desenvolvimento
 
@@ -198,7 +228,9 @@ node --test hooks/test/*.test.mjs
 
 Os testes de `web/test` cobrem as regras de comportamento dos bonecos (onde cada um fica, a demora antes de levantar, os gestos, os pensamentos e as conversas) e a formatação do terminal, que não dependem do navegador.
 
-Os testes de `hooks/test` rodam os instaladores com `CLAUDE_CONFIG_DIR` e `CODEX_HOME` numa pasta temporária e os dois hooks contra um escritório falso em `127.0.0.1`, então não mexem na sua configuração. A montagem do `settings.json` e do `config.toml` fica em `hooks/lib`, separada da leitura e da gravação dos arquivos. Os dois hooks gravados no `settings.json` (`office-session-start.mjs` e `office-statusline.mjs`) não mudam de nome nem de lugar, porque as sessões abertas apontam para eles.
+Os testes de `hooks/test` rodam os instaladores com `CLAUDE_CONFIG_DIR` e `CODEX_HOME` numa pasta temporária, com `HOME` e `USERPROFILE` numa pasta descartável (o segredo de teste fica lá), e os hooks contra um escritório falso em `127.0.0.1` que assina as respostas, então não mexem na sua configuração. A montagem do `settings.json` e do `config.toml` fica em `hooks/lib`, separada da leitura e da gravação dos arquivos. Os três hooks gravados no `settings.json` (`office-session-start.mjs`, `office-statusline.mjs` e `office-decision.mjs`) não mudam de nome nem de lugar, porque as sessões abertas apontam para eles.
+
+O protocolo assinado tem duas cópias, `collector/src/shared/auth/signed-message.js` e `hooks/lib/signed-message.mjs`, porque a pasta `hooks/` precisa continuar copiável sozinha. Os testes das duas usam os mesmos vetores fixos, e uma mudança em só uma delas quebra o teste.
 
 A página não tem etapa de build: as bibliotecas ficam copiadas em `web/vendor`, com a licença de cada uma ao lado.
 
@@ -208,5 +240,6 @@ A página não tem etapa de build: as bibliotecas ficam copiadas em `web/vendor`
 | marked | 18.1.3 | markdown das respostas no terminal |
 | DOMPurify | 3.4.17 | limpar o HTML gerado do markdown antes de mostrar |
 | highlight.js | 11.12.0 (build ES do `@highlightjs/cdn-assets`) | cores de sintaxe |
+| uqr | 0.1.3 (`dist/index.mjs`) | QR para parear outro aparelho; a página desenha o SVG a partir da matriz |
 
-Para atualizar uma delas, baixe o pacote do npm, confira o hash `integrity` do registro e substitua o arquivo em `web/vendor`. O DOMPurify vai com a extensão `.js`, porque o servidor do coletor não serve `.mjs`.
+Para atualizar uma delas, baixe o pacote do npm, confira o hash `integrity` do registro e substitua o arquivo em `web/vendor`. O DOMPurify e o uqr vão com a extensão `.js`, porque o servidor do coletor não serve `.mjs`.

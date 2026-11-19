@@ -35,7 +35,7 @@ Três evoluções já aprovadas dependem dessa organização: o escritório em f
    - `collector/src/main.js`;
    - `runner/src/main.js`;
    - `web/index.html` carregando `scripts/app/main.js`;
-   - `hooks/office-session-start.mjs` e `hooks/office-statusline.mjs`, gravados no `settings.json` do usuário.
+   - `hooks/office-session-start.mjs`, `hooks/office-statusline.mjs` e `hooks/office-decision.mjs` (este desde o ADR 0002), gravados no `settings.json` do usuário.
 7. A composição de cada pacote recebe a configuração como objeto, sem ler `process.env` e sem depender do diretório atual. Por padrão, o coletor escuta só em `127.0.0.1`; o `0.0.0.0` passa a ser definido apenas no `Dockerfile`. Com isso, a CLI de `npx` pode reaproveitar a composição.
 8. A refatoração prepara o campus sem implementá-lo. Ela separa:
    - as ilhas de mesas das zonas comuns da sala;
