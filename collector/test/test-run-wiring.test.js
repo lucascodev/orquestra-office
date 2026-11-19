@@ -13,17 +13,41 @@ const AT = Date.UTC(2026, 10, 19, 15, 0);
 const SESSION = { session_id: "s1", cwd: "/home/dev/app" };
 const bash = (command) => ({ tool_name: "Bash", tool_use_id: "t1", tool_input: { command } });
 
-function runThroughHooks(command, stdout) {
+function officeThroughHooks() {
   const store = createOfficeStore();
   const activity = createRecordActivity({ store, history: createSessionHistory(), parseTestOutput });
   const send = (hook, extra, at) => {
     const payload = { ...SESSION, hook_event_name: hook, ...extra };
     activity.record(normalizeClaudeEvent(payload, at), claudeHistoryEntry(payload, at));
   };
-  send("PreToolUse", bash(command), AT);
-  send("PostToolUse", { ...bash(command), tool_response: { stdout, stderr: "", interrupted: false } }, AT + 3_000);
-  return store.findAgent("claude:s1");
+  return { send, agent: () => store.findAgent("claude:s1") };
 }
+
+function runThroughHooks(command, stdout) {
+  const office = officeThroughHooks();
+  office.send("PreToolUse", bash(command), AT);
+  office.send("PostToolUse", { ...bash(command), tool_response: { stdout, stderr: "", interrupted: false } }, AT + 3_000);
+  return office.agent();
+}
+
+// Claude Code's Bash response carries stdout, stderr, interrupted and isImage, never an exit code: a command that exits
+// with an error reaches the office as PostToolUseFailure, with the output in the error text.
+test("a test command that fails with output the parser cannot read is a failed run", () => {
+  const office = officeThroughHooks();
+  office.send("PreToolUse", bash("npm test"), AT);
+  office.send("PostToolUseFailure", { ...bash("npm test"), error: "Exit code 1\nnpm ERR! Missing script: \"test\"" }, AT + 3_000);
+  const { tests, actionId, subject } = office.agent();
+  assert.deepEqual([tests.lastRun.isOk, tests.lastRun.passed, tests.lastRun.failed], [false, null, null]);
+  assert.deepEqual([actionId, subject], [AGENT_ACTION.TESTS_FAILED, null]);
+});
+
+test("a test command that ends well with output the parser cannot read is a passed run", () => {
+  const office = officeThroughHooks();
+  office.send("PreToolUse", bash("npm test"), AT);
+  office.send("PostToolUse", { ...bash("npm test"), tool_response: { stdout: "all good", stderr: "", interrupted: false, isImage: false } }, AT + 3_000);
+  const { tests, actionId } = office.agent();
+  assert.deepEqual([tests.lastRun.isOk, tests.lastRun.passed, actionId], [true, null, AGENT_ACTION.TESTS_PASSED]);
+});
 
 test("the real output parser turns a vitest run reported by the hooks into counts and named failures", () => {
   const agent = runThroughHooks("npx vitest run", readTestOutputFixture("vitest/vitest3-failures.txt"));
