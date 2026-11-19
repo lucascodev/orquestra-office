@@ -93,6 +93,11 @@ test("a task created without a known id after every task was deleted follows the
   assert.deepEqual(checklist.items.map((item) => item.id), ["3"]);
 });
 
+test("a task id too big to count is not taken as the highest number", () => {
+  const checklist = withTaskCreated(createdTasks("2", "99999999999999999999"), { id: null, text: "d" }, LATER);
+  assert.deepEqual(checklist.items.map((item) => item.id), ["2", "99999999999999999999", "3"]);
+});
+
 test("the same task created twice stays one item", () => {
   const once = withTaskCreated(null, { id: "1", text: "a" }, AT);
   assert.equal(withTaskCreated(once, { id: "1", text: "a" }, AT).items.length, 1);
