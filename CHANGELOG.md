@@ -6,9 +6,21 @@ All notable changes to this project are documented in this file, following [Keep
 
 ## [Unreleased]
 
+### Added
+
+- **Checklist, plan and tests in the agent sheet.** The sheet has four tabs: Now (Agora), Tasks (Tarefas), Plan (Plano) and Tests (Testes). Tasks shows the agent's checklist and its count, Plan the latest version of the plan with its state, and Tests the run in progress, the last run with up to 10 failures by name, today's runs and the session's test files. The Tests tab gets a red dot when the last run failed. Claude Code only: Codex does not report any of it.
+- **Test runs in any language.** The collector recognizes test commands (jest, vitest, mocha, `node --test`, playwright, pytest, `go test`, `cargo test`, `dotnet test`, maven, gradle, rspec, phpunit, `mix test` and others), reads the summary of 15 frameworks from the output and spots test files by their names. Without a summary it knows, the exit code decides whether the run passed.
+- **Plan approval in the permission alert.** The alert shows the plan the agent wants to carry out, with Approve plan (Aprovar plano), by click only, and Keep planning (Continuar planejando), which sends what you wrote to the agent.
+- **Signs on the map.** The tag over a character shows ⚗ with a clock while tests run, ✕ or ✓ with the count after a run, ✎ while it writes a test and ☰ with the checklist count. The legend explains them, the island sheet shows the checklist count and the last result per agent, and the timeline in the Today panel (Hoje) lists test runs and approved plans.
+- Demo mode shows checklist, plan and tests on the sample agents.
+
 ### Changed
 
 - **Codex with another `notify`.** The Codex installer no longer gives up when `config.toml` already has a `notify`, such as the Codex app's for computer use: it chains it, so `hooks/office-codex-notify.mjs` reports the turn to the office and then hands it to your command, and `--remove` gives your command back.
+
+### Security
+
+- **Test output, checklist and plan.** The collector never stores the whole test output: only the counts and up to 10 failures, each field cut to 300 characters, and the test command cut to 200. It masks tokens, keys, JWTs, credentials in URLs and `password=` or `token=` values in the command, the failures, the plan and the checklist. The checklist, the failures and the plan text stay in memory and never reach the disk. The page shows the plan without raw HTML, images, styles or form elements, and only with `http`, `https` and `mailto` links.
 
 ## [0.1.0] - 2026-11-19
 

@@ -128,6 +128,11 @@
         <h3 class="card-title">Um escritório por projeto</h3>
         <p class="card-text">Sete temas: Laboratório, Café, Biblioteca, Garagem, Estação espacial, Jardim e Fliperama. Cada projeto ganha a sua sala.</p>
       </article>
+      <article class="card card-wide">
+        <svg class="feature-icon" aria-hidden="true" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 17 2 2 4-4"></path><path d="m3 7 2 2 4-4"></path><path d="M13 6h8"></path><path d="M13 12h8"></path><path d="M13 18h8"></path></svg>
+        <h3 class="card-title">Checklist, plano e testes</h3>
+        <p class="card-text">A ficha do agente mostra a checklist dele, o plano e cada rodada de testes, com as falhas pelo nome. O escritório reconhece testes em qualquer linguagem, como jest, pytest, go, cargo, dotnet, maven e rspec, e mostra em cima do boneco: ⚗ enquanto rodam, depois ✓ ou ✕ com a contagem. O plano chega no alerta, e só um clique aprova.</p>
+      </article>
     </div>
   </div>
 </section>
@@ -257,11 +262,11 @@
     <div class="card-grid">
       <div class="card privacy-card">
         <h3 class="card-title">No disco</h3>
-        <p class="card-text">Pasta do projeto, id da sessão, nome da ferramenta, nome do arquivo sem o caminho, o primeiro termo do comando e os totais de tokens e custo.</p>
+        <p class="card-text">Pasta do projeto, id da sessão, nome da ferramenta, nome do arquivo sem o caminho, o primeiro termo do comando e os totais de tokens e custo. Dos testes, o comando, os arquivos de teste e os números de cada rodada, nunca a saída.</p>
       </div>
       <div class="card privacy-card">
         <h3 class="card-title">Só na memória</h3>
-        <p class="card-text">O texto dos seus pedidos, os comandos completos e as respostas. Nada disso vai para o disco, e tudo some quando o container reinicia.</p>
+        <p class="card-text">O texto dos seus pedidos, os comandos completos, as respostas, a checklist e o plano do agente e até 10 falhas de teste. Nada disso vai para o disco, e tudo some quando o container reinicia. Segredos no plano, na checklist e nos testes aparecem mascarados.</p>
       </div>
       <div class="card privacy-card">
         <h3 class="card-title">Só no localhost</h3>

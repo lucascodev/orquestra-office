@@ -51,6 +51,13 @@ The product terms in English and Brazilian Portuguese. The README, the community
 |---|---|---|
 | drawer | gaveta | The side panel on the right. It holds one sheet at a time. |
 | agent sheet | ficha do agente | The agent's details, live terminal and message box, shown in the drawer. |
+| Now, Tasks, Plan and Tests tabs | abas Agora, Tarefas, Plano e Testes | The four tabs of the agent sheet. |
+| tag | etiqueta | The label over a character with its name, title and status color. |
+| sign | sinal | The mark on the tag of an agent at work: ⚗ testing, ✓ or ✕ test result, ✎ writing a test, ☰ checklist. |
+| checklist | checklist | The agent's own task list, in the Tasks (Tarefas) tab and as ☰ 4/7 on the tag. |
+| plan | plano | What the agent proposes before acting, approved with Approve plan (Aprovar plano) or sent back with Keep planning (Continuar planejando). Not the same as plan usage. |
+| test run | rodada de testes | One run of a test command: its counts and up to 10 failures. |
+| timeline | linha do tempo | The list of the day's events in the Today panel, such as test runs and approved plans. |
 | island sheet | ficha da ilha | Who works on the island, its day, its theme and closing the room, shown in the drawer. |
 | bottom sheet | folha de baixo | The panel that slides up on phones, with the Rooms, Today, Accounts and Legend tabs. |
 | live terminal | terminal ao vivo | The terminal of a session opened by the runner, which accepts messages and can be interrupted. |

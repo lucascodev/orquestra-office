@@ -9,7 +9,7 @@ Como o escritório se comporta depois de instalado. Instalar, parear e desinstal
 - Todos os projetos dividem a mesma Sede, um escritório térreo aberto visto de cima. Cada projeto ganha uma ilha de 6 lugares na área de trabalho; um projeto com mais gente ganha mais de uma ilha. As sessões e seus subagentes sentam juntos, e os lugares livres ficam à vista.
 - Cada ilha tem um dos 7 temas, que pinta o tapete, as mesas e as cadeiras dela: Laboratório, Café, Biblioteca, Garagem, Estação espacial, Jardim e Fliperama. O tema se escolhe na ficha da ilha, aberta pelo nome do projeto na lista de salas ou com um clique na ilha.
 - Em volta das ilhas ficam as áreas comuns, de todos os projetos: sala de reuniões, copa, sala de jogos, lounge e recepção, e o quintal na frente do prédio.
-- Cada boneco leva uma etiqueta com o nome, o título e a cor do status. Quem tem mensagens na fila mostra quantas na etiqueta e na ficha da ilha.
+- Cada boneco leva uma etiqueta com o nome, o título e a cor do status. Quem tem mensagens na fila mostra quantas na etiqueta e na ficha da ilha. Enquanto o agente testa ou avança na checklist, a etiqueta mostra também um sinal (veja [Sinais em cima do boneco](#sinais-em-cima-do-boneco)).
 - Uma sessão aberta num worktree do git entra na ilha do repositório principal.
 - Os papéis definidos em `.claude/agents` do projeto ganham mesa com o nome mesmo quando ninguém está no papel. Só os nomes dos arquivos são lidos.
 - A interface segue o Orquestra Design System: os mesmos tokens de cor, tipografia, espaço e raio (`web/styles/tokens.css`), status sempre com glifo e texto, e o painel de terminal do app.
@@ -19,6 +19,8 @@ Como o escritório se comporta depois de instalado. Instalar, parear e desinstal
 Clique num boneco, ou no nome dele na ficha da ilha ou na busca (`Ctrl K`, `Cmd K` no Mac), para abrir a ficha do agente, na gaveta à direita do mapa. É nela que ficam as opções de resposta, a caixa de mensagem e o histórico.
 
 Para alargar a gaveta, passe o mouse na borda esquerda dela e arraste. A largura fica guardada no navegador; duplo clique na borda volta ao padrão, e com o foco na borda as setas também mudam a largura.
+
+A ficha tem quatro abas: **Agora**, **Tarefas**, **Plano** e **Testes**. A aba Agora tem o status, o terminal e a caixa de mensagem, descritos a seguir. As outras três estão em [Checklist, plano e testes](#checklist-plano-e-testes).
 
 O terminal da ficha:
 
@@ -38,6 +40,66 @@ Quando o Claude Code vai pedir uma permissão ou fazer uma pergunta, o hook segu
 - O coletor segura o pedido por até 120 segundos (variável `OFFICE_HOLD_SECONDS` do container). Sem resposta nesse prazo, ou se você clicar em **Decidir no terminal**, o pedido volta para o terminal.
 - Enquanto o pedido está segurado, o terminal mostra "Esperando você no escritório".
 - Ao recusar, você pode escrever o motivo. O agente lê esse motivo.
+
+## Checklist, plano e testes
+
+O Claude Code avisa a lista de tarefas do agente, o plano dele e cada rodada de testes. O escritório mostra tudo isso na ficha do agente e em cima do boneco. O Codex só avisa o fim de cada turno, então nada disso aparece para os agentes do Codex. No modo demo (`?modo=demo`), os agentes de exemplo mostram tudo.
+
+### Sinais em cima do boneco
+
+A etiqueta em cima do boneco mostra um sinal por vez, o primeiro que valer:
+
+| Sinal | Quando |
+|---|---|
+| ⚗ testando 0:12 | os testes estão rodando; o relógio conta o tempo |
+| ✕ 2 falharam | a última rodada falhou, até a próxima rodada |
+| ✓ 250 passaram | a última rodada passou, por 1 minuto depois de terminar |
+| ✎ escrevendo teste | o último arquivo que o agente criou ou editou é de teste, por até 1 minuto |
+| ☰ 4/7 | a checklist tem itens abertos: 4 de 7 feitos |
+
+Sem nenhum deles, a etiqueta mostra só o nome, o título e o status. A legenda explica os sinais. A ficha da ilha mostra, para cada agente, a contagem da checklist e o resultado da última rodada. A linha do tempo do painel **Hoje** lista cada rodada de testes e cada plano aprovado, por exemplo "rodou os testes: 2 falharam, 248 passaram".
+
+<p><img src="images/work-tags.png" width="640" alt="Bonecos no mapa com sinais em cima: testando, passaram, falharam, escrevendo teste e checklist em 4/7"><br><sub>Sinais em cima dos bonecos: ⚗ testando, ✓ passaram, ✕ falharam, ✎ escrevendo teste e ☰ checklist.</sub></p>
+
+### Tarefas
+
+A aba **Tarefas** mostra a checklist do próprio agente, a que ele monta com as ferramentas de tarefas do Claude Code. Cada item tem o status: a fazer, em andamento ou feito. A contagem, como "4 de 7 feitas", aparece também na aba. A lista só muda quando o agente a atualiza.
+
+<p><img src="images/checklist-tab.png" width="640" alt="Ficha do agente na aba Tarefas, com uma checklist de 7 itens e 4 feitos"><br><sub>Aba <b>Tarefas</b>: a checklist do agente, com 4 de 7 feitas.</sub></p>
+
+### Plano
+
+Quando o agente termina um plano no modo de planejamento e pede para seguir, o alerta de permissão no alto mostra o próprio plano, com o nome do agente e "terminou o plano e quer sua aprovação".
+
+- **Aprovar plano** só funciona com clique. Não tem atalho de teclado, para ninguém aprovar um plano sem ler.
+- **Continuar planejando**, ou a tecla N, recusa o pedido e manda ao agente o que você escreveu no campo, e ele volta a planejar com isso.
+- **Decidir no terminal** devolve o pedido para o terminal, como qualquer outro pedido de permissão.
+- Um plano com mais de 20 000 caracteres chega cortado; o resto está no terminal.
+
+A aba **Plano** mostra a versão mais recente, o estado (esperando sua aprovação, aprovado ou trocado por uma versão nova) e a hora. Ela busca o texto no coletor quando você a abre. O texto fica só na memória do coletor: depois de um reinício, a aba avisa que o coletor não tem mais o texto.
+
+<p><img src="images/plan-approval.png" width="640" alt="Alerta de permissão no alto da Sede com um plano para aprovar, o campo do que mudar, Continuar planejando e Aprovar plano"><br><sub>Plano no alerta de permissão: <b>Aprovar plano</b> só por clique, ou <b>Continuar planejando</b> com um comentário.</sub></p>
+
+### Testes
+
+O escritório reconhece uma rodada de testes em qualquer linguagem, de três jeitos:
+
+- **Pelo comando.** jest, vitest, mocha, `node --test`, playwright, cypress, pytest, tox, `go test`, `cargo test`, `dotnet test`, maven, gradle, rspec, `rails test`, phpunit, pest, `mix test`, `flutter test`, `swift test` e os scripts `test` do npm, pnpm, yarn e bun, entre outros. Um `cd` ou variáveis de ambiente no começo do comando não atrapalham.
+- **Pela saída.** O resumo de 15 frameworks dá os números de testes que passaram, falharam e foram pulados: jest, vitest, pytest, node:test e TAP, go, cargo, dotnet, maven, gradle, mocha, rspec, phpunit, mix e playwright. Jest, vitest, pytest, node:test, TAP, go, cargo e rspec dão também o nome, o arquivo e a linha, e a mensagem de cada falha. Sem um resumo conhecido, o escritório diz só se o comando terminou bem ou com erro.
+- **Pelos arquivos de teste.** Nomes como `*.test.*`, `*.spec.*`, `__tests__/`, `test_*.py`, `*_test.go`, `*Test.java`, `*Tests.cs`, `*_spec.rb` e `*Test.php`, e as pastas `test/`, `tests/` e `spec/`.
+
+A aba **Testes** mostra:
+
+- a rodada em andamento, com o relógio;
+- a última rodada, com os números de testes que passaram, falharam e foram pulados e até 10 falhas com nome, arquivo e linha, e mensagem;
+- as rodadas de hoje, da mais recente para a mais antiga;
+- os arquivos de teste da sessão, se o agente leu, criou ou editou cada um, e quantas falhas da última rodada estavam nele.
+
+Quando a última rodada falhou e a aba não está aberta, a aba ganha um ponto vermelho.
+
+<p><img src="images/tests-tab.png" width="640" alt="Ficha do agente na aba Testes, com testes rodando, a última rodada com 2 falhas pelo nome e os arquivos de teste da sessão"><br><sub>Aba <b>Testes</b>: a rodada em andamento, a última rodada com cada falha e os arquivos de teste.</sub></p>
+
+O escritório nunca guarda a saída inteira dos testes: só os números e até 10 falhas. Segredos no comando, nas falhas, no plano e na checklist aparecem mascarados, e a checklist, as falhas e o texto do plano nunca vão para o disco. O item [O que fica guardado](../README.pt-BR.md#o-que-fica-guardado) do README tem os detalhes.
 
 ## Mandar mensagens
 

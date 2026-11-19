@@ -128,6 +128,11 @@
         <h3 class="card-title">One office per project</h3>
         <p class="card-text">Seven themes: Lab, Café, Library, Garage, Space station, Garden and Arcade. Every project gets its own room.</p>
       </article>
+      <article class="card card-wide">
+        <svg class="feature-icon" aria-hidden="true" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 17 2 2 4-4"></path><path d="m3 7 2 2 4-4"></path><path d="M13 6h8"></path><path d="M13 12h8"></path><path d="M13 18h8"></path></svg>
+        <h3 class="card-title">Checklist, plan and tests</h3>
+        <p class="card-text">The agent sheet shows the agent's checklist, its plan and every test run, with failures by name. The office recognizes tests in any language, such as jest, pytest, go, cargo, dotnet, maven and rspec, and shows it over the character: ⚗ while they run, then ✓ or ✕ with the count. The plan arrives in the alert, and only a click approves it.</p>
+      </article>
     </div>
   </div>
 </section>
@@ -257,11 +262,11 @@
     <div class="card-grid">
       <div class="card privacy-card">
         <h3 class="card-title">On disk</h3>
-        <p class="card-text">Project folder, session id, tool name, file name without its path, the first word of a command and token and cost totals.</p>
+        <p class="card-text">Project folder, session id, tool name, file name without its path, the first word of a command and token and cost totals. For tests, the command, the test files and the counts of each run, never the output.</p>
       </div>
       <div class="card privacy-card">
         <h3 class="card-title">In memory only</h3>
-        <p class="card-text">The text of your prompts, full commands and replies. None of it is written to disk, and it is gone when the container restarts.</p>
+        <p class="card-text">The text of your prompts, full commands, replies, the agent's checklist and plan, and up to 10 test failures. None of it is written to disk, and it is gone when the container restarts. Secrets in the plan, the checklist and the tests show up masked.</p>
       </div>
       <div class="card privacy-card">
         <h3 class="card-title">Localhost only</h3>

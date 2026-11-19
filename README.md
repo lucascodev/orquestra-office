@@ -35,8 +35,11 @@ Each project folder gets an island of desks in the Sede (HQ), a single open-plan
 | Session history | yes, read-only | no |
 | 5-hour and weekly plan usage | yes | no |
 | Tokens and cost for the day | yes | no |
+| Checklist, plan and tests in the agent sheet and on the map | yes | no |
 
 Click a character, or its name in the island sheet or in search (`Ctrl K`, `Cmd K` on a Mac), to open its agent sheet in the drawer on the right. That is where the answer options, the message box and the history live. Permission requests also show up in the permission alert at the top of the screen, with Allow (Permitir) and Deny (Negar).
+
+The agent sheet has four tabs: Now (Agora), with the status, the terminal and the message box; Tasks (Tarefas), with the agent's checklist; Plan (Plano), with the plan it proposed; and Tests (Testes), with every test run and its failures by name. The office recognizes test runs in any language, from jest and pytest to `go test`, `cargo test` and `dotnet test`, and shows a sign over the character: ⚗ while tests run, then ✓ or ✕ with the count. When the agent finishes a plan, the permission alert shows it, and only a click approves it.
 
 <table>
   <tr>
@@ -51,9 +54,13 @@ Click a character, or its name in the island sheet or in search (`Ctrl K`, `Cmd 
     <td><img src="docs/images/permission-alert.png" width="420" alt="Permission alert for a command, with Deny, Allow and Decide in the terminal"><br><sub>Permission alert: Allow (Permitir), Deny (Negar) or Decide in the terminal (Decidir no terminal).</sub></td>
     <td><img src="docs/images/mobile.png" width="420" alt="The office on two phone screens: the map with the alert, and the bottom sheet with the rooms"><br><sub>On a phone, the map fills the screen and the panels move to a bottom sheet.</sub></td>
   </tr>
+  <tr>
+    <td><img src="docs/images/tests-tab.png" width="420" alt="Agent sheet on the Tests tab, with tests running, the last run with 2 named failures and the session's test files"><br><sub>Tests (Testes) tab: the run in progress, the last run with each failure and the test files.</sub></td>
+    <td><img src="docs/images/work-tags.png" width="420" alt="Characters on the map with signs over them: testing, passed, failed, writing a test and a checklist at 4/7"><br><sub>Signs over the characters: ⚗ testing, ✓ passed, ✕ failed, ✎ writing a test and ☰ checklist.</sub></td>
+  </tr>
 </table>
 
-The [guide](docs/guide.md) covers the rest: how characters behave, the agent sheet's terminal, approving and answering, messages, the runner, and usage and cost.
+The [guide](docs/guide.md) covers the rest: how characters behave, the agent sheet's terminal, approving and answering, checklist, plan and tests, messages, the runner, and usage and cost.
 
 ## How it works
 
@@ -158,11 +165,13 @@ Sessions that are already open keep the old hooks until they are closed.
 
 ## What is stored
 
-**On disk** (the `office-data` volume), only what is needed to draw the office: project folder, session id, subagent name, tool name, file name (without the path), the first word of a command (for example `cargo`, never the arguments) and the token and cost totals.
+**On disk** (the `office-data` volume), only what is needed to draw the office: project folder, session id, subagent name, tool name, file name (without the path), the first word of a command (for example `cargo`, never the arguments) and the token and cost totals. For tests, it also keeps the counts of each run (passed, failed and skipped), the framework, the test command cut to 200 characters with secrets masked, and the test files' paths relative to the project. For the plan, only its version, state and times.
 
 **Paired devices** (`devices.json`, in the same volume): the browser name, the address it was opened from, the dates and the SHA-256 hash of the cookie, never the cookie itself. A device unused for 30 days drops off the list.
 
-**Only in the collector's memory**, for the history and so you can decide with context: the text of your prompts, full commands, the agent's last reply in each turn, pending permission requests, queued messages and unused pairing codes. None of this goes to disk, and all of it is lost when the container restarts. The history keeps at most 200 entries per session.
+**Only in the collector's memory**, for the history and so you can decide with context: the text of your prompts, full commands, the agent's last reply in each turn, pending permission requests, queued messages, unused pairing codes, the agent's checklist, the text of its plan and up to 10 failures of the last test run. None of this goes to disk, and all of it is lost when the container restarts. The history keeps at most 200 entries per session.
+
+**Test output is never stored whole.** The collector reads the counts and up to 10 failures (name, place and message, each cut to 300 characters) and drops the rest. Before it keeps the test command, the failures, the plan or the checklist, it masks tokens, keys, JWTs, credentials in URLs and `password=` or `token=` values.
 
 **In your home folder** (`~/.orquestra-office`, created by the installer and readable only by your user): `secret`, the key shared by hooks, collector and runner, and `activity.header`, the header with the activity token that `curl` reads. The token lives in a file, not on the command line, because on macOS and Linux any user can see the command line of running processes.
 
