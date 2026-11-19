@@ -56,7 +56,7 @@ A ficha do agente tem quatro abas: **Agora**, com o status, o terminal e a caixa
   </tr>
   <tr>
     <td><img src="docs/images/tests-tab.png" width="420" alt="Ficha do agente na aba Testes, com testes rodando, a última rodada com 2 falhas pelo nome e os arquivos de teste da sessão"><br><sub>Aba <b>Testes</b>: a rodada em andamento, a última rodada com cada falha e os arquivos de teste.</sub></td>
-    <td><img src="docs/images/work-tags.png" width="420" alt="Bonecos no mapa com sinais em cima: um rodando testes, um com testes que falharam e um com a checklist em 4/7, ao lado da legenda"><br><sub>Sinais em cima dos bonecos: ⚗ testando, ✕ falharam e ☰ checklist. A legenda mostra também ✓ passaram e ✎ escrevendo teste.</sub></td>
+    <td><img src="docs/images/work-tags.png" width="420" alt="Bonecos no mapa com os cinco sinais em cima: um rodando testes, um com testes que acabaram de passar, um com testes que falharam, um escrevendo teste e um com a checklist em 4/7, ao lado da legenda"><br><sub>Sinais em cima dos bonecos: ⚗ testando, ✓ passaram, ✕ falharam, ✎ escrevendo teste e ☰ checklist.</sub></td>
   </tr>
 </table>
 

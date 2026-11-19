@@ -59,7 +59,7 @@ The tag over the character shows one sign at a time, the first one that applies:
 
 With none of them, the tag shows only the name, the title and the status. The legend (Legenda) explains the signs. The island sheet shows, for each agent, the checklist count and the result of the last run. The timeline in the Today panel (Hoje) lists each test run and each approved plan, for example "ran the tests: 2 failed, 248 passed" (rodou os testes: 2 falharam, 248 passaram).
 
-<p><img src="images/work-tags.png" width="640" alt="Characters on the map with signs over them: one running tests, one whose tests failed and one with a checklist at 4/7, next to the legend"><br><sub>Signs over the characters: ⚗ testing, ✕ failed and ☰ checklist. The legend also lists ✓ passed and ✎ writing a test.</sub></p>
+<p><img src="images/work-tags.png" width="640" alt="Characters on the map with the five signs over them: one running tests, one whose tests just passed, one whose tests failed, one writing a test and one with a checklist at 4/7, next to the legend"><br><sub>Signs over the characters: ⚗ testing, ✓ passed, ✕ failed, ✎ writing a test and ☰ checklist.</sub></p>
 
 ### Tasks
 

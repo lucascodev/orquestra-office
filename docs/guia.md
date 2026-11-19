@@ -59,7 +59,7 @@ A etiqueta em cima do boneco mostra um sinal por vez, o primeiro que valer:
 
 Sem nenhum deles, a etiqueta mostra só o nome, o título e o status. A legenda explica os sinais. A ficha da ilha mostra, para cada agente, a contagem da checklist e o resultado da última rodada. A linha do tempo do painel **Hoje** lista cada rodada de testes e cada plano aprovado, por exemplo "rodou os testes: 2 falharam, 248 passaram".
 
-<p><img src="images/work-tags.png" width="640" alt="Bonecos no mapa com sinais em cima: um rodando testes, um com testes que falharam e um com a checklist em 4/7, ao lado da legenda"><br><sub>Sinais em cima dos bonecos: ⚗ testando, ✕ falharam e ☰ checklist. A legenda mostra também ✓ passaram e ✎ escrevendo teste.</sub></p>
+<p><img src="images/work-tags.png" width="640" alt="Bonecos no mapa com os cinco sinais em cima: um rodando testes, um com testes que acabaram de passar, um com testes que falharam, um escrevendo teste e um com a checklist em 4/7, ao lado da legenda"><br><sub>Sinais em cima dos bonecos: ⚗ testando, ✓ passaram, ✕ falharam, ✎ escrevendo teste e ☰ checklist.</sub></p>
 
 ### Tarefas
 

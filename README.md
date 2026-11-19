@@ -56,7 +56,7 @@ The agent sheet has four tabs: Now (Agora), with the status, the terminal and th
   </tr>
   <tr>
     <td><img src="docs/images/tests-tab.png" width="420" alt="Agent sheet on the Tests tab, with tests running, the last run with 2 named failures and the session's test files"><br><sub>Tests (Testes) tab: the run in progress, the last run with each failure and the test files.</sub></td>
-    <td><img src="docs/images/work-tags.png" width="420" alt="Characters on the map with signs over them: one running tests, one whose tests failed and one with a checklist at 4/7, next to the legend"><br><sub>Signs over the characters: ⚗ testing, ✕ failed and ☰ checklist. The legend also lists ✓ passed and ✎ writing a test.</sub></td>
+    <td><img src="docs/images/work-tags.png" width="420" alt="Characters on the map with the five signs over them: one running tests, one whose tests just passed, one whose tests failed, one writing a test and one with a checklist at 4/7, next to the legend"><br><sub>Signs over the characters: ⚗ testing, ✓ passed, ✕ failed, ✎ writing a test and ☰ checklist.</sub></td>
   </tr>
 </table>
 
