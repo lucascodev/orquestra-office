@@ -2,6 +2,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { createBootstrapChallenges } from "../src/access/domain/bootstrap-challenges.js";
 import { createDeviceSessions } from "../src/access/domain/device-sessions.js";
+import { createLegacyHooksNotice } from "../src/access/domain/legacy-hooks-notice.js";
 import { createPairingCodes } from "../src/access/domain/pairing-codes.js";
 
 const CODE_TTL_MS = 120_000;
@@ -67,6 +68,38 @@ test("no more than twenty codes wait at once, and expired ones free their place"
   assert.equal(pairing.issue(), null);
   time.advance(CODE_TTL_MS);
   assert.ok(pairing.issue());
+});
+
+const LEGACY_NOTICE_WINDOW_MS = 10 * 60_000;
+
+test("the old-hooks notice lasts ten minutes after the last old hook, and its end is announced once", () => {
+  const time = clock();
+  const notice = createLegacyHooksNotice({ now: time.now });
+  let changes = 0;
+  notice.onChange(() => { changes += 1; });
+  notice.see();
+  const seenAt = time.now();
+
+  time.advance(LEGACY_NOTICE_WINDOW_MS - 1);
+  notice.sweep();
+  assert.equal(notice.seenAt(), seenAt);
+  time.advance(1);
+  assert.equal(notice.seenAt(), null);
+  notice.sweep();
+  notice.sweep();
+
+  assert.equal(changes, 2);
+});
+
+test("an old hook seen again keeps the notice up", () => {
+  const time = clock();
+  const notice = createLegacyHooksNotice({ now: time.now });
+  notice.see();
+  time.advance(LEGACY_NOTICE_WINDOW_MS - 1);
+  notice.see();
+  time.advance(LEGACY_NOTICE_WINDOW_MS - 1);
+
+  assert.equal(notice.seenAt(), time.now() - LEGACY_NOTICE_WINDOW_MS + 1);
 });
 
 const BOOTSTRAP_CHALLENGE_TTL_MS = 30_000;

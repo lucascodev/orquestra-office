@@ -100,6 +100,7 @@ export function createOffice({ webDir, dataDir = null, holdMs, allowedHosts = []
   function sweepSafely() {
     try {
       store.sweep(Date.now());
+      legacyHooks.sweep();
     } catch (error) {
       console.error("office sweep failed:", error);
     }
