@@ -108,7 +108,7 @@ test("a template change for a project named like a prototype key does not reach 
 
 const SECURITY_HEADERS = {
   "x-frame-options": "DENY",
-  "content-security-policy": "frame-ancestors 'none'; img-src 'self' data: blob:",
+  "content-security-policy": "frame-ancestors 'none'; img-src 'self' data: blob:; object-src 'none'; base-uri 'none'; form-action 'self'",
   "x-content-type-options": "nosniff",
   "cross-origin-resource-policy": "same-origin",
   "referrer-policy": "same-origin",

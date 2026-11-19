@@ -83,7 +83,7 @@ A saída dos testes nunca é guardada inteira: só os números, até 10 falhas c
 
 O arquivo de estado em disco não guarda texto livre: sai a checklist, as falhas, o texto do plano e os comandos de teste (`lastRun.command`, `runsToday[].label` e a rodada em curso, gravada como `running: null`). Eles ficam em memória, como o histórico do terminal, e somem quando o coletor reinicia. O arquivo é gravado só para o dono (`0o600`), como o de aparelhos pareados.
 
-A página mostra o plano com um renderizador próprio, sem HTML cru, imagens, estilos nem elementos de formulário, e só com links `http`, `https` e `mailto`. As decisões só leem botões e o campo de dentro da barra de decisão. A CSP ganhou `img-src 'self' data: blob:`.
+A página mostra o plano com um renderizador próprio, sem HTML cru, imagens, estilos nem elementos de formulário, e só com links `http`, `https` e `mailto`. As decisões só leem botões e o campo de dentro da barra de decisão. A CSP ganhou `img-src 'self' data: blob:`, `object-src 'none'`, `base-uri 'none'` e `form-action 'self'`.
 
 ## 5. Divisão do trabalho
 
