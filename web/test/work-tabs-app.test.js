@@ -93,6 +93,28 @@ describe("tabs of the agent's sheet, in the page", () => {
     tabs.close();
   });
 
+  it("draws the plan only while its tab is open, and again only when the plan or its text changed", async () => {
+    const plans = deferredPlans();
+    const { tabs, view, press, slots } = tabsWith(plans);
+    tabs.open("claude:p1");
+    for (let update = 0; update < 3; update += 1) tabs.render(planner(1));
+    assert.equal(view.planCalls.length, 0);
+    press("plan");
+    assert.deepEqual(view.planCalls.map((loaded) => loaded.loading), ["loading"]);
+    tabs.render(planner(1));
+    tabs.render(planner(1));
+    assert.equal(view.planCalls.length, 1);
+    plans.asked[0]({ text: "# v1", version: 1, state: "proposed", proposedAt: NOW - SECOND, decidedAt: null });
+    await settle();
+    assert.equal(slots.plan.innerHTML, "ready:# v1");
+    tabs.render(planner(1));
+    assert.equal(view.planCalls.length, 2);
+    press("tests");
+    tabs.render(planner(2));
+    assert.equal(view.planCalls.length, 2);
+    tabs.close();
+  });
+
   it("keeps the text of an older version that arrives late from taking the place of the version asked for after it", async () => {
     const plans = deferredPlans();
     const { tabs, press, slots } = tabsWith(plans);
