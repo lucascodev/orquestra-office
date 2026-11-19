@@ -8,7 +8,7 @@ Obrigado pelo interesse no Orquestra Office. Este guia mostra como rodar o proje
 
 - Para uma mudança grande (funcionalidade nova, mudança de contrato entre coletor, hooks e página, nova camada), abra uma issue antes e descreva a ideia. Assim ninguém perde trabalho com algo que não cabe no projeto.
 - Correção pequena, teste que falta ou texto errado podem ir direto num pull request.
-- Falha de segurança não vai em issue pública: siga o [SECURITY.md](SECURITY.md).
+- Falha de segurança não vai em issue pública: siga a [política de segurança](SECURITY.pt-BR.md).
 - Ao participar, você concorda com o [Código de Conduta](CODE_OF_CONDUCT.pt-BR.md).
 
 ## Idiomas
@@ -61,7 +61,7 @@ A página não tem etapa de build: edite um arquivo em `web/` e recarregue o nav
 
 ### Com sessões reais
 
-Siga a seção de instalação do [README](README.md). Os instaladores gravam na sua configuração do Claude Code (`settings.json`) e do Codex (`config.toml`). Para experimentar sem mexer na sua configuração, aponte `CLAUDE_CONFIG_DIR` e `CODEX_HOME` para uma pasta temporária antes de instalar e de abrir a sessão:
+Siga a seção de instalação do [README](README.pt-BR.md#instalar). Os instaladores gravam na sua configuração do Claude Code (`settings.json`) e do Codex (`config.toml`). Para experimentar sem mexer na sua configuração, aponte `CLAUDE_CONFIG_DIR` e `CODEX_HOME` para uma pasta temporária antes de instalar e de abrir a sessão:
 
 ```powershell
 $env:CLAUDE_CONFIG_DIR = "$env:TEMP\orquestra-claude"

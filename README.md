@@ -1,264 +1,237 @@
-# Escritórios dos agentes
+**English** | [Português (Brasil)](README.pt-BR.md)
 
-Uma sede em pixel art onde cada projeto em que você abre o Claude Code ou o Codex ganha uma ilha de mesas. Cada sessão senta numa mesa, os subagentes sentam ao lado dela, e o boneco mostra o que está acontecendo: digitando, lendo, pedindo sua permissão, esperando você, em pausa ou bloqueado.
+# Orquestra Office
 
-## O que dá para fazer
+A pixel-art office for your coding agents: every Claude Code and Codex session gets a desk, shows what it is doing, and waits for your answer in the browser instead of the terminal.
 
-| No escritório | Claude Code | Codex |
+[![CI](https://github.com/lucascodev/orquestra-office/actions/workflows/ci.yml/badge.svg)](https://github.com/lucascodev/orquestra-office/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+[![Node 22 or newer](https://img.shields.io/badge/node-%E2%89%A5%2022-339933?logo=node.js&logoColor=white)](https://nodejs.org/)
+[![Zero npm dependencies](https://img.shields.io/badge/npm%20dependencies-zero-brightgreen.svg)](CONTRIBUTING.md#no-npm-dependencies)
+[![Live demo](https://img.shields.io/badge/live%20demo-open-e8936a.svg)](https://lucascodev.github.io/orquestra-office/demo/?modo=demo)
+
+<p align="center">
+  <a href="https://lucascodev.github.io/orquestra-office/demo/?modo=demo">
+    <img src="docs/images/sede.gif" width="920" alt="The Sede (HQ) in demo mode: agents typing at their desks, walking to the pantry and raising a hand for a permission request">
+  </a>
+  <br>
+  <sub><a href="https://lucascodev.github.io/orquestra-office/demo/?modo=demo">Open the live demo</a> (sample data, nothing to install) · <a href="https://lucascodev.github.io/orquestra-office/en/">Project page</a></sub>
+</p>
+
+> The office interface is in Portuguese only. This README names buttons in English with the on-screen label in parentheses, for example Allow (Permitir).
+
+## What you can do
+
+Each project folder gets an island of desks in the Sede (HQ), a single open-plan building seen from above. Each session sits at a desk, its subagents sit next to it, and the character shows what is going on: typing, reading, asking for your permission, waiting for you, on break or stuck on an error.
+
+| In the office | Claude Code | Codex |
 |---|---|---|
-| Personagem e ilha por projeto | sim | sim |
-| Atividade ao vivo | sim | só o fim de cada turno |
-| Aprovar ou recusar um pedido de permissão | sim | não |
-| Responder perguntas do agente | sim | não |
-| Mandar mensagens | sim: na hora nas sessões abertas pelo escritório, no fim do turno nas demais | não |
-| Terminal ao vivo, interromper e encerrar | sim, nas sessões abertas pelo escritório | não |
-| Histórico da sessão | sim, somente leitura | não |
-| Uso de 5 h e semanal | sim | não |
-| Tokens e custo do dia | sim | não |
+| Character and island per project | yes | yes |
+| Live activity | yes | end of each turn only |
+| Approve or deny a permission request | yes | no |
+| Answer the agent's questions | yes | no |
+| Send messages | yes: right away in sessions opened from the office, at the end of the turn in the others | no |
+| Live terminal, interrupt and end the session | yes, in sessions opened from the office | no |
+| Session history | yes, read-only | no |
+| 5-hour and weekly plan usage | yes | no |
+| Tokens and cost for the day | yes | no |
 
-Clique num personagem, ou no nome dele na ficha da ilha ou na busca (`Ctrl K`), para abrir a ficha do agente, numa gaveta à direita do mapa. É nela que ficam as opções de resposta, a caixa de mensagem e o histórico. Os pedidos de permissão aparecem também no aviso no alto da tela, com "Permitir" e "Negar".
+Click a character, or its name in the island sheet or in search (`Ctrl K`, `Cmd K` on a Mac), to open its agent sheet in the drawer on the right. That is where the answer options, the message box and the history live. Permission requests also show up in the permission alert at the top of the screen, with Allow (Permitir) and Deny (Negar).
 
-Para alargar a gaveta, passe o mouse na borda esquerda dela e arraste. A largura fica guardada no navegador; duplo clique na borda volta ao padrão, e com o foco na borda as setas também mudam a largura.
+<table>
+  <tr>
+    <td width="50%"><img src="docs/images/sede-overview.png" width="420" alt="The whole Sede with five project islands and the common areas"><br><sub>The whole Sede: one island per project, with the common areas around them.</sub></td>
+    <td width="50%"><img src="docs/images/agent-drawer.png" width="420" alt="Agent sheet open in the drawer, with the live terminal and the message box"><br><sub>Agent sheet: status, live terminal and message box.</sub></td>
+  </tr>
+  <tr>
+    <td><img src="docs/images/island-sheet.png" width="420" alt="Island sheet with the people on the island, today's numbers and the theme picker"><br><sub>Island sheet: who sits there, today's numbers and the island theme.</sub></td>
+    <td><img src="docs/images/search.png" width="420" alt="Search listing agents grouped by project, with the ones that need you first"><br><sub>Search finds agents, rooms and actions, with whoever needs you first.</sub></td>
+  </tr>
+  <tr>
+    <td><img src="docs/images/permission-alert.png" width="420" alt="Permission alert for a command, with Deny, Allow and Decide in the terminal"><br><sub>Permission alert: Allow (Permitir), Deny (Negar) or Decide in the terminal (Decidir no terminal).</sub></td>
+    <td><img src="docs/images/mobile.png" width="420" alt="The office on two phone screens: the map with the alert, and the bottom sheet with the rooms"><br><sub>On a phone, the map fills the screen and the panels move to a bottom sheet.</sub></td>
+  </tr>
+</table>
 
-### Terminal da ficha
+The [guide](docs/guide.md) covers the rest: how characters behave, the agent sheet's terminal, approving and answering, messages, the runner, and usage and cost.
 
-- Cada linha leva o horário e um ícone colorido pelo tipo de ferramenta: leitura, edição, comando, web, delegação, lista de tarefas.
-- As respostas do agente aparecem formatadas como markdown, com listas, negrito, links e blocos de código com cores de sintaxe.
-- Uma edição aparece como diff, com as linhas removidas em vermelho e as adicionadas em verde. Um arquivo escrito aparece com as cores da linguagem dele, e um comando aparece com o `$` na frente. Detalhes com mais de 12 linhas vêm recolhidos.
-- Comandos e blocos de código têm o botão "copiar".
-- Se você rolar para cima para ler, o terminal não puxa você de volta: aparece "↓ novas linhas" quando chega coisa nova.
-- O botão de expandir, no canto do terminal, abre o terminal por cima da página; Esc ou o mesmo botão fecha.
+## How it works
 
-## Como funciona
-
-- Um coletor pequeno (Node, sem dependências) roda no Docker em `http://127.0.0.1:8420`.
-- O Claude Code manda cada evento para ele pelos hooks configurados no `~/.claude/settings.json` (vale para todos os projetos). A atividade vai pelo `curl` do sistema, em segundo plano, sem atrasar as ferramentas. Pedidos de permissão, perguntas e o fim do turno passam por `hooks/office-decision.mjs`, que assina o pedido e só aceita uma resposta assinada pelo coletor.
-- O Codex manda um aviso no fim de cada turno pelo `notify` do `~/.codex/config.toml`. O Codex só avisa o fim do turno, então aparece com menos detalhe que o Claude Code.
-- Hooks, coletor e executor se reconhecem por um segredo que o instalador cria em `~/.orquestra-office/secret`. Cada navegador que abre o escritório precisa estar pareado (veja [Parear navegadores e aparelhos](#parear-navegadores-e-aparelhos)).
-- O projeto é a pasta onde a sessão começou. Todos os projetos dividem a mesma Sede, um escritório térreo aberto visto de cima, e cada projeto ganha uma ilha de 6 lugares na área de trabalho (um projeto com mais gente ganha mais de uma ilha). As sessões e seus subagentes sentam juntos, e os lugares livres ficam à vista.
-- Cada ilha tem um dos 7 temas (Laboratório, Café, Biblioteca, Garagem, Estação espacial, Jardim, Fliperama), que pinta o tapete, as mesas e as cadeiras dela. O tema se escolhe na ficha da ilha, aberta pelo nome do projeto na lista de salas ou com um clique na ilha.
-- Em volta das ilhas ficam as áreas comuns, de todos os projetos: sala de reuniões, copa, sala de jogos, lounge e recepção, e o quintal na frente do prédio. Cada pessoa leva uma etiqueta com o nome, o título e a cor do status, e quem tem mensagens na fila mostra quantas na etiqueta e na ficha da ilha.
-- A interface segue o Orquestra Design System: os mesmos tokens de cor, tipografia, espaço e raio (`web/styles/tokens.css`), status sempre com glifo e texto, e o painel de terminal do app.
-- Uma sessão aberta num worktree entra no escritório do repositório principal, e os papéis definidos em `.claude/agents` do projeto ganham mesa com o nome mesmo quando ninguém está no papel. Só os nomes dos arquivos são lidos.
-
-### Vida no escritório
-
-O boneco reage ao que o agente está fazendo e se move pela Sede.
-
-| O agente está | O boneco |
-|---|---|
-| editando um arquivo | digita |
-| lendo ou procurando no código | lê um papel, com a cabeça indo de um lado ao outro |
-| rodando um comando | recosta e acompanha, com o balão de terminal |
-| pesquisando na web | olha em volta, com o balão de globo |
-| começando a pensar no seu pedido | mão no queixo, com os três pontos |
-| delegando a um subagente | aponta para o colega |
-| organizando a lista de tarefas | escreve, com o balão de lista |
-| com uma ferramenta que falhou | balança a cabeça |
-| pedindo permissão ou com uma pergunta | levanta a mão, com o balão de exclamação ou interrogação |
-| bloqueado por erro | mão no rosto |
-| acabou de terminar o turno | recosta na cadeira por alguns segundos, com o balão de visto |
-| em pausa ou esperando sua resposta | levanta e vai tomar café na copa, depois segue a rotina de tempo livre |
-| livre | vai para o sofá do lounge, depois segue a rotina de tempo livre |
-| encerrado | sai pela porta da frente |
-
-**Quem trabalha fica sentado.** Só o tempo livre tira alguém da cadeira. Se chega trabalho para quem está longe da mesa, a pessoa volta apressada. Se as mesas mudam de lugar (um subagente entra ou sai), quem estava sentado já aparece na mesa nova, sem levantar.
-
-Quem está em pausa, esperando sua resposta ou livre não fica parado. Depois de recostar um pouco na mesa, cada um troca de atividade a cada 30 a 55 segundos, num ritmo e numa ordem próprios e sem dois ocuparem o mesmo lugar, mesmo sendo de projetos diferentes:
-
-- tomar café na copa ou água no bebedouro;
-- olhar pela janela da copa;
-- escrever no quadro da sala de reuniões ou sentar à mesa de reunião;
-- jogar pingue-pongue ou fliperama na sala de jogos, ou descansar no pufe;
-- cochilar no sofá do lounge;
-- regar as plantas;
-- alongar na própria mesa, quando todos os lugares estão ocupados.
-
-As atividades são as mesmas para todos os projetos, qualquer que seja o tema da ilha. Quem precisa de você ou está bloqueado continua na mesa.
-
-Cada pessoa tem um temperamento próprio, fixo pelo agente: quanto tempo fica sentada depois de terminar, de quanto em quanto tempo troca de atividade, a velocidade do passo, o ritmo da digitação e do piscar. Por isso ninguém se move em sincronia com o colega ao lado. Além disso:
-
-- **Pensamentos.** De vez em quando aparece um balão de pensamento sobre a etiqueta, ligado ao que a pessoa faz: o arquivo que edita, o comando que roda, o colega a quem delegou, ou o café e a janela no tempo livre. Ficam visíveis no máximo três por vez, sempre os mais recentes.
-- **Gestos na mesa.** Quem trabalha sentado para um instante de tempos em tempos: olha para o lado, alonga o pescoço, coça a cabeça, toma um gole de café, recosta com as mãos atrás da cabeça ou esfrega os olhos.
-- **Piscar.** Todos piscam, menos quem cochila.
-
-#### Conversas
-
-Os bonecos conversam entre si, com balão de fala e falando um de cada vez, virados para quem está ouvindo:
-
-- **Delegação.** Quando um subagente começa, o agente principal se vira para ele e passa a tarefa ("Bia, pode pegar essa pra mim?"), e o subagente responde. Os dois continuam sentados, porque estão trabalhando.
-- **Entrega.** Quando o subagente termina, ele leva o resultado em mãos até a mesa do agente principal, avisa que está pronto, ouve o agradecimento e só então sai pela porta. Se o agente principal não estiver na mesa, o subagente vai direto embora.
-- **Papo no tempo livre.** Quem está livre e para perto de outra pessoa na mesma área (no café, no sofá, na sala de jogos) puxa conversa, inclusive com gente de outro projeto. Uma divisória separa as conversas: quem está na copa não conversa com quem está na sala de jogos, mesmo encostado na parede. O papo continua enquanto estiverem juntos, mudando de assunto de tempos em tempos.
-
-Quem está conversando não mostra balão de pensamento.
-
-Quem chega depois que a Sede já está aberta entra pela recepção e anda até a mesa. Todos caminham pelos corredores, sem atravessar paredes, divisórias, ilhas ou móveis. Com "reduzir movimento" ligado no sistema, ninguém anda: cada um aparece direto no lugar.
-
-### Abrir sessões pelo escritório
-
-Hooks só observam uma sessão que você abriu no terminal. Para ter terminal ao vivo e mensagem na hora, o escritório precisa ser o dono da sessão. Isso é feito pelo executor, um processo pequeno (Node, sem dependências) que roda na sua máquina, fora do Docker:
-
-```powershell
-node runner/src/main.js
+```mermaid
+flowchart LR
+  claude["Claude Code"]
+  codex["Codex"]
+  collector["Collector in Docker<br/>127.0.0.1:8420"]
+  page["Page: the Sede<br/>paired browsers only"]
+  runner["Runner, optional<br/>127.0.0.1:8421"]
+  claude -->|"hooks: curl and signed decisions"| collector
+  codex -->|"notify at the end of each turn"| collector
+  collector -->|"page, live state and decisions"| page
+  page -->|"token from a challenge signed by the collector"| runner
+  runner -->|"opens and drives sessions"| claude
 ```
 
-Com ele ligado, a página mostra "Nova sessão" no alto e na ficha de cada ilha. Você informa a pasta do projeto e a primeira mensagem, e o executor abre o Claude Code nessa pasta em modo de fluxo. Na ficha do agente aparecem o terminal ao vivo (o texto chega enquanto o agente escreve), "Interromper" e "Encerrar sessão". As permissões dessas sessões chegam ao escritório como as de qualquer outra.
+- **Collector.** A small Node server with no dependencies, running in Docker on `http://127.0.0.1:8420`. It receives the events, keeps the state and serves the page.
+- **Claude Code hooks.** The installer writes them to `~/.claude/settings.json`, so they apply to every project. Activity goes through the system `curl` in the background, without slowing tools down. Permission requests, questions and the end of a turn go through `hooks/office-decision.mjs`, which signs the request and only accepts a reply signed by the collector. The office status line (`hooks/office-statusline.mjs`) passes plan usage, tokens and cost on to the collector.
+- **Codex notify hook.** Codex reports the end of each turn through `notify` in `~/.codex/config.toml`. That is all Codex reports, so it shows less detail than Claude Code.
+- **Runner.** Optional. A small Node process that runs on your machine, outside Docker, and opens Claude Code sessions from the office. Only those sessions get the live terminal, instant messages, Interrupt (Interromper) and End session (Encerrar sessão). Start it with `node runner/src/main.js`.
+- **Page.** The Sede, plain HTML, CSS and ES modules with no build step. Every browser that opens it must be [paired](#pair-your-browser).
 
-- É o Claude Code em modo não interativo, não a tela do terminal: não há comandos de barra nem a interface do Claude Code, só a conversa.
-- O executor escuta em `127.0.0.1:8421` e só atende quem traz um token dele. A página pareada consegue o token sozinha: pede um desafio ao executor, o coletor assina o desafio com o segredo e o executor troca a assinatura por um token de 12 horas. Um processo qualquer da máquina, sem o segredo, não abre sessão nem manda mensagem. Variáveis: `OFFICE_RUNNER_PORT`, `OFFICE_ORIGINS`, `CLAUDE_BIN`, `OFFICE_RUNNER_MODEL` e `OFFICE_SECRET_FILE` (padrão `~/.orquestra-office/secret`).
-- As sessões abertas por ele são encerradas quando o executor para.
+Hooks, collector and runner trust each other through a secret that the installer creates in `~/.orquestra-office/secret`.
 
-### Aprovar, recusar e responder
+A project is the folder where the session started. A session opened in a git worktree joins the island of the main repository.
 
-Quando o Claude Code vai pedir uma permissão ou fazer uma pergunta, o hook segura o pedido no coletor e ele aparece no escritório. Você decide lá e a resposta volta para a sessão.
+## Install
 
-- O pedido só é segurado se houver uma página pareada do escritório aberta. Sem ela, ele vai direto para o terminal, como sempre.
-- Quem decide é só a página pareada. Se a resposta do coletor não vier assinada com o segredo desta máquina (coletor antigo, coletor parado e outro programa na porta 8420), o pedido vai para o terminal. Uma aprovação vinda do escritório nunca reescreve o comando, nunca grava regra de permissão e nunca muda o modo de permissão da sessão.
-- O coletor segura o pedido por até 120 segundos (variável `OFFICE_HOLD_SECONDS` do container). Sem resposta nesse prazo, ou se você clicar em "Decidir no terminal", o pedido volta para o terminal.
-- Enquanto o pedido está segurado, o terminal mostra "Esperando você no escritório".
-- Ao recusar, você pode escrever o motivo. O agente lê esse motivo.
+> An `npx orquestra-office` package is coming soon. For now, the office runs from a clone of this repository, with Docker.
 
-### Mandar mensagens
+You need:
 
-Nas sessões abertas pelo escritório, a mensagem chega na hora. Nas sessões que você abriu no terminal, a mensagem escrita na ficha fica numa fila e chega ao agente quando ele termina o turno atual: em vez de parar, ele lê a mensagem e continua. Uma sessão que já está parada esperando você no terminal só recebe a mensagem no fim do próximo turno, porque os hooks não conseguem acordar uma sessão parada.
+- Node 22 or newer;
+- Docker with Compose;
+- the system `curl` (Windows 10 1803 or newer ships `C:\Windows\System32\curl.exe`; on macOS it is `/usr/bin/curl`);
+- Claude Code, Codex or both.
 
-### Uso, tokens e custo
+The commands are the same in PowerShell and bash:
 
-O Claude Code só entrega esses números para a linha de status do terminal. O instalador configura a linha de status do escritório (`hooks/office-statusline.mjs`), que repassa os números ao coletor e mostra no terminal o modelo, o uso das janelas de 5 h e semanal e o custo da sessão.
-
-- As janelas de 5 h e semanal aparecem no canto de cima da página, um anel por conta. Elas só existem para assinantes do claude.ai e depois da primeira resposta da sessão.
-- Os tokens e o custo do dia ficam em "Hoje nesta ilha", na ficha de cada ilha, e contam o que foi gasto com o escritório ligado. O custo é a estimativa do próprio Claude Code, a preço de tabela.
-- Se você já tem uma linha de status sua, o instalador não mexe nela e avisa. Sem a linha de status do escritório, esses números ficam vazios.
-
-## O que fica guardado
-
-**No disco** (volume `office-data`), só o necessário para desenhar o escritório: pasta do projeto, id da sessão, nome do subagente, nome da ferramenta, nome do arquivo (sem o caminho), o primeiro termo do comando (por exemplo `cargo`, nunca os argumentos) e os totais de tokens e custo.
-
-**Aparelhos pareados** (`devices.json`, no mesmo volume): o nome do navegador, o endereço por onde foi aberto, as datas e o hash SHA-256 do cookie, nunca o cookie. Um aparelho sem uso por 30 dias sai da lista.
-
-**Só na memória do coletor**, para o histórico e para você decidir com contexto: o texto dos seus pedidos, os comandos completos, a última resposta do agente em cada turno, os pedidos de permissão pendentes, as mensagens na fila e os códigos de pareamento ainda não usados. Nada disso vai para o disco, e tudo se perde quando o container reinicia. O histórico guarda no máximo 200 registros por sessão.
-
-**Na sua pasta pessoal** (`~/.orquestra-office`, criada pelo instalador e legível só pelo seu usuário): `secret`, a chave que hooks, coletor e executor compartilham, e `activity.header`, o cabeçalho com o token de atividade que o `curl` lê. O token fica num arquivo, e não na linha de comando, porque no macOS e no Linux qualquer usuário vê a linha de comando dos processos.
-
-Por padrão, o coletor só aceita conexões da sua máquina (`127.0.0.1`). Todo `/api/*` exige um navegador pareado, e as ações de controle recusam pedidos vindos de outro site aberto no navegador ou sem a origem da própria página.
-
-### Parear navegadores e aparelhos
-
-Cada navegador recebe um cookie de 90 dias, renovado sempre que a página carrega, também nesta máquina. Sem ele, a página mostra "Este navegador não está pareado".
-
-- **Neste computador:** rode `node hooks/open-office.mjs` na pasta do escritório. Ele pede ao coletor um desafio de uso único, que vale 30 segundos, e depois um código, com um pedido assinado pelo segredo que leva esse desafio; um pedido copiado no caminho não serve de novo. Em seguida, abre o escritório já pareado no navegador padrão, em `http://127.0.0.1:8420`. Para outro navegador, copie o endereço que o comando mostra; ele vale uma vez, por 2 minutos.
-- **Use `127.0.0.1`, não `localhost`.** O cookie vale só para o endereço em que foi recebido. No Windows, `localhost` resolve primeiro para `::1`, onde outro processo pode estar escutando e receberia o código de pareamento e o cookie. Por isso o comando abre o endereço exato em que o coletor escuta.
-- **Em outro aparelho:** num navegador já pareado, clique em **Aparelhos** e depois em **Parear aparelho**. Leia o QR com o outro aparelho ou abra o link nele, também uma vez e por 2 minutos.
-- **Revogar:** em **Aparelhos**, "Revogar" desconecta o aparelho na hora; "Sair deste" desconecta o navegador atual.
-- **Girar o segredo** (`node hooks/install-claude-hooks.mjs --rotate-secret`) é o botão de pânico: invalida todos os aparelhos, os tokens do executor e qualquer hook com o segredo antigo. No Docker, rode `docker compose restart office` depois, porque o arquivo montado não muda dentro do container.
-
-### Abrir na rede local
-
-Para usar o escritório no celular, publique a porta também no IP da máquina na rede local. O arquivo `.env` desta pasta guarda esse IP em `OFFICE_LAN_IP`, e o `compose.lan.yaml` acrescenta a porta e libera esse endereço no coletor:
-
-```powershell
-docker compose -f compose.yaml -f compose.lan.yaml up -d --build
-```
-
-Para usar no celular, pareie o aparelho pelo QR (**Aparelhos**, **Parear aparelho**, num navegador já pareado). O link do QR já aponta para `http://<OFFICE_LAN_IP>:8420`. Para voltar ao modo só local, rode `docker compose up -d` sem o segundo arquivo.
-
-- Um aparelho da rede que não foi pareado não vê nada: todo `/api/*` responde `401`, também para quem manda `Host: localhost`. As rotas dos hooks exigem o token ou a assinatura.
-- Pareado, o aparelho tem controle total: vê as sessões, aprova permissões e manda mensagens. Revogue em **Aparelhos** um aparelho perdido.
-- O modo rede é HTTP: quem escuta o tráfego da rede consegue copiar o cookie de um aparelho pareado. Só ligue em rede em que você confia.
-- Só páginas pareadas contam como espectador; uma página qualquer aberta na rede não segura pedidos de permissão longe do terminal.
-- Se o IP da máquina mudar, atualize `OFFICE_LAN_IP` no `.env` e suba de novo.
-- O executor continua só em `127.0.0.1`. "Nova sessão", terminal ao vivo, interromper e encerrar não funcionam pelo celular.
-
-## Instalar
-
-Com o Node 22 ou mais novo e o `curl` do sistema (o Windows 10 1803 ou mais novo já traz `C:\Windows\System32\curl.exe`; no macOS, `/usr/bin/curl`), no PowerShell, nesta pasta:
-
-```powershell
+```bash
+git clone https://github.com/lucascodev/orquestra-office.git
+cd orquestra-office
 node hooks/install-claude-hooks.mjs
 node hooks/install-codex-notify.mjs
 docker compose up -d --build
 node hooks/open-office.mjs
 ```
 
-Os instaladores vêm primeiro porque criam o segredo em `~/.orquestra-office/secret`, que o `compose.yaml` monta no container. O último comando abre o escritório já pareado no navegador padrão. As sessões do Claude Code e do Codex abertas **depois** da instalação aparecem sozinhas.
+- Skip the installer of the tool you do not use. Either one creates the secret.
+- The installers come first because they create `~/.orquestra-office/secret`, which `compose.yaml` mounts into the container.
+- The last command opens the office, already paired, in your default browser.
+- Claude Code and Codex sessions opened **after** the install show up on their own.
+- For the live terminal and instant messages, also start the runner: `node runner/src/main.js`.
 
-Depois de atualizar esta pasta, rode de novo os dois instaladores e `docker compose up -d --build`.
+After you pull a new version, run both installers again and `docker compose up -d --build`.
 
-### Atualizar de uma versão com hooks `http`
+The installers only change what the office wrote and record it in `orquestra-office.json`, next to the configuration file. They can run again without duplicating anything. Before writing, they back up the file and keep the three latest backups. A backup is a full copy, so if the `env` block of your `settings.json` has tokens or passwords, the backup has them too. The [guide](docs/guide.md#how-the-installers-change-your-configuration) has the details: backups, atomic writes, the office address and the secret.
 
-Os hooks antigos do tipo `http` deixam de valer: o coletor novo responde a eles sem efeito, e a página avisa "Há hooks de uma versão antiga neste computador". O aviso some 10 minutos depois do último pedido de um hook antigo. Para migrar:
+## Pair your browser
 
-1. Rode `node hooks/install-claude-hooks.mjs` uma vez para cada pasta de configuração do Claude Code que você usa (com `CLAUDE_CONFIG_DIR` apontando para ela) e `node hooks/install-codex-notify.mjs`. O instalador troca as entradas `http` pelas novas, cria o segredo e avisa que migrou. Se já existe um `~/.orquestra-office/secret` que você não criou com o instalador, ou de que não tem certeza de onde veio, rode o primeiro instalador com `--rotate-secret`: ele troca a chave por uma nova antes de o coletor passar a usá-la.
-2. Reconstrua o coletor com `docker compose up -d --build`. Ele lê o segredo de `~/.orquestra-office/secret`; se o arquivo não existir, rode o instalador antes.
-3. Rode `node hooks/open-office.mjs` para parear o navegador. Pareie o celular pelo QR em **Aparelhos**.
-4. Reinicie o executor, se você usa: `node runner/src/main.js`.
+Every browser needs a pairing cookie to see or decide anything. The cookie lasts 90 days and is renewed every time the page loads. Without it, the page shows "This browser is not paired" (Este navegador não está pareado).
 
-As sessões já abertas continuam com os hooks antigos até serem fechadas.
+- **On this computer.** Run `node hooks/open-office.mjs` in the office folder. It asks the collector for a single-use challenge, valid for 30 seconds, then for a pairing code, with a request signed with the secret. Then it opens the paired office in your default browser at `http://127.0.0.1:8420`. For another browser, copy the address the command prints; it works once, for 2 minutes.
+- **Use `127.0.0.1`, not `localhost`.** The cookie only applies to the address it was received on. On Windows, `localhost` resolves to `::1` first, where another process could be listening and would receive the pairing code and the cookie.
+- **On another device.** In a paired browser, click Devices (Aparelhos), then Pair device (Parear aparelho). Scan the QR code with the other device or open the link on it. It also works once, for 2 minutes.
+- **Revoke.** In Devices (Aparelhos), Revoke (Revogar) disconnects a device right away, and Sign out this one (Sair deste) disconnects the current browser.
+- **Rotate the secret.** `node hooks/install-claude-hooks.mjs --rotate-secret` is the panic button: it invalidates every paired device, every runner token and every hook that still has the old secret. Then run `docker compose restart office`, because the mounted file does not change inside a running container.
 
-Os dois scripts só mexem no que o escritório gravou. Os comandos exatos ficam anotados em `orquestra-office.json`, na mesma pasta da configuração, e um hook seu que apenas se pareça com o do escritório fica onde está. Eles podem rodar de novo sem duplicar nada e, quando não há nada a mudar, não gravam nem fazem backup. O do Codex não sobrescreve um `notify` que você já tenha: ele avisa e não muda nada.
+## Uninstall
 
-- **Backup.** Antes de gravar, cada script copia o arquivo para `settings.json.bak-<data>` ou `config.toml.bak-<data>` e guarda só os três backups mais recentes. A cópia é inteira: se o `env` do seu `settings.json` tiver tokens ou senhas, o backup também terá. No macOS e no Linux o backup fica legível só pelo seu usuário; no Windows ele herda as permissões da pasta.
-- **Gravação.** O arquivo é trocado de uma vez, e um `settings.json` que seja symlink continua symlink. Se o Claude Code salvar o arquivo enquanto o script roda, nada é gravado e o script pede para rodar de novo.
-- **Endereço.** Os hooks falam com `http://127.0.0.1:8420`. Para usar outra porta, defina `OFFICE_URL` antes de instalar, com um endereço desta máquina (`127.0.0.1` ou `[::1]`) e sem caminho. Um `localhost` vira `127.0.0.1`, porque no Windows ele resolve primeiro para `::1`, onde outro processo poderia estar escutando. Isso vale também para o `--office-url` que uma instalação anterior gravou; o `curl` da atividade só muda quando você reinstala. Endereço de outra máquina só com `--allow-remote-office` e `https://`, porque os hooks mandam para lá os comandos e as respostas das ferramentas. O endereço fica gravado em todos os comandos (no `curl` da atividade e no `--office-url` de `office-session-start.mjs`, `office-statusline.mjs` e `office-decision.mjs`), e o caminho do segredo, no de `office-decision.mjs`. Nenhum deles lê `OFFICE_URL` durante a sessão, porque o `.claude/settings.json` de um projeto pode definir variáveis de ambiente e mandar o token para outro lugar. Um comando gravado por uma versão anterior, sem `--office-url`, usa o padrão até você reinstalar.
-- **Pasta.** O caminho desta pasta e o do segredo vão dentro do comando gravado, então o instalador recusa um caminho com caracteres que o shell interpreta, como `$`, crase, aspas ou `;`.
-- **Segredo.** O instalador cria `~/.orquestra-office/secret` quando falta e nunca o sobrescreve; `--rotate-secret` troca a chave (veja [Parear navegadores e aparelhos](#parear-navegadores-e-aparelhos)). Rodado num terminal, o instalador do Claude Code termina abrindo o escritório já pareado, se o coletor responder.
-
-## Desinstalar
-
-```powershell
+```bash
 node hooks/install-claude-hooks.mjs --remove
 node hooks/install-codex-notify.mjs --remove
 docker compose down
 ```
 
-O `--remove` tira só o que o escritório gravou. Em `orquestra-office.json`, a anotação do Codex é apagada e a do Claude fica vazia, para que uma instalação seguinte não confunda um script ou um `curl` seu com os do escritório, como se fossem de uma instalação antiga. Se o arquivo de configuração não existir, ele não cria nada. O segredo fica onde está; para apagá-lo, remova a pasta `~/.orquestra-office` (no PowerShell, `Remove-Item -Recurse "$HOME\.orquestra-office"`; no macOS, `rm -r ~/.orquestra-office`).
+`--remove` only takes out what the office wrote, and creates nothing if the configuration file does not exist. In `orquestra-office.json`, the Codex record is deleted and the Claude record is left empty, so a later install does not mistake a script or `curl` of yours for an old office hook. `docker compose down -v` also deletes the `office-data` volume.
 
-Se o container estiver parado, a atividade se perde sem aviso, as decisões voltam para o terminal e o Claude Code continua normalmente.
-
-## Desenvolvimento
+The secret stays where it is. To delete it, remove the `~/.orquestra-office` folder:
 
 ```powershell
+Remove-Item -Recurse "$HOME\.orquestra-office"
+```
+
+```bash
+rm -r ~/.orquestra-office
+```
+
+If the container is stopped, activity is lost silently, decisions go back to the terminal and Claude Code carries on as usual.
+
+## Updating from the `http` hooks
+
+Earlier versions used hooks of type `http`. They no longer work: the new collector answers them without effect, and the page shows "There are hooks from an old version on this computer" (Há hooks de uma versão antiga neste computador). The warning goes away 10 minutes after the last request from an old hook. To migrate:
+
+1. Run `node hooks/install-claude-hooks.mjs` once for each Claude Code configuration folder you use (with `CLAUDE_CONFIG_DIR` pointing to it), and `node hooks/install-codex-notify.mjs`. The installer replaces the `http` entries with the new ones, creates the secret and says it migrated. If a `~/.orquestra-office/secret` already exists and you did not create it with the installer, or you are not sure where it came from, run the first installer with `--rotate-secret`: it replaces the key before the collector starts using it.
+2. Rebuild the collector with `docker compose up -d --build`. It reads the secret from `~/.orquestra-office/secret`; if the file does not exist, run the installer first.
+3. Run `node hooks/open-office.mjs` to pair your browser. Pair your phone with the QR code in Devices (Aparelhos).
+4. Restart the runner, if you use it: `node runner/src/main.js`.
+
+Sessions that are already open keep the old hooks until they are closed.
+
+## What is stored
+
+**On disk** (the `office-data` volume), only what is needed to draw the office: project folder, session id, subagent name, tool name, file name (without the path), the first word of a command (for example `cargo`, never the arguments) and the token and cost totals.
+
+**Paired devices** (`devices.json`, in the same volume): the browser name, the address it was opened from, the dates and the SHA-256 hash of the cookie, never the cookie itself. A device unused for 30 days drops off the list.
+
+**Only in the collector's memory**, for the history and so you can decide with context: the text of your prompts, full commands, the agent's last reply in each turn, pending permission requests, queued messages and unused pairing codes. None of this goes to disk, and all of it is lost when the container restarts. The history keeps at most 200 entries per session.
+
+**In your home folder** (`~/.orquestra-office`, created by the installer and readable only by your user): `secret`, the key shared by hooks, collector and runner, and `activity.header`, the header with the activity token that `curl` reads. The token lives in a file, not on the command line, because on macOS and Linux any user can see the command line of running processes.
+
+By default the collector only accepts connections from your machine (`127.0.0.1`). Every `/api/*` route requires a paired browser, and control actions refuse requests that come from another site open in the browser or that lack the page's own origin.
+
+## Open on your local network
+
+To use the office on your phone, also publish the port on the machine's local network IP. Create a `.env` file in the office folder with that IP:
+
+```dotenv
+OFFICE_LAN_IP=192.168.0.10
+```
+
+Then start the collector with `compose.lan.yaml`, which adds the port and allows that address in the collector:
+
+```bash
+docker compose -f compose.yaml -f compose.lan.yaml up -d --build
+```
+
+Pair the phone with the QR code (Devices (Aparelhos), then Pair device (Parear aparelho), in a paired browser). The QR link already points to `http://<OFFICE_LAN_IP>:8420`. To go back to local only, run `docker compose up -d` without the second file.
+
+- A device on the network that was not paired sees nothing: every `/api/*` route answers `401`, also for requests that send `Host: localhost`. Hook routes require the token or the signature.
+- A paired device has full control: it sees the sessions, approves permissions and sends messages. Revoke a lost device in Devices (Aparelhos).
+- LAN mode is plain HTTP: anyone who can sniff the network can copy the cookie of a paired device. Only turn it on in a network you trust.
+- Only paired pages count as viewers; a random page opened on the network does not hold permission requests away from the terminal.
+- If the machine's IP changes, update `OFFICE_LAN_IP` in `.env` and start the collector again.
+- The runner stays on `127.0.0.1` only. New session (Nova sessão), the live terminal, interrupt and end do not work from the phone.
+
+## Development
+
+The project has no npm dependencies and the page has no build step. There are five test suites, and CI runs all of them on Node 22 for every pull request and every push to `main`:
+
+```bash
+node --test site/test/*.test.mjs
+node --test web/test/*.test.js
 cd collector
 npm test
 cd ../runner
 npm test
 cd ..
-node --test web/test/*.test.js
 node --test hooks/test/*.test.mjs
 ```
 
-Os testes de `web/test` cobrem as regras de comportamento dos bonecos (onde cada um fica, a demora antes de levantar, os gestos, os pensamentos e as conversas) e a formatação do terminal, que não dependem do navegador.
+[CONTRIBUTING.md](CONTRIBUTING.md) explains how to run the office locally with sample data, the layered architecture, the code rules and the commit format.
 
-Os testes de `hooks/test` rodam os instaladores com `CLAUDE_CONFIG_DIR` e `CODEX_HOME` numa pasta temporária, com `HOME` e `USERPROFILE` numa pasta descartável (o segredo de teste fica lá), e os hooks contra um escritório falso em `127.0.0.1` que assina as respostas, então não mexem na sua configuração. A montagem do `settings.json` e do `config.toml` fica em `hooks/lib`, separada da leitura e da gravação dos arquivos. Os três hooks gravados no `settings.json` (`office-session-start.mjs`, `office-statusline.mjs` e `office-decision.mjs`) não mudam de nome nem de lugar, porque as sessões abertas apontam para eles.
+Browser libraries are copied into `web/vendor`, each with its license next to it:
 
-O protocolo assinado tem duas cópias, `collector/src/shared/auth/signed-message.js` e `hooks/lib/signed-message.mjs`, porque a pasta `hooks/` precisa continuar copiável sozinha. Os testes das duas usam os mesmos vetores fixos, e uma mudança em só uma delas quebra o teste.
-
-A página não tem etapa de build: as bibliotecas ficam copiadas em `web/vendor`, com a licença de cada uma ao lado.
-
-| Biblioteca | Versão | Para quê |
+| Library | Version | What for |
 |---|---|---|
-| three.js | r187 | a Sede em 3D |
-| marked | 18.1.3 | markdown das respostas no terminal |
-| DOMPurify | 3.4.17 | limpar o HTML gerado do markdown antes de mostrar |
-| highlight.js | 11.12.0 (build ES do `@highlightjs/cdn-assets`) | cores de sintaxe |
-| uqr | 0.1.3 (`dist/index.mjs`) | QR para parear outro aparelho; a página desenha o SVG a partir da matriz |
+| three.js | r187 | the Sede in 3D |
+| marked | 18.1.3 | markdown in the agent's replies in the terminal |
+| DOMPurify | 3.4.17 | cleaning the HTML generated from markdown before showing it |
+| highlight.js | 11.12.0 (ES build from `@highlightjs/cdn-assets`) | syntax colors |
+| uqr | 0.1.3 (`dist/index.mjs`) | the QR code to pair another device; the page draws the SVG from the matrix |
 
-Para atualizar uma delas, baixe o pacote do npm, confira o hash `integrity` do registro e substitua o arquivo em `web/vendor`. O DOMPurify e o uqr vão com a extensão `.js`, porque o servidor do coletor não serve `.mjs`.
+To update one, download the package from npm, check the registry `integrity` hash and replace the file in `web/vendor`. DOMPurify and uqr keep the `.js` extension, because the collector's server does not serve `.mjs`.
 
-### Landing
+The signed protocol has two copies, `collector/src/shared/auth/signed-message.js` and `hooks/lib/signed-message.mjs`, because the `hooks/` folder must stay copyable on its own. Both test suites use the same fixed vectors, so a change to only one of them breaks a test.
 
-A landing fica em `site/`, com a página em português em `site/index.html` e a em inglês em `site/en/index.html`. O `site/assemble.mjs` monta o site publicado: a landing na raiz e o escritório em `demo/`, que abre em modo demo dentro da página.
+### Landing page
 
-As páginas apontam para o repositório `Lucascodev/orquestra-office` e para o endereço `https://lucascodev.github.io/orquestra-office/`. Num fork, troque esses dois nas duas páginas. Se sobrar o marcador `OWNER` numa página, a montagem para com erro e o deploy não acontece.
+The landing page lives in `site/`: Portuguese in `site/index.html`, English in `site/en/index.html`. `node site/assemble.mjs _site` builds the published site, with the landing page at the root and the office in demo mode under `demo/`. The `Pages` workflow runs the tests, builds the site and publishes it on every push to `main`.
 
-Para ver o site montado antes de publicar:
+In a fork, replace the repository and the `https://lucascodev.github.io/orquestra-office/` address in both pages. If an `OWNER` placeholder is left in a page, the build fails and nothing is deployed.
 
-```powershell
-node --test site/test/*.test.mjs
-node site/assemble.mjs _site
-python -m http.server 8000 -d _site
-```
+## Security
 
-A montagem só substitui uma pasta que não existe, que está vazia ou que ela mesma montou antes (com o arquivo `.site-assembly`), então ela não apaga uma pasta sua por engano.
+The office writes to your Claude Code and Codex configuration and decides permission requests on your behalf. Read [SECURITY.md](SECURITY.md) for the threat model and for how to report a vulnerability privately. Do not open a public issue for one.
 
-Para publicar, em Settings, Pages, escolha a fonte "GitHub Actions". O workflow `Pages` roda os testes, monta o site e publica a cada push na `main`, e também pode ser disparado à mão.
+## License
+
+[MIT](LICENSE).
