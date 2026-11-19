@@ -15,7 +15,10 @@
       <span class="hq-brand-mark" aria-hidden="true"><i></i><i></i><i></i><i></i></span>
       <h1 class="hq-brand">Orquestra Office</h1>
       <span class="hq-connection" role="status" data-slot="connection"></span>
-      <button class="btn btn-sm btn-ghost" type="button" data-open-devices hidden>Aparelhos</button>
+      <button class="btn btn-sm btn-ghost hq-devices-button" type="button" aria-label="Aparelhos" title="Aparelhos" data-open-devices hidden>
+        <svg class="hq-devices-icon" aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="14" height="10" rx="1"></rect><path d="M9 14v4M6 18h6"></path><rect x="16" y="9" width="6" height="11" rx="1"></rect></svg>
+        <span class="hq-devices-label">Aparelhos</span>
+      </button>
       <button type="button" class="hq-requests-button" aria-disabled="true" aria-label="Pedidos: nenhum esperando você" data-requests>Pedidos <b data-requests-count>0</b></button>
     </header>
     <button type="button" class="hq-search-button hq-panel" aria-haspopup="dialog" aria-keyshortcuts="Control+K Meta+K" data-open-search>
